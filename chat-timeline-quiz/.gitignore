@@ -1,0 +1,5 @@
+# Private chat exports / screenshots
+*.json
+*.png
+*.jpg
+*.jpeg
