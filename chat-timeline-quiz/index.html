@@ -161,6 +161,39 @@
   .center { text-align: center; }
   .hero { font-size: 3rem; line-height: 1; margin: 12px 0 0; }
   .final-score { font-size: 3rem; font-weight: 800; color: var(--accent); }
+
+  select {
+    display: block; width: 100%; margin-top: 4px; padding: 10px 12px; font: inherit;
+    color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px;
+  }
+  input[type=number] {
+    width: 90px; padding: 10px 12px; font: inherit; color: var(--ink); background: var(--bg);
+    border: 1px solid var(--line); border-radius: 10px; margin: 0 6px;
+  }
+  .cat-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .cat-row input { margin-top: 0; }
+  .cat-row button { padding: 8px 12px; flex: none; }
+
+  /* Board (used for both setup preview and gameplay) */
+  .board { display: grid; gap: 6px; margin-top: 12px; }
+  .board .head {
+    font-size: .78rem; font-weight: 700; text-align: center; padding: 6px 2px; line-height: 1.2;
+    display: flex; align-items: center; justify-content: center; overflow-wrap: anywhere; hyphens: auto;
+    background: var(--accent-soft); color: var(--accent); border-radius: 10px; min-height: 48px;
+  }
+  .board .cell {
+    position: relative; aspect-ratio: 1 / 1; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--bg); padding: 0; overflow: hidden; font-weight: 800; font-size: 1.1rem;
+    color: var(--muted); display: flex; align-items: center; justify-content: center;
+  }
+  .board .cell img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .55; }
+  .board .cell span { position: relative; text-shadow: 0 1px 3px var(--card); color: var(--ink); }
+  .board .cell.warn { outline: 2px solid var(--warn); }
+  .board.play .cell { background: var(--accent); color: var(--accent-ink); border: 0; font-size: 1.3rem; box-shadow: var(--shadow); }
+  .board.play .cell.done { background: var(--line); color: var(--muted); box-shadow: none; flex-direction: column; font-size: .95rem; cursor: default; }
+  .board.play .cell.done small { font-size: .7rem; font-weight: 600; }
+  .board.play .cell.empty { background: transparent; border: 1px dashed var(--line); box-shadow: none; cursor: default; }
+  .play-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
 </style>
 </head>
 <body>
@@ -205,12 +238,30 @@
     </div>
 
     <div class="card">
-      <h2>3. Play</h2>
-      <p class="muted small" id="readyMsg"></p>
-      <div class="row">
-        <button class="primary big" id="startBtn">Start the quiz ▶</button>
+      <h2>3. The board</h2>
+      <p class="muted small">Like Jeopardy: a column per category and a row per point value. Put easier screenshots on the low values and harder ones on the high values. Tap a square to put a screenshot in it.</p>
+      <div id="catList"></div>
+      <div class="row" style="margin-bottom:8px">
+        <button id="addCatBtn">＋ Add category</button>
       </div>
-      <p class="muted small" style="margin-top:12px">Scoring: up to 1000 points per screenshot. Exact day = 1000, a week off ≈ 840, a month off ≈ 470, three months off ≈ 100.</p>
+      <label>Point values, top to bottom (comma separated)
+        <input type="text" id="valuesInput" inputmode="numeric" placeholder="100, 200, 300, 400">
+      </label>
+      <div class="board" id="setupBoard"></div>
+    </div>
+
+    <div class="card">
+      <h2>4. Play</h2>
+      <p class="muted small" id="readyMsg"></p>
+      <div class="play-buttons">
+        <button class="primary big" id="boardStartBtn">Play the board 🎯</button>
+        <button class="big" id="startBtn">Quick play (all, shuffled)</button>
+      </div>
+      <p class="muted small" style="margin-top:12px">
+        Scoring: the closer the guess, the more of the question's points she gets. Exact day = all points.
+        Half points when off by <input type="number" id="halfLife" min="1" max="365"> days.
+        <span id="scoringExample"></span>
+      </p>
     </div>
 
     <div class="card">
@@ -223,6 +274,20 @@
         </label>
         <button class="ghost" id="clearBtn">Delete everything</button>
       </div>
+    </div>
+  </section>
+
+  <!-- ============ BOARD ============ -->
+  <section id="board" class="hidden">
+    <div class="topbar">
+      <button class="ghost" id="boardQuitBtn">✕ Quit</button>
+      <span class="pill" id="boardLeft"></span>
+      <span class="pill" id="boardScore"></span>
+    </div>
+    <p class="center" style="margin:16px 0 0"><b id="boardPrompt">Pick a square!</b></p>
+    <div class="board play" id="playBoard"></div>
+    <div class="center" style="margin-top:20px">
+      <button class="ghost" id="boardFinishBtn">Finish &amp; see results 🏁</button>
     </div>
   </section>
 
@@ -308,6 +373,9 @@
         <input type="date" id="edDate">
       </label>
       <p class="muted small" id="edHint" style="margin:6px 0 0"></p>
+      <label style="margin-top:12px">Board square
+        <select id="edSlot"></select>
+      </label>
     </div>
     <div class="card shot-center">
       <p class="muted small">Drag on the image to cover parts of it. Tap a box to remove it.</p>
@@ -316,6 +384,26 @@
         <button id="edUndo">↶ Undo box</button>
         <button class="ghost" id="edDelete">🗑 Remove screenshot</button>
       </div>
+    </div>
+  </main>
+</div>
+
+<!-- ============ SLOT PICKER ============ -->
+<div class="overlay hidden" id="picker">
+  <main>
+    <div class="topbar">
+      <button class="ghost" id="pickCancel">Cancel</button>
+      <b id="pickTitle"></b>
+      <span style="width:70px"></span>
+    </div>
+    <div class="card">
+      <div class="row" style="margin-bottom:12px">
+        <label class="btn primary">＋ Upload a new one
+          <input type="file" id="pickFile" accept="image/*" class="hidden">
+        </label>
+      </div>
+      <p class="muted small">Or pick one you already added. If it's already on the board, it moves here.</p>
+      <div class="grid" id="pickGrid"></div>
     </div>
   </main>
 </div>
@@ -349,8 +437,11 @@
   };
 
   // ---------- Scoring ----------
-  const MAX_POINTS = 1000;
-  const scoreFor = (daysOff) => Math.round(MAX_POINTS * Math.exp(-daysOff / 40));
+  // A guess earns a share of the question's value that halves every `halfLife` days off.
+  const QUICK_PLAY_POINTS = 1000;
+  const DEFAULT_HALF_LIFE = 28;
+  const halfLife = () => (settings.halfLife > 0 ? settings.halfLife : DEFAULT_HALF_LIFE);
+  const scoreFor = (daysOff, value) => Math.round(value * Math.pow(0.5, daysOff / halfLife()));
   const verdict = (daysOff) => {
     if (daysOff === 0) return 'Exact day! 🤯';
     if (daysOff <= 3) return 'So close! 😍';
@@ -388,7 +479,7 @@
       } catch (e) { resolve(null); }
     });
   };
-  const dbPut = (shot) => dbTx('readwrite', (s) => s.put({ id: shot.id, blob: shot.blob, date: shot.date, covers: shot.covers, order: shot.order }));
+  const dbPut = (shot) => dbTx('readwrite', (s) => s.put({ id: shot.id, blob: shot.blob, date: shot.date, covers: shot.covers, order: shot.order, slot: shot.slot || '' }));
   const dbDelete = (id) => dbTx('readwrite', (s) => s.delete(id));
   const dbClear = () => dbTx('readwrite', (s) => s.clear());
   const dbAll = () => dbTx('readonly', (s) => s.getAll());
@@ -411,6 +502,51 @@
   const endNum = () => toDayNum(settings.endDate);
   const rangeOk = () => isValidIso(settings.startDate) && isValidIso(settings.endDate) && endNum() > startNum();
   const shotOk = (s) => rangeOk() && isValidIso(s.date) && toDayNum(s.date) >= startNum() && toDayNum(s.date) <= endNum();
+
+  // ---------- Board model ----------
+  // settings.board = { categories: [{id, name}], values: [100, 200, ...] }
+  // A screenshot sits in a square via shot.slot = "<categoryId>:<rowIndex>".
+  // Squares whose category or row no longer exists are simply ignored.
+  const DEFAULT_BOARD = () => ({
+    categories: [
+      { id: uid(), name: 'Early days' },
+      { id: uid(), name: 'Dates & trips' },
+      { id: uid(), name: 'Inside jokes' },
+      { id: uid(), name: 'Late-night chats' },
+    ],
+    values: [100, 200, 300, 400],
+  });
+  const board = () => settings.board;
+  const slotKey = (catId, row) => `${catId}:${row}`;
+  const slotValid = (slot) => {
+    if (!slot) return false;
+    const [catId, row] = slot.split(':');
+    return board().categories.some((c) => c.id === catId) && Number(row) < board().values.length;
+  };
+  const slotInfo = (slot) => {
+    const [catId, row] = slot.split(':');
+    return { cat: board().categories.find((c) => c.id === catId), value: board().values[Number(row)] };
+  };
+  const shotInSlot = (slot) => shots.find((s) => s.slot === slot);
+  // Fill in defaults and drop anything malformed (old saves, imported files).
+  const normalizeSettings = (raw) => {
+    const r = raw && typeof raw === 'object' ? raw : {};
+    const b = r.board && typeof r.board === 'object' ? r.board : null;
+    const cats = b && Array.isArray(b.categories)
+      ? b.categories.filter((c) => c && typeof c.id === 'string' && !c.id.includes(':'))
+        .map((c) => ({ id: c.id, name: typeof c.name === 'string' ? c.name : '' }))
+      : null;
+    const vals = b && Array.isArray(b.values) ? b.values.map(Number).filter((n) => n > 0) : null;
+    const def = DEFAULT_BOARD();
+    return {
+      startDate: isValidIso(r.startDate) ? r.startDate : '',
+      endDate: isValidIso(r.endDate) ? r.endDate : todayIso(),
+      playerName: typeof r.playerName === 'string' ? r.playerName : '',
+      halfLife: Number(r.halfLife) > 0 ? Math.min(365, Math.round(Number(r.halfLife))) : DEFAULT_HALF_LIFE,
+      board: { categories: cats || def.categories, values: vals && vals.length ? vals : def.values },
+    };
+  };
+  const parseValues = (text) => text.split(/[^\d]+/).map(Number).filter((n) => n > 0).slice(0, 10);
 
   // ---------- Rendering a screenshot with its covers ----------
   const renderShot = (container, shot) => {
@@ -459,20 +595,168 @@
         badge.textContent = '■ ' + s.covers.length;
         b.appendChild(badge);
       }
+      if (slotValid(s.slot)) {
+        const badge = document.createElement('div');
+        badge.className = 'covers-badge';
+        badge.style.right = 'auto'; badge.style.left = '6px';
+        badge.textContent = slotInfo(s.slot).value;
+        b.appendChild(badge);
+      }
       b.onclick = () => openEditor(s);
       grid.appendChild(b);
     });
 
+    renderBoardSetup();
+
     const ready = shots.filter(shotOk).length;
+    const onBoard = shots.filter((s) => slotValid(s.slot) && shotOk(s)).length;
+    const squares = board().categories.length * board().values.length;
     $('shotCount').textContent = shots.length ? `${shots.length} screenshot${shots.length === 1 ? '' : 's'}` : '';
     let msg;
     if (!rangeOk()) msg = 'Set the two dates first (the first message must be before the quiz day).';
     else if (!shots.length) msg = 'Add at least one screenshot.';
-    else if (ready < shots.length) msg = `${ready} of ${shots.length} screenshots are ready. The others need a date inside the timeline and will be skipped.`;
-    else msg = `${ready} screenshot${ready === 1 ? '' : 's'} ready. Hand over the phone! 📱`;
+    else {
+      msg = `Board: ${onBoard} of ${squares} squares filled. Quick play: ${ready} of ${shots.length} screenshots ready.`;
+      if (ready < shots.length) msg += ' Screenshots without a date inside the timeline are skipped.';
+    }
     $('readyMsg').textContent = msg;
     $('startBtn').disabled = !ready;
+    $('boardStartBtn').disabled = !onBoard;
+
+    $('halfLife').value = halfLife();
+    const ex = (d) => `${d} days ≈ ${Math.round(100 * Math.pow(0.5, d / halfLife()))}%`;
+    $('scoringExample').textContent = `(${ex(7)}, ${ex(30)}, ${ex(90)}.)`;
   };
+
+  const renderBoardSetup = () => {
+    const list = $('catList');
+    // Keep the category inputs while one has focus, so typing isn't interrupted.
+    if (!list.contains(document.activeElement)) {
+      list.innerHTML = '';
+      board().categories.forEach((c) => {
+        const row = document.createElement('div');
+        row.className = 'cat-row';
+        const input = document.createElement('input');
+        input.type = 'text'; input.value = c.name; input.placeholder = 'Category name';
+        input.addEventListener('input', () => { c.name = input.value; saveSettings(); drawSetupBoard(); });
+        input.addEventListener('change', renderSetup);
+        const del = document.createElement('button');
+        del.textContent = '✕'; del.title = 'Remove category';
+        del.onclick = () => {
+          if (shots.some((s) => s.slot && s.slot.startsWith(c.id + ':')) &&
+              !confirm(`Remove "${c.name}"? Its screenshots stay in your list but leave the board.`)) return;
+          board().categories = board().categories.filter((x) => x !== c);
+          saveSettings();
+          renderSetup();
+        };
+        row.append(input, del);
+        list.appendChild(row);
+      });
+    }
+    if (document.activeElement !== $('valuesInput')) $('valuesInput').value = board().values.join(', ');
+    drawSetupBoard();
+  };
+
+  const drawSetupBoard = () => {
+    const el = $('setupBoard');
+    const cats = board().categories;
+    el.innerHTML = '';
+    el.style.gridTemplateColumns = `repeat(${Math.max(1, cats.length)}, 1fr)`;
+    cats.forEach((c) => {
+      const h = document.createElement('div');
+      h.className = 'head';
+      h.textContent = c.name || '…';
+      el.appendChild(h);
+    });
+    board().values.forEach((v, row) => {
+      cats.forEach((c) => {
+        const slot = slotKey(c.id, row);
+        const shot = shotInSlot(slot);
+        const cell = document.createElement('button');
+        cell.type = 'button';
+        cell.className = 'cell';
+        if (shot) {
+          const img = document.createElement('img');
+          img.src = shot.url; img.alt = '';
+          cell.appendChild(img);
+          if (!shotOk(shot)) { cell.classList.add('warn'); cell.title = 'Needs a date inside the timeline'; }
+        }
+        const label = document.createElement('span');
+        label.textContent = shot ? v : '＋';
+        cell.appendChild(label);
+        cell.onclick = () => (shot ? openEditor(shot) : openPicker(slot));
+        el.appendChild(cell);
+      });
+    });
+  };
+
+  $('addCatBtn').onclick = () => {
+    board().categories.push({ id: uid(), name: `Category ${board().categories.length + 1}` });
+    saveSettings();
+    renderSetup();
+  };
+  $('valuesInput').addEventListener('change', () => {
+    const vals = parseValues($('valuesInput').value);
+    if (vals.length) board().values = vals;
+    saveSettings();
+    $('valuesInput').blur();
+    renderSetup();
+  });
+  $('halfLife').addEventListener('change', () => {
+    const n = Math.round(Number($('halfLife').value));
+    settings.halfLife = n > 0 ? Math.min(n, 365) : DEFAULT_HALF_LIFE;
+    saveSettings();
+    renderSetup();
+  });
+
+  // ---------- Picker: choose a screenshot for an empty square ----------
+  let pickingSlot = null;
+  const openPicker = (slot) => {
+    pickingSlot = slot;
+    const { cat, value } = slotInfo(slot);
+    $('pickTitle').textContent = `${cat.name} · ${value}`;
+    const grid = $('pickGrid');
+    grid.innerHTML = '';
+    // Screenshots not on the board yet come first.
+    [...shots].sort((a, b) => slotValid(a.slot) - slotValid(b.slot)).forEach((s) => {
+      const b = document.createElement('button');
+      b.className = 'thumb'; b.type = 'button';
+      const img = document.createElement('img');
+      img.src = s.url; img.alt = '';
+      b.appendChild(img);
+      const tag = document.createElement('div');
+      tag.className = 'tag';
+      tag.textContent = slotValid(s.slot) ? `On board: ${slotInfo(s.slot).value}` : (isValidIso(s.date) ? fmt(toDayNum(s.date), { day: 'numeric', month: 'short', year: '2-digit' }) : 'No date');
+      b.appendChild(tag);
+      b.onclick = () => assignSlot(s, pickingSlot);
+      grid.appendChild(b);
+    });
+    $('picker').classList.remove('hidden');
+    $('picker').scrollTop = 0;
+  };
+  const closePicker = () => { $('picker').classList.add('hidden'); pickingSlot = null; };
+  const assignSlot = async (shot, slot) => {
+    const prev = shotInSlot(slot);
+    if (prev && prev !== shot) { prev.slot = ''; await dbPut(prev); }
+    shot.slot = slot;
+    await dbPut(shot);
+    closePicker();
+    renderSetup();
+  };
+  $('pickCancel').onclick = closePicker;
+  $('pickFile').addEventListener('change', async (e) => {
+    const f = e.target.files[0];
+    e.target.value = '';
+    if (!f || !f.type.startsWith('image/')) return;
+    const slot = pickingSlot;
+    const order = shots.reduce((m, s) => Math.max(m, s.order || 0), 0) + 1;
+    const shot = { id: uid(), blob: f, url: URL.createObjectURL(f), date: dateFromFilename(f.name), covers: [], order, slot };
+    shots.push(shot);
+    await dbPut(shot);
+    closePicker();
+    renderSetup();
+    openEditor(shot); // a new screenshot always needs its date checked
+  });
 
   const onSettingChange = () => {
     settings.startDate = $('startDate').value;
@@ -507,6 +791,7 @@
     $('edDate').min = settings.startDate || '';
     $('edDate').max = settings.endDate || '';
     updateEdHint();
+    fillSlotSelect();
     drawEditor();
     $('editor').classList.remove('hidden');
     $('editor').scrollTop = 0;
@@ -524,6 +809,24 @@
     $('edHint').textContent = hint;
   };
   $('edDate').addEventListener('input', updateEdHint);
+
+  const fillSlotSelect = () => {
+    const sel = $('edSlot');
+    sel.innerHTML = '';
+    sel.add(new Option('Not on the board (quick play only)', ''));
+    board().categories.forEach((c) => {
+      const group = document.createElement('optgroup');
+      group.label = c.name || 'Untitled';
+      board().values.forEach((v, row) => {
+        const slot = slotKey(c.id, row);
+        const other = shotInSlot(slot);
+        const taken = other && other !== editing ? ' (swap with the current one)' : '';
+        group.appendChild(new Option(`${c.name} · ${v}${taken}`, slot));
+      });
+      sel.appendChild(group);
+    });
+    sel.value = slotValid(editing.slot) ? editing.slot : '';
+  };
 
   const drawEditor = () => {
     const canvas = $('edCanvas');
@@ -579,6 +882,14 @@
   $('edSave').onclick = async () => {
     editing.date = $('edDate').value;
     editing.covers = draftCovers;
+    const slot = $('edSlot').value;
+    const other = slot && shotInSlot(slot);
+    if (other && other !== editing) {
+      // Swap: the screenshot that was there takes this one's old square (or leaves the board).
+      other.slot = slotValid(editing.slot) ? editing.slot : '';
+      await dbPut(other);
+    }
+    editing.slot = slot;
     await dbPut(editing);
     closeEditor();
   };
@@ -633,7 +944,8 @@
   };
 
   // ---------- Quiz ----------
-  let game = null; // {rounds:[{shot, guess, score}], i, locked}
+  // game = { mode: 'quick' | 'board', rounds: [{shot, value, cat, guess, score, played}], i, locked }
+  let game = null;
   let guessDay = 0;
   let guessPin = null;
 
@@ -646,24 +958,84 @@
   };
 
   const show = (id) => {
-    ['setup', 'quiz', 'results'].forEach((s) => $(s).classList.toggle('hidden', s !== id));
+    ['setup', 'board', 'quiz', 'results'].forEach((s) => $(s).classList.toggle('hidden', s !== id));
     window.scrollTo(0, 0);
   };
 
+  const setEndLabels = () => {
+    $('startLabel').textContent = fmt(startNum(), { day: 'numeric', month: 'short', year: 'numeric' });
+    $('endLabel').textContent = fmt(endNum(), { day: 'numeric', month: 'short', year: 'numeric' });
+  };
+  const newRound = (shot, value, cat = null) => ({ shot, value, cat, guess: null, score: 0, played: false });
+  const totalScore = () => game.rounds.reduce((t, r) => t + r.score, 0);
+
+  // Quick play: every dated screenshot, shuffled, each worth the same.
   const startGame = () => {
     const pool = shuffle(shots.filter(shotOk));
     if (!pool.length) return;
-    game = { rounds: pool.map((shot) => ({ shot, guess: null, score: 0 })), i: 0 };
-    $('startLabel').textContent = fmt(startNum(), { day: 'numeric', month: 'short', year: 'numeric' });
-    $('endLabel').textContent = fmt(endNum(), { day: 'numeric', month: 'short', year: 'numeric' });
+    game = { mode: 'quick', rounds: pool.map((shot) => newRound(shot, QUICK_PLAY_POINTS)), i: 0 };
+    setEndLabels();
     show('quiz');
     showRound();
+  };
+
+  // Board: one round per filled square; the player picks the order.
+  const startBoard = () => {
+    const rounds = [];
+    board().values.forEach((v, row) => board().categories.forEach((c) => {
+      const shot = shotInSlot(slotKey(c.id, row));
+      if (shot && shotOk(shot)) rounds.push({ ...newRound(shot, v, c), slot: slotKey(c.id, row) });
+    }));
+    if (!rounds.length) return;
+    game = { mode: 'board', rounds, i: -1 };
+    setEndLabels();
+    showBoard();
+  };
+
+  const showBoard = () => {
+    const el = $('playBoard');
+    const cats = board().categories;
+    el.innerHTML = '';
+    el.style.gridTemplateColumns = `repeat(${Math.max(1, cats.length)}, 1fr)`;
+    cats.forEach((c) => {
+      const h = document.createElement('div');
+      h.className = 'head';
+      h.textContent = c.name;
+      el.appendChild(h);
+    });
+    board().values.forEach((v, row) => cats.forEach((c) => {
+      const idx = game.rounds.findIndex((r) => r.slot === slotKey(c.id, row));
+      const r = game.rounds[idx];
+      const cell = document.createElement('button');
+      cell.type = 'button';
+      cell.className = 'cell';
+      if (!r) { cell.classList.add('empty'); cell.disabled = true; }
+      else if (r.played) {
+        cell.classList.add('done');
+        cell.disabled = true;
+        cell.innerHTML = '<span></span><small></small>';
+        cell.querySelector('span').textContent = r.score;
+        cell.querySelector('small').textContent = `of ${v}`;
+      } else {
+        cell.textContent = v;
+        cell.onclick = () => { game.i = idx; show('quiz'); showRound(); };
+      }
+      el.appendChild(cell);
+    }));
+    const left = game.rounds.filter((r) => !r.played).length;
+    $('boardLeft').textContent = `${left} left`;
+    $('boardScore').textContent = `${totalScore().toLocaleString()} pts`;
+    $('boardPrompt').textContent = settings.playerName ? `${settings.playerName}, pick a square!` : 'Pick a square!';
+    $('boardFinishBtn').classList.toggle('hidden', !game.rounds.some((r) => r.played));
+    show('board');
   };
 
   const showRound = () => {
     const r = game.rounds[game.i];
     game.locked = false;
-    $('roundLabel').textContent = `${game.i + 1} / ${game.rounds.length}`;
+    $('roundLabel').textContent = game.mode === 'board'
+      ? `${r.cat.name} · ${r.value}`
+      : `${game.i + 1} / ${game.rounds.length}`;
     updateScoreLabel();
     $('prompt').textContent = settings.playerName ? `${settings.playerName}, when was this?` : 'When was this?';
     renderShot($('quizShot'), r.shot);
@@ -684,8 +1056,7 @@
   };
 
   const updateScoreLabel = () => {
-    const total = game.rounds.reduce((t, r) => t + r.score, 0);
-    $('scoreLabel').textContent = `${total.toLocaleString()} pts`;
+    $('scoreLabel').textContent = `${totalScore().toLocaleString()} pts`;
   };
 
   const placeGuess = () => {
@@ -741,7 +1112,8 @@
     const truth = toDayNum(r.shot.date);
     const off = Math.abs(truth - guessDay);
     r.guess = guessDay;
-    r.score = scoreFor(off);
+    r.score = scoreFor(off, r.value);
+    r.played = true;
     updateScoreLabel();
 
     const track = $('track');
@@ -756,24 +1128,32 @@
     track.appendChild(truthPin);
     keepBubbleInside(truthPin);
 
-    $('resultPts').textContent = `+${r.score} pts`;
+    $('resultPts').textContent = game.mode === 'board' ? `+${r.score} of ${r.value}` : `+${r.score} pts`;
     $('resultText').textContent = off === 0
       ? verdict(off)
       : `${verdict(off)} · ${off} day${off === 1 ? '' : 's'} ${guessDay < truth ? 'too early' : 'too late'}`;
     $('result').classList.remove('hidden');
     $('nudge').classList.add('hidden');
     $('lockBtn').classList.add('hidden');
-    $('nextBtn').textContent = game.i + 1 < game.rounds.length ? 'Next ▶' : 'See results 🏁';
+    const more = game.rounds.some((x) => !x.played);
+    $('nextBtn').textContent = !more ? 'See results 🏁' : game.mode === 'board' ? 'Back to the board ▦' : 'Next ▶';
     $('nextBtn').classList.remove('hidden');
   };
 
   $('nextBtn').onclick = () => {
-    if (game.i + 1 < game.rounds.length) { game.i++; showRound(); }
-    else showResults();
+    if (!game.rounds.some((r) => !r.played)) showResults();
+    else if (game.mode === 'board') showBoard();
+    else { game.i++; showRound(); }
   };
 
-  $('quitBtn').onclick = () => {
+  const quit = () => {
     if (confirm('Quit this game?')) { game = null; show('setup'); renderSetup(); }
+  };
+  $('quitBtn').onclick = quit;
+  $('boardQuitBtn').onclick = quit;
+  $('boardFinishBtn').onclick = () => {
+    const left = game.rounds.filter((r) => !r.played).length;
+    if (confirm(`Finish now and skip the ${left} remaining square${left === 1 ? '' : 's'}?`)) showResults();
   };
 
   // Tap to zoom
@@ -787,9 +1167,9 @@
 
   // ---------- Results ----------
   const showResults = () => {
-    const rs = game.rounds;
-    const total = rs.reduce((t, r) => t + r.score, 0);
-    const max = rs.length * MAX_POINTS;
+    const rs = game.rounds.filter((r) => r.played);
+    const total = totalScore();
+    const max = rs.reduce((t, r) => t + r.value, 0);
     const offs = rs.map((r) => Math.abs(toDayNum(r.shot.date) - r.guess));
     const avgOff = offs.reduce((a, b) => a + b, 0) / offs.length;
     const exact = offs.filter((o) => o === 0).length;
@@ -827,14 +1207,16 @@
       li.querySelector('img').src = r.shot.url;
       li.querySelector('b').textContent = fmt(truth);
       li.querySelector('.muted').textContent = off === 0 ? 'Guessed exactly 🎯' : `Guessed ${fmt(r.guess)} (${off} day${off === 1 ? '' : 's'} off)`;
-      li.querySelector('.score').textContent = r.score;
+      li.querySelector('.score').textContent = game.mode === 'board' ? `${r.score}/${r.value}` : r.score;
+      if (r.cat) li.querySelector('b').textContent += ` · ${r.cat.name}`;
       list.appendChild(li);
     });
   };
 
-  $('againBtn').onclick = startGame;
+  $('againBtn').onclick = () => (game && game.mode === 'board' ? startBoard() : startGame());
   $('backBtn').onclick = () => { game = null; show('setup'); renderSetup(); };
   $('startBtn').onclick = startGame;
+  $('boardStartBtn').onclick = startBoard;
 
   // ---------- Export / import ----------
   const blobToDataUrl = (blob) => new Promise((resolve, reject) => {
@@ -847,7 +1229,7 @@
   $('exportBtn').onclick = async () => {
     const data = {
       app: 'when-was-that', version: 1, settings,
-      shots: await Promise.all(shots.map(async (s) => ({ date: s.date, covers: s.covers, image: await blobToDataUrl(s.blob) }))),
+      shots: await Promise.all(shots.map(async (s) => ({ date: s.date, covers: s.covers, slot: s.slot || '', image: await blobToDataUrl(s.blob) }))),
     };
     const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
     const a = document.createElement('a');
@@ -867,11 +1249,7 @@
       if (data.app !== 'when-was-that' || !Array.isArray(data.shots)) throw new Error('Not a quiz file');
       if (shots.length && !confirm('Replace the current quiz with the imported one?')) return;
       await clearAll();
-      settings = {
-        startDate: isValidIso(data.settings?.startDate) ? data.settings.startDate : '',
-        endDate: isValidIso(data.settings?.endDate) ? data.settings.endDate : '',
-        playerName: typeof data.settings?.playerName === 'string' ? data.settings.playerName : '',
-      };
+      settings = normalizeSettings(data.settings);
       saveSettings();
       let order = 0;
       for (const s of data.shots) {
@@ -880,7 +1258,8 @@
         const covers = Array.isArray(s.covers)
           ? s.covers.filter((c) => [c.x, c.y, c.w, c.h].every((v) => typeof v === 'number' && v >= 0 && v <= 1))
           : [];
-        const shot = { id: uid(), blob, url: URL.createObjectURL(blob), date: isValidIso(s.date) ? s.date : '', covers, order: ++order };
+        const shot = { id: uid(), blob, url: URL.createObjectURL(blob), date: isValidIso(s.date) ? s.date : '', covers, order: ++order,
+          slot: typeof s.slot === 'string' ? s.slot : '' };
         shots.push(shot);
         await dbPut(shot);
       }
@@ -898,14 +1277,15 @@
   $('clearBtn').onclick = async () => {
     if (!confirm('Delete all screenshots and settings from this device?')) return;
     await clearAll();
-    settings = { endDate: todayIso() };
+    settings = normalizeSettings({});
     saveSettings();
     renderSetup();
   };
 
   // ---------- Boot ----------
   (async () => {
-    if (!settings.endDate) settings.endDate = todayIso();
+    settings = normalizeSettings(settings);
+    saveSettings();
     const stored = (await dbAll()) || [];
     shots = stored
       .sort((a, b) => (a.order || 0) - (b.order || 0))
