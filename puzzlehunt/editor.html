@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hunt Editor</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✏️</text></svg>">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="editor.css">
+</head>
+<body class="ed">
+<header class="ed-top">
+  <div class="ed-brand">✏️ Hunt Editor</div>
+  <div class="ed-status" id="status"></div>
+  <div class="ed-actions">
+    <button class="ed-btn" id="btn-play" title="Play the whole hunt from scratch, with locks, in a test run">▶ Play-test</button>
+    <button class="ed-btn" id="btn-open" title="Open a hunt-data.js or a backup file">📂 Open…</button>
+    <button class="ed-btn" id="btn-backup" title="Download everything, including the plain-text answers. Keep this file private.">💾 Backup</button>
+    <button class="ed-btn primary" id="btn-publish" title="Download hunt-data.js to put next to index.html">⬇ Publish</button>
+  </div>
+</header>
+<div class="ed-main">
+  <nav class="ed-tree" id="tree"></nav>
+  <section class="ed-form" id="form"></section>
+  <section class="ed-preview">
+    <div class="ed-preview-bar"><span>Live preview</span><small>Everything is unlocked here</small></div>
+    <div class="ed-preview-scroll" id="preview"></div>
+  </section>
+</div>
+<input type="file" id="file-open" accept=".js,.json,application/json,text/javascript" hidden>
+<script src="core.js"></script>
+<script src="player.js"></script>
+<script src="hunt-data.js"></script>
+<script src="editor.js"></script>
+</body>
+</html>
