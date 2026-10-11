@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Puzzle Hunt</title>
+<meta name="theme-color" content="#fbf3e2">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍳</text></svg>">
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="hunt-page">
+<div id="app"></div>
+<script src="core.js"></script>
+<script src="player.js"></script>
+<script src="hunt-data.js"></script>
+<script>
+  if (!window.HUNT) {
+    document.getElementById('app').innerHTML = '<p style="padding:24px">No hunt found. Export <code>hunt-data.js</code> from the editor and put it next to this file.</p>';
+  } else {
+    HuntPlayer(document.getElementById('app'), window.HUNT, { storage: 'local', useHash: true });
+  }
+</script>
+</body>
+</html>
