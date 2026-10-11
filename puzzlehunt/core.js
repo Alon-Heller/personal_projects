@@ -75,6 +75,7 @@
     return s.replace(/\u0000(\d+)\u0000/g, (_, i) => `<code>${codes[i]}</code>`);
   }
 
+  const WIDGET_TYPES = ['grid', 'blanks', 'highlight', 'order'];
   const RAW_BLOCK = /^\s*<\/?(div|table|thead|tbody|tr|td|th|p|ul|ol|li|iframe|svg|figure|section|details|summary|center|h[1-6]|pre|blockquote|img|br|hr|style|audio|video|span|a)\b/i;
 
   function markdown(src, images) {
@@ -96,7 +97,10 @@
         i++;
         while (i < lines.length && !/^```/.test(lines[i])) buf.push(lines[i++]);
         i++;
-        out.push(`<pre class="mono">${esc(buf.join('\n'))}</pre>`);
+        const kind = m[1].trim().toLowerCase();
+        out.push(WIDGET_TYPES.includes(kind)
+          ? `<div class="widget" data-type="${kind}" data-src="${esc(buf.join('\n'))}"></div>`
+          : `<pre class="mono">${esc(buf.join('\n'))}</pre>`);
         continue;
       }
       if ((m = line.match(/^(#{1,4})\s+(.*)$/))) {
@@ -181,7 +185,59 @@
     return el;
   }
 
+  // ---------- Constructor tools (used by the editor's Tools drawer) ----------
+  const A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const MORSE = {
+    A: '.-', B: '-...', C: '-.-.', D: '-..', E: '.', F: '..-.', G: '--.', H: '....', I: '..', J: '.---', K: '-.-', L: '.-..', M: '--',
+    N: '-.', O: '---', P: '.--.', Q: '--.-', R: '.-.', S: '...', T: '-', U: '..-', V: '...-', W: '.--', X: '-..-', Y: '-.--', Z: '--..',
+    0: '-----', 1: '.----', 2: '..---', 3: '...--', 4: '....-', 5: '.....', 6: '-....', 7: '--...', 8: '---..', 9: '----.',
+  };
+  const MORSE_BACK = Object.fromEntries(Object.entries(MORSE).map(([k, v]) => [v, k]));
+  const words = (s) => String(s).trim().split(/\s+/).filter(Boolean);
+  // Several lines → one item per line; a single line → one item per word.
+  const items = (s) => { const ls = String(s).split('\n').map((l) => l.trim()).filter(Boolean); return ls.length > 1 ? ls : words(s); };
+  const letters = (s) => normalizeAnswer(s).replace(/\d/g, '');
+  const shift = (s, n) => String(s).replace(/[a-z]/gi, (ch) => {
+    const base = ch <= 'Z' ? 65 : 97;
+    return String.fromCharCode(((ch.charCodeAt(0) - base + n) % 26 + 26) % 26 + base);
+  });
+  const tools = {
+    enumeration: (s) => {
+      const counts = words(s).map((w) => normalizeAnswer(w).length).filter(Boolean);
+      return counts.length ? `(${counts.join(', ')})  ·  ${counts.reduce((a, b) => a + b, 0)} letters` : '';
+    },
+    anagram: (a, b) => {
+      const count = (s) => [...letters(s)].reduce((m, ch) => (m[ch] = (m[ch] || 0) + 1, m), {});
+      const ca = count(a), cb = count(b);
+      const diff = (x, y) => Object.keys(x).sort().map((ch) => ch.repeat(Math.max(0, x[ch] - (y[ch] || 0)))).join('');
+      const extraA = diff(ca, cb), extraB = diff(cb, ca);
+      if (!letters(a) || !letters(b)) return 'Type text in both boxes.';
+      if (!extraA && !extraB) return '✓ Perfect anagram!';
+      return [extraA && `Only in the first: ${extraA}`, extraB && `Only in the second: ${extraB}`].filter(Boolean).join('\n');
+    },
+    caesar: (s, n) => (Number(n) ? shift(s, Number(n)) : Array.from({ length: 25 }, (_, i) => `${String(i + 1).padStart(2)}: ${shift(s, i + 1)}`).join('\n')),
+    atbash: (s) => String(s).replace(/[a-z]/gi, (ch) => {
+      const u = ch.toUpperCase();
+      const out = A[25 - A.indexOf(u)];
+      return ch === u ? out : out.toLowerCase();
+    }),
+    a1z26: (s) => (/[a-z]/i.test(s)
+      ? words(s).map((w) => [...letters(w)].map((ch) => A.indexOf(ch) + 1).join(' ')).join(' / ')
+      : String(s).split('/').map((w) => (w.match(/\d+/g) || []).map((n) => A[(+n - 1) % 26] || '?').join('')).join(' ')),
+    morse: (s) => (/^[\s.\-/·–—]+$/.test(s)
+      ? String(s).replace(/·/g, '.').replace(/[–—]/g, '-').split('/').map((w) => words(w).map((c) => MORSE_BACK[c] || '?').join('')).join(' ')
+      : words(s).map((w) => [...normalizeAnswer(w)].map((ch) => MORSE[ch] || '?').join(' ')).join(' / ')),
+    firstLetters: (s) => items(s).map((w) => letters(w)[0] || '').join(''),
+    nthLetters: (s, idx) => {
+      const ns = (String(idx).match(/\d+/g) || []).map(Number);
+      const list = items(s);
+      return list.map((w, i) => letters(w)[(ns.length === 1 ? ns[0] : ns[i]) - 1] || '?').join('');
+    },
+    alphabetize: (s) => items(s).sort((a, b) => a.localeCompare(b)).join('\n'),
+    reverse: (s) => [...String(s)].reverse().join(''),
+  };
+
   const uid = (prefix) => prefix + '-' + Math.random().toString(36).slice(2, 8);
 
-  window.HuntCore = { sha256, normalizeAnswer, hashAnswer, markdown, esc, h, uid };
+  window.HuntCore = { sha256, normalizeAnswer, hashAnswer, markdown, inline, esc, h, uid, tools };
 })();

@@ -13,6 +13,9 @@
   <div class="ed-brand">✏️ Hunt Editor</div>
   <div class="ed-status" id="status"></div>
   <div class="ed-actions">
+    <button class="ed-btn" id="btn-undo" title="Undo (Ctrl/Cmd+Z)" disabled>↶</button>
+    <button class="ed-btn" id="btn-redo" title="Redo (Ctrl/Cmd+Shift+Z)" disabled>↷</button>
+    <button class="ed-btn" id="btn-tools" title="Ciphers, anagram checker, letter counts and more">🧰 Tools</button>
     <button class="ed-btn" id="btn-play" title="Play the whole hunt from scratch, with locks, in a test run">▶ Play-test</button>
     <button class="ed-btn" id="btn-open" title="Open a hunt-data.js or a backup file">📂 Open…</button>
     <button class="ed-btn" id="btn-backup" title="Download everything, including the plain-text answers. Keep this file private.">💾 Backup</button>
@@ -29,6 +32,7 @@
 </div>
 <input type="file" id="file-open" accept=".js,.json,application/json,text/javascript" hidden>
 <script src="core.js"></script>
+<script src="widgets.js"></script>
 <script src="player.js"></script>
 <script src="hunt-data.js"></script>
 <script src="editor.js"></script>

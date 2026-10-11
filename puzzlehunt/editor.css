@@ -144,3 +144,21 @@ body.ed {
   .ed-tree { border-right: 0; border-bottom: 2px solid var(--e-line); }
   .ed-form .two { grid-template-columns: 1fr; }
 }
+
+/* ---------- Toolbar widget menu, restore points, tools drawer ---------- */
+.ed-form .toolbar .tb-select { width: auto; font: 600 .8rem 'Nunito', sans-serif; padding: 2px 6px; border: 1px solid var(--e-line); border-radius: 6px; background: var(--e-accent-soft); }
+.ed-form .snapshots { list-style: none; padding: 0; margin: 8px 0 0; }
+.ed-form .snapshots li { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 0; border-bottom: 1px dashed var(--e-line); }
+.ed-form .snapshots .snap-name { flex: 1; font-weight: 700; min-width: 140px; }
+.ed-form .snapshots small { margin: 0; }
+.ed-tools {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 60; width: min(420px, 100%); overflow-y: auto;
+  background: var(--e-panel); border-left: 3px solid var(--e-ink); box-shadow: -8px 0 24px rgba(59, 36, 22, .18);
+}
+.ed-tools .tools-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.ed-tools .tool-out {
+  white-space: pre-wrap; word-break: break-word; min-height: 64px; max-height: 40vh; overflow-y: auto; margin: 4px 0 10px;
+  background: #fff; border: 2px solid var(--e-line); border-radius: 10px; padding: 10px 12px;
+  font: .95rem/1.5 ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+.ed-tools [hidden] { display: none !important; }

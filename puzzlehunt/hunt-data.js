@@ -5,6 +5,7 @@ window.HUNT = {
   "title": "Rona's Curious Kitchen",
   "subtitle": "A puzzle hunt, made with love",
   "mascot": "👩‍🍳",
+  "openingScene": "🔔 *Ding ding!* The kitchen doors swing open.\n\nA nervous-looking judge hands you an apron. **\"The contest starts now. Good luck!\"**\n\n*(Placeholder story card: edit or delete it in the editor.)*",
   "intro": "Welcome, chef! 🍳\n\nThe **Grand Kitchen Contest** is tonight, and the judges want proof you've got what it takes. Each chapter is a course: solve its puzzles, then crack the **meta** that ties them together.\n\nAnswers are words or short phrases. Spaces, capitals and punctuation don't matter.\n\n*(This is a sample hunt. Open the editor to make it your own!)*",
   "ending": "You did it! The judges are speechless. 🏆\n\nDinner is served... and it's for two. ❤️",
   "settings": {
@@ -20,18 +21,20 @@ window.HUNT = {
       "color": "#e4572e",
       "intro": "Four little bites. Each answer is an ingredient.",
       "metaUnlock": "all",
+      "openingScene": "You tie your apron. Four little plates are waiting on the counter...",
       "puzzles": [
         {
           "id": "p-demo1",
           "title": "Pantry Shuffle",
           "icon": "🧂",
           "flavor": "Someone knocked the label maker over...",
-          "body": "Unscramble the jar label:\n\n```\nT L A S\n```",
+          "body": "Unscramble the jar label, then fill in the boxes:\n\n```\nT L A S\n```\n\n```blanks\n4\n```",
           "partials": [],
           "hints": [
             "It is on every table, usually next to the pepper."
           ],
           "solveText": "",
+          "scene": "",
           "answerHashes": [
             "04e0360830c36eac835fe877c33320bf50d4cbb703c325f1c46d49d3e2e5e174"
           ]
@@ -50,6 +53,7 @@ window.HUNT = {
           ],
           "hints": [],
           "solveText": "",
+          "scene": "",
           "answerHashes": [
             "1b704f1c739e556e591fc965bf6ad254d3a87ec729e43ba804d24a04e66551af"
           ]
@@ -75,6 +79,7 @@ window.HUNT = {
             "It starts with U."
           ],
           "solveText": "",
+          "scene": "",
           "answerHashes": [
             "6cf57b00094719124ea6c117b3d2d3462f50e9b51df31f1abdecf5d42a5a2f54"
           ]
@@ -84,10 +89,11 @@ window.HUNT = {
           "title": "Hot Stuff",
           "icon": "🌶️",
           "flavor": "Handle with care.",
-          "body": "- Bell ___\n- Black ___\n- Dr ___\n- ___mint",
+          "body": "- Bell ___\n- Black ___\n- Dr ___\n- ___mint\n\nStuck? Find it in the spice rack:\n\n```highlight\nP E P P E R\nS A L T X O\nO L I V E S\n```",
           "partials": [],
           "hints": [],
           "solveText": "",
+          "scene": "",
           "answerHashes": [
             "673feb00121c5c2579ecf14d57a7f500faa2260879fa107e2423f6e93a7d5bbc"
           ]
@@ -98,10 +104,11 @@ window.HUNT = {
         "title": "First Course",
         "icon": "🍲",
         "flavor": "What do all four starters make together?",
-        "body": "Take the **first letter** of each Starters answer, in order.\n\nWhat would you serve first?",
+        "body": "Take the **first letter** of each Starters answer, in order.\n\n```grid\n1 2 3 4\n```\n\nWhat would you serve first?",
         "partials": [],
         "hints": [],
         "solveText": "Soup's on! The judges look impressed.",
+        "scene": "The head judge takes a sip... and **smiles**. 🥣\n\n*\"Not bad, chef. Let's see your mains.\"*",
         "answerHashes": [
           "eef657a93df52dc6b84d5b083086191e057b8c853cd445093e65306594ffc49b"
         ]
@@ -121,10 +128,11 @@ window.HUNT = {
           "title": "Licorice Bulb",
           "icon": "🌿",
           "flavor": "Tastes like anise, looks like celery.",
-          "body": "F _ N N _ L",
+          "body": "Fill in the missing letters:\n\n```blanks\nF _ N N _ L\n```",
           "partials": [],
           "hints": [],
           "solveText": "",
+          "scene": "",
           "answerHashes": [
             "6306fcde32cbb264128224d290228ab83f429bef1ca4d3279e7031832adcb171"
           ]
@@ -138,6 +146,7 @@ window.HUNT = {
           "partials": [],
           "hints": [],
           "solveText": "",
+          "scene": "",
           "answerHashes": [
             "c33d36e8415ba065ebb13668241bb7cbcdc91a45eec927cd7ab3b6e125c1e854",
             "939101db82b379d4c1d2ddecc5b4f28f3dda194c8e82c1a17cc047b5cd76cb6e"
@@ -148,10 +157,11 @@ window.HUNT = {
           "title": "Grain of Truth",
           "icon": "🍚",
           "flavor": "Long, short, sticky, wild.",
-          "body": "Sushi needs it. Risotto needs it. Paella needs it.",
+          "body": "Sushi needs it. Risotto needs it. Paella needs it.\n\nPut the cooking steps in order, then read the first letters:\n\n```order\nCook it covered for 18 minutes\nEat!\nRinse the grains\nIn goes the water\n```",
           "partials": [],
           "hints": [],
           "solveText": "",
+          "scene": "",
           "answerHashes": [
             "9ff132e23e41256c56c2c06531238774f6d58f1c8c3741a264beb631afa4398b"
           ]
@@ -166,6 +176,7 @@ window.HUNT = {
         "partials": [],
         "hints": [],
         "solveText": "",
+        "scene": "",
         "answerHashes": [
           "8833f4b25e996b24ebb2c692b2bddbab6af11158c078f9850913ee8a0d0b1454"
         ]
@@ -181,6 +192,7 @@ window.HUNT = {
     "partials": [],
     "hints": [],
     "solveText": "...and it is all for you. ❤️",
+    "scene": "The lights dim. A table for two, candles lit. 🕯️\n\n**You win.** ❤️",
     "enabled": true,
     "answerHashes": [
       "ac2382af1ef8be5793a268ff62d3bd0d5a51cc06d8b8d3ea0a78f7b2f423dec2"

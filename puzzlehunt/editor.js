@@ -132,8 +132,68 @@
     return draft;
   }
 
+  // ---------- Undo / redo ----------
+  // Each burst of edits (until a 1s pause) is one undo step. Images are shared by reference, so steps stay small.
+  const undoStack = [];
+  const redoStack = [];
+  let lastState = null;
+  let groupTimer = null;
+  const snap = () => ({ json: JSON.stringify(Object.assign({}, draft, { images: undefined })), images: Object.assign({}, draft.images) });
+  const unsnap = (st) => Object.assign(JSON.parse(st.json), { images: Object.assign({}, st.images) });
+  function recordChange() {
+    if (!groupTimer) {
+      if (lastState) undoStack.push(lastState);
+      if (undoStack.length > 100) undoStack.shift();
+      redoStack.length = 0;
+    }
+    clearTimeout(groupTimer);
+    groupTimer = setTimeout(endGroup, 1000);
+    undoButtons();
+  }
+  function endGroup() {
+    clearTimeout(groupTimer);
+    groupTimer = null;
+    lastState = snap();
+  }
+  function undo() {
+    if (groupTimer) endGroup();
+    if (!undoStack.length) return;
+    redoStack.push(snap());
+    applyState(undoStack.pop(), 'Undone.');
+  }
+  function redo() {
+    if (groupTimer) endGroup();
+    if (!redoStack.length) return;
+    undoStack.push(snap());
+    applyState(redoStack.pop(), 'Redone.');
+  }
+  function applyState(st, msg) {
+    draft = normalize(unsnap(st));
+    lastState = st;
+    renderAll();
+    undoButtons();
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(save, 400);
+    status(msg);
+  }
+  function undoButtons() {
+    $('btn-undo').disabled = !undoStack.length && !groupTimer;
+    $('btn-redo').disabled = !redoStack.length;
+  }
+
+  // ---------- Restore points (named copies of the whole draft, kept in this browser) ----------
+  const getSnapshots = async () => (await storeGet('snapshots')) || [];
+  async function addSnapshot(name, auto = false) {
+    const copy = clone(draft);
+    const list = await getSnapshots();
+    list.unshift({ id: uid('s'), name, auto, at: Date.now(), hunt: copy });
+    let autos = 0;
+    await storeSet('snapshots', list.filter((x) => !x.auto || ++autos <= 10)); // keep the 10 newest automatic ones
+  }
+
   // ---------- Change handling ----------
   function changed(opts = {}) {
+    recordChange();
     status('Saving…');
     clearTimeout(saveTimer);
     saveTimer = setTimeout(save, 400);
@@ -256,7 +316,16 @@
         tb('Table', () => block('| Clue | Answer |\n|---|---|\n| first clue | _ _ _ _ |\n| second clue | _ _ _ |')),
         tb('Link', () => wrap('[', '](https://)', 'link text')),
         tb('🖼 Image', () => pickImage((k) => block(`![](img:${k})`)), 'Upload an image into the puzzle'),
-        tb('Line', () => block('---'), 'Horizontal divider')),
+        tb('Line', () => block('---'), 'Horizontal divider'),
+        h('select', {
+          class: 'tb-select', title: 'Insert an interactive widget',
+          onchange: (e) => { const t = e.target.value; e.target.value = ''; if (t) block(window.HuntWidgets.TEMPLATES[t]); },
+        },
+          h('option', { value: '' }, '🧩 Interactive…'),
+          h('option', { value: 'grid' }, 'Fill-in grid (crossword)'),
+          h('option', { value: 'blanks' }, 'Answer blanks'),
+          h('option', { value: 'highlight' }, 'Highlighter grid (word search)'),
+          h('option', { value: 'order' }, 'Drag-to-order list'))),
       ta,
       o.help && h('small', {}, o.help),
       o.cheat && h('details', { class: 'cheat' }, h('summary', {}, 'Formatting cheat sheet'), h('pre', {}, CHEAT)));
@@ -274,8 +343,28 @@ monospace block: grids, ciphers, _ _ _ blanks
 | 1 | 2 |
 ![caption](img:name)   uploaded image (use the 🖼 button)
 [text](https://…)      link
+
+Interactive widgets (🧩 menu), whatever the solver enters is saved:
+\`\`\`grid        rows of cells: # black  . empty  A given letter
+1 . 2 . .     a number = clue number (12A = numbered + given)
+. # . # .
+\`\`\`
+\`\`\`blanks      4 3 3   or   _ _ * _ / _ _ _   (* circled, / new word)
+\`\`\`highlight   letter rows to color in (word search)
+\`\`\`order       one item per line, solver drags into order
+
 Single line breaks are kept. Raw HTML works too (e.g. <span style="color:red">).
 Hebrew/RTL text is detected automatically.`;
+
+  function sceneField(label, obj, key, help, sceneInfo) {
+    return [
+      mdField(label, obj, key, { rows: 4, help }),
+      h('div', { class: 'row-btns', style: { marginTop: '-6px' } }, btn('▶ Preview scene', () => {
+        if (!obj[key] || !obj[key].trim()) return alert('Write the scene first.');
+        window.HuntPlayer.showScene(publishable(), Object.assign({ body: obj[key] }, sceneInfo()));
+      })),
+    ];
+  }
 
   function iconField(label, obj, key) {
     const now = h('div', { class: 'icon-now' });
@@ -387,6 +476,7 @@ Hebrew/RTL text is detected automatically.`;
       text('Subtitle', draft, 'subtitle', { help: 'Shown in handwriting under the title.' }),
       iconField('Mascot', draft, 'mascot'),
       mdField('Welcome text', draft, 'intro', { rows: 7, cheat: true, help: 'The story and the rules, shown on the home page.' }),
+      sceneField('Opening scene', draft, 'openingScene', 'Optional story card that pops up the first time she opens the hunt.', () => ({ title: draft.title })),
       mdField('Ending text', draft, 'ending', { rows: 4, help: 'Shown on the home page once the whole hunt is solved.' }),
       field('Chapter unlocking', h('select', {
         value: draft.settings.chapterUnlock,
@@ -415,19 +505,102 @@ Hebrew/RTL text is detected automatically.`;
             changed({ form: true });
           }, 'danger'))))),
 
+      h('h3', {}, 'Restore points'),
+      h('p', { class: 'help' }, 'Save a named copy of the whole hunt before big changes, and roll back any time. One is also saved automatically before opening a file or starting over. For quick fixes, use ↶ Undo (Ctrl/Cmd+Z).'),
+      snapshotsPanel(),
+
       h('h3', {}, 'Start over'),
       h('div', { class: 'callout' }, 'Your draft lives only in this browser. Use 💾 Backup now and then. It keeps the plain-text answers, so you can keep editing on another computer.'),
       h('div', { class: 'row-btns' },
         btn('Reload the published hunt-data.js', async () => {
           if (!window.HUNT) return alert('No hunt-data.js found next to the editor.');
           if (!confirm('Replace your draft with the published hunt-data.js? Unsaved draft changes will be lost.')) return;
-          load(clone(window.HUNT));
+          load(clone(window.HUNT), 'reloading the published file');
         }, 'danger'),
         btn('New blank hunt', () => {
           if (!confirm('Start a brand-new empty hunt? Your current draft will be replaced (back it up first!).')) return;
-          load(blankHunt());
+          load(blankHunt(), 'starting a new hunt');
         }, 'danger')),
     ];
+  }
+
+  function snapshotsPanel() {
+    const name = h('input', { placeholder: 'e.g. Before rewriting chapter 3' });
+    const list = h('ul', { class: 'snapshots' }, h('li', { class: 'help' }, 'Loading…'));
+    const refresh = async () => {
+      const snaps = await getSnapshots();
+      list.replaceChildren(...(snaps.length ? snaps.map((sn) => h('li', {},
+        h('span', { class: 'snap-name' }, sn.auto ? '⚙️ ' : '📌 ', sn.name),
+        h('small', {}, new Date(sn.at).toLocaleString()),
+        btn('Restore', () => {
+          if (confirm(`Replace the current draft with “${sn.name}”? (The current draft is saved as a restore point first.)`)) load(clone(sn.hunt), `restoring “${sn.name}”`);
+        }),
+        btn('✕', async () => {
+          if (!confirm(`Delete restore point “${sn.name}”?`)) return;
+          await storeSet('snapshots', (await getSnapshots()).filter((x) => x.id !== sn.id));
+          refresh();
+        }, 'x'))) : [h('li', { class: 'help' }, 'No restore points yet.')]));
+    };
+    refresh();
+    return [
+      h('div', { class: 'list-row' }, name, btn('📌 Save restore point', async () => {
+        await addSnapshot(name.value.trim() || 'Restore point');
+        name.value = '';
+        refresh();
+        status('Restore point saved.');
+      })),
+      list,
+    ];
+  }
+
+  // ---------- Constructor tools drawer ----------
+  const TOOLS = [
+    { id: 'enumeration', name: 'Letter count / enumeration' },
+    { id: 'anagram', name: 'Anagram check', second: true },
+    { id: 'caesar', name: 'Caesar shift', param: 'Shift (leave empty to see all 25)' },
+    { id: 'atbash', name: 'Atbash (A↔Z, B↔Y…)' },
+    { id: 'a1z26', name: 'A1Z26 (letters ↔ numbers)' },
+    { id: 'morse', name: 'Morse code (both ways)' },
+    { id: 'firstLetters', name: 'First letters' },
+    { id: 'nthLetters', name: 'Nth letters', param: 'Positions, e.g. 3 1 4 (one number = same for all)' },
+    { id: 'alphabetize', name: 'Alphabetize' },
+    { id: 'reverse', name: 'Reverse' },
+  ];
+  let lastField = null; // the form text box the tools insert into
+  document.addEventListener('focusin', (e) => {
+    if (e.target.matches('#form textarea, #form input:not([type]), #form input[type=text]')) lastField = e.target;
+  });
+  function toggleTools() {
+    if ($('tools')) return $('tools').remove();
+    let tool = TOOLS[0];
+    const input = h('textarea', { rows: 4, placeholder: 'Type or paste text…', dir: 'auto' });
+    const second = h('textarea', { rows: 2, placeholder: 'Second text', dir: 'auto' });
+    const param = h('input', {});
+    const out = h('pre', { class: 'tool-out' });
+    const paramLbl = h('span', { class: 'lbl' });
+    const secondWrap = h('label', { class: 'field' }, h('span', { class: 'lbl' }, 'Compare with'), second);
+    const paramWrap = h('label', { class: 'field' }, paramLbl, param);
+    const run = () => { out.textContent = input.value.trim() ? window.HuntCore.tools[tool.id](input.value, tool.second ? second.value : param.value) : ''; };
+    const layout = () => { secondWrap.hidden = !tool.second; paramWrap.hidden = !tool.param; paramLbl.textContent = tool.param || ''; };
+    [input, second, param].forEach((el) => el.addEventListener('input', run));
+    const pick = h('select', { onchange: (e) => { tool = TOOLS.find((t) => t.id === e.target.value); layout(); run(); } },
+      TOOLS.map((t) => h('option', { value: t.id }, t.name)));
+    const drawer = h('aside', { id: 'tools', class: 'ed-form ed-tools' },
+      h('div', { class: 'tools-head' }, h('h2', {}, '🧰 Constructor tools'), btn('Close ✕', () => drawer.remove())),
+      field('Tool', pick), field('Input', input), secondWrap, paramWrap,
+      h('span', { class: 'lbl' }, 'Result'), out,
+      h('div', { class: 'row-btns' },
+        btn('Copy', () => navigator.clipboard?.writeText(out.textContent)),
+        btn('Insert at cursor', () => {
+          if (!lastField || !document.contains(lastField)) return alert('Click into a text box in the form first, then come back here.');
+          lastField.focus();
+          lastField.setRangeText(out.textContent, lastField.selectionStart, lastField.selectionEnd, 'end');
+          lastField.dispatchEvent(new Event('input'));
+        })),
+      h('p', { class: 'help' }, '“Insert at cursor” puts the result where you last clicked in the form.'));
+    layout();
+    document.body.append(drawer);
+    input.focus();
   }
 
   function chapterForm(c, ci) {
@@ -450,6 +623,7 @@ Hebrew/RTL text is detected automatically.`;
       iconField('Icon', c, 'icon'),
       colorField('Color', c, 'color'),
       mdField('Chapter intro', c, 'intro', { rows: 4, help: 'Optional story shown at the top of the chapter page.' }),
+      sceneField('Opening scene', c, 'openingScene', 'Optional story card that pops up the first time she opens this chapter.', () => ({ title: c.title, color: c.color })),
       h('h3', {}, 'When does the meta unlock?'),
       h('div', { class: 'two' },
         field('Rule', h('select', {
@@ -550,7 +724,9 @@ Hebrew/RTL text is detected automatically.`;
         h('div', { class: 'row-btns' }, btn('+ Add hint', () => { p.hints.push(''); changed({ form: true }); })),
 
         h('h3', {}, 'After solving'),
-        mdField('Message shown once solved', p, 'solveText', { rows: 3, help: 'Optional: a bit of story, a photo, a sweet note…' }),
+        mdField('Message shown once solved', p, 'solveText', { rows: 3, help: 'Optional: a bit of story, a photo, a sweet note… Stays on the puzzle page.' }),
+        sceneField('Story scene', p, 'scene', 'Optional story card that pops up right after solving. Great for metas and the finale. Replayable from “Story so far”.',
+          () => ({ title: p.title, color: c && kind !== 'finale' ? c.color : undefined })),
       ],
     ];
   }
@@ -569,7 +745,7 @@ Hebrew/RTL text is detected automatically.`;
     box.replaceChildren();
     const mount = h('div');
     box.append(mount);
-    window.HuntPlayer(mount, publishable(), { storage: 'memory', unlockAll: true, route: previewRoute(), scrollEl: box });
+    window.HuntPlayer(mount, publishable(), { storage: 'memory', unlockAll: true, scenes: false, route: previewRoute(), scrollEl: box });
     box.scrollTop = scroll;
   }
   function playTest() {
@@ -618,18 +794,37 @@ Hebrew/RTL text is detected automatically.`;
     const hunt = data.kind === 'puzzlehunt-backup' ? data.hunt : data;
     if (!hunt || !Array.isArray(hunt.chapters)) return alert('That file doesn’t look like a hunt.');
     if (!confirm('Replace your current draft with this file?')) return;
-    load(hunt);
+    load(hunt, 'opening ' + file.name);
   }
 
-  function load(hunt) {
+  // Replaces the whole draft. Undoable, and a restore point of the old draft is saved first.
+  async function load(hunt, reason) {
+    if (draft) {
+      if (reason) await addSnapshot('Before ' + reason, true);
+      if (groupTimer) endGroup();
+      undoStack.push(lastState || snap());
+      redoStack.length = 0;
+    }
     draft = normalize(hunt);
+    lastState = snap();
     sel = { type: 'hunt' };
     renderAll();
+    undoButtons();
     save();
   }
 
   // ---------- Boot ----------
   $('btn-play').onclick = playTest;
+  $('btn-undo').onclick = undo;
+  $('btn-redo').onclick = redo;
+  $('btn-tools').onclick = toggleTools;
+  document.addEventListener('keydown', (e) => {
+    const k = e.key.toLowerCase();
+    if (!(e.ctrlKey || e.metaKey) || (k !== 'z' && k !== 'y')) return;
+    if (e.target.closest('input, textarea, select')) return; // let text boxes keep their own undo
+    e.preventDefault();
+    k === 'y' || e.shiftKey ? redo() : undo();
+  });
   $('btn-publish').onclick = publish;
   $('btn-backup').onclick = backup;
   $('btn-open').onclick = () => $('file-open').click();
@@ -639,12 +834,15 @@ Hebrew/RTL text is detected automatically.`;
     const saved = await storeGet('draft');
     if (saved && saved.hunt) {
       draft = normalize(saved.hunt);
+      lastState = snap();
       renderAll();
       status(`Restored your draft from ${new Date(saved.savedAt).toLocaleString()}.`);
     } else {
       draft = normalize(window.HUNT ? clone(window.HUNT) : blankHunt());
+      lastState = snap();
       renderAll();
       status(window.HUNT ? 'Loaded the published hunt-data.js. Edits save in this browser as you go.' : 'Started a new hunt.');
     }
+    undoButtons();
   })();
 })();

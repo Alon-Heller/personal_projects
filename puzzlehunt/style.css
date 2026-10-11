@@ -244,3 +244,65 @@ body.hunt-page {
   .hunt .plate .dish { width: 112px; height: 112px; font-size: 46px; }
   .hunt .meta-card { flex-direction: column; text-align: center; }
 }
+
+/* ---------- Interactive widgets ---------- */
+.hunt .widget { margin: 14px 0; }
+.hunt .w-wrap { --cell: clamp(30px, 9vw, 44px); display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.hunt .w-tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: center; }
+.hunt .w-mini {
+  font: 600 .85rem var(--display); color: var(--ink); background: var(--card); border: 2px solid var(--ink);
+  border-radius: 999px; padding: 2px 12px; cursor: pointer; box-shadow: 2px 2px 0 var(--ink);
+}
+.hunt .w-mini:active { transform: translate(2px, 2px); box-shadow: none; }
+.hunt .w-box {
+  width: var(--cell); height: var(--cell); padding: 0; text-align: center; text-transform: uppercase;
+  font: 700 calc(var(--cell) * .5) var(--display); color: var(--ink); background: #fff;
+  border: 2px solid var(--ink); border-radius: 6px; caret-color: transparent;
+}
+.hunt .w-box:focus { outline: none; background: color-mix(in srgb, var(--mustard) 45%, #fff); }
+.hunt .w-box.given { background: var(--paper-2); color: var(--ink-soft); }
+.hunt .w-box.circled { border-radius: 50%; box-shadow: 0 0 0 3px var(--c-soft); }
+
+.hunt .w-grid, .hunt .w-hl { display: grid; gap: 0; border: 3px solid var(--ink); background: var(--ink); max-width: 100%; overflow-x: auto; }
+.hunt .w-cell { position: relative; width: var(--cell); height: var(--cell); background: #fff; outline: 1px solid var(--ink); }
+.hunt .w-cell.block { background: var(--ink); }
+.hunt .w-cell.word .w-box { background: var(--c-soft); }
+.hunt .w-cell .w-box { border: 0; border-radius: 0; width: 100%; height: 100%; background: transparent; }
+.hunt .w-cell .w-box:focus { background: color-mix(in srgb, var(--mustard) 55%, #fff); }
+.hunt .w-cell .w-box.given { background: var(--paper-2); }
+.hunt .w-num { position: absolute; top: 1px; left: 3px; font: 700 calc(var(--cell) * .24) var(--display); line-height: 1; pointer-events: none; z-index: 1; }
+
+.hunt .w-blanks { display: flex; flex-wrap: wrap; gap: 8px 22px; justify-content: center; }
+.hunt .w-word { display: flex; gap: 4px; }
+
+.hunt .w-hl { touch-action: none; user-select: none; -webkit-user-select: none; }
+.hunt .w-hc {
+  width: var(--cell); height: var(--cell); display: grid; place-items: center; background: #fff; outline: 1px solid var(--ink);
+  font: 700 calc(var(--cell) * .5) var(--display); cursor: pointer;
+}
+.hunt .w-swatch { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--ink); cursor: pointer; }
+.hunt .w-swatch.on { box-shadow: 0 0 0 3px var(--card), 0 0 0 5px var(--ink); }
+
+.hunt .w-order { list-style: none; counter-reset: ord; padding: 0; margin: 0; width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: 8px; }
+.hunt .w-order li {
+  counter-increment: ord; display: flex; align-items: center; gap: 10px; background: #fff;
+  border: 2px solid var(--ink); border-radius: 12px; padding: 8px 10px; box-shadow: 3px 3px 0 var(--ink);
+}
+.hunt .w-order li::before { content: counter(ord) '.'; font: 700 1rem var(--display); color: var(--ink-soft); min-width: 1.4em; }
+.hunt .w-order li.dragging { opacity: .7; transform: rotate(-1deg) scale(1.02); }
+.hunt .w-handle { cursor: grab; touch-action: none; font-size: 1.3rem; color: var(--ink-soft); padding: 0 4px; user-select: none; }
+.hunt .w-item { flex: 1; }
+.hunt .w-item img { max-height: 80px; margin: 0; display: inline-block; }
+
+/* ---------- Story scenes ---------- */
+.scene-overlay {
+  position: fixed; inset: 0; z-index: 9000; display: grid; place-items: center; padding: 16px;
+  background: rgba(59, 36, 22, .55); animation: fade .25s ease-out;
+}
+.scene-overlay .scene-card { width: min(620px, 100%); max-height: 88vh; overflow-y: auto; margin: 0; animation: pop .35s cubic-bezier(.2, 1.4, .4, 1); }
+.scene-overlay .scene-actions { display: flex; justify-content: flex-end; margin-top: 8px; }
+@keyframes fade { from { opacity: 0; } }
+@keyframes pop { from { transform: scale(.85) rotate(-2deg); opacity: 0; } }
+.hunt .story-link { margin-top: 14px; }
+.hunt .story-title { font-size: 2rem; margin: 16px 0 0; }
+@media (prefers-reduced-motion: reduce) { .scene-overlay, .scene-overlay .scene-card { animation: none; } }

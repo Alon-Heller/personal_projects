@@ -4,7 +4,28 @@
   const { h, markdown, normalizeAnswer, hashAnswer } = window.HuntCore;
   const CONFETTI = ['🍅', '🧀', '🥕', '🍋', '🌶️', '🥐', '🍓', '✨', '🎉', '🫐'];
 
-  // opts: { storage: 'local' | 'memory', useHash: bool, route: {...}, onNavigate(route) }
+  const blankProgress = () => ({ solved: {}, guesses: {}, hints: {}, widgets: {}, scenesSeen: [] });
+
+  // ---------- Story scenes: a modal story card, queued so several show one after another ----------
+  let sceneChain = Promise.resolve();
+  function showScene(hunt, { title, body, color }) {
+    sceneChain = sceneChain.then(() => new Promise((resolve) => {
+      const close = () => { overlay.remove(); document.removeEventListener('keydown', onKey); resolve(); };
+      const onKey = (e) => { if (e.key === 'Escape' || e.key === 'Enter') { e.preventDefault(); close(); } };
+      const btn = h('button', { class: 'btn primary', onclick: close }, 'Continue →');
+      const overlay = h('div', { class: 'hunt scene-overlay', style: color ? { '--c': color } : {}, onclick: (e) => e.target === overlay && close() },
+        h('div', { class: 'card paper scene-card', role: 'dialog', 'aria-modal': 'true' },
+          title && h('div', { class: 'ribbon' }, '📜 ', title),
+          h('div', { class: 'body', dir: 'auto', html: markdown(body, hunt.images) }),
+          h('div', { class: 'scene-actions' }, btn)));
+      document.body.append(overlay);
+      document.addEventListener('keydown', onKey);
+      btn.focus();
+    }));
+    return sceneChain;
+  }
+
+  // opts: { storage: 'local' | 'memory', useHash, route, onNavigate(route), scrollEl, unlockAll, scenes: false }
   function HuntPlayer(root, hunt, opts = {}) {
     const storageKey = 'puzzlehunt-progress:' + hunt.salt;
     let progress = load();
@@ -12,7 +33,7 @@
     let flash = null; // feedback shown once after a submit
 
     function load() {
-      const blank = { solved: {}, guesses: {}, hints: {} };
+      const blank = blankProgress();
       if (opts.storage !== 'local') return blank;
       try { return Object.assign(blank, JSON.parse(localStorage.getItem(storageKey)) || {}); } catch { return blank; }
     }
@@ -54,6 +75,7 @@
 
     // ---------- Routing ----------
     function parseHash() {
+      if (location.hash === '#/story') return { view: 'story' };
       const m = location.hash.match(/^#\/(chapter|puzzle)\/(.+)$/);
       return m ? { view: m[1], id: decodeURIComponent(m[2]) } : { view: 'home' };
     }
@@ -61,7 +83,7 @@
       route = r;
       flash = null;
       if (opts.useHash) {
-        const hash = r.view === 'home' ? '#/' : `#/${r.view}/${encodeURIComponent(r.id)}`;
+        const hash = r.view === 'home' ? '#/' : r.view === 'story' ? '#/story' : `#/${r.view}/${encodeURIComponent(r.id)}`;
         if (location.hash !== hash) history.pushState(null, '', hash);
       }
       opts.onNavigate && opts.onNavigate(r);
@@ -79,6 +101,33 @@
       root.classList.add('hunt');
       root.replaceChildren(h('div', { class: 'wrap' }, view()));
       if (opts.useHash) document.title = pageTitle();
+      playRouteScenes();
+    }
+
+    // ---------- Scenes ----------
+    function sceneFor(key) {
+      if (key === 'hunt') return { title: hunt.title, body: hunt.openingScene };
+      const [kind, id] = [key.slice(0, 1), key.slice(2)];
+      if (kind === 'c') {
+        const ch = chapters().find((c) => c.id === id);
+        return ch && { title: ch.title, body: ch.openingScene, color: ch.color };
+      }
+      const info = find(id);
+      return info && { title: info.puzzle.title, body: info.puzzle.scene, color: info.chapter?.color };
+    }
+    function playScene(key) {
+      const sc = sceneFor(key);
+      if (opts.scenes === false || !sc || !sc.body || !sc.body.trim() || progress.scenesSeen.includes(key)) return;
+      progress.scenesSeen.push(key);
+      save();
+      showScene(hunt, sc);
+    }
+    function playRouteScenes() {
+      if (route.view === 'home') playScene('hunt');
+      if (route.view === 'chapter') {
+        const ci = chapters().findIndex((c) => c.id === route.id);
+        if (ci >= 0 && chapterUnlocked(ci)) playScene('c:' + route.id);
+      }
     }
     function pageTitle() {
       const info = route.view === 'puzzle' ? find(route.id) : null;
@@ -94,6 +143,7 @@
         const info = find(route.id);
         if (info) return puzzleView(info);
       }
+      if (route.view === 'story') return storyView();
       return homeView();
     }
 
@@ -103,7 +153,8 @@
         h('header', { class: 'masthead' },
           h('div', { class: 'mascot' }, icon(hunt.mascot || '🧑‍🍳')),
           h('h1', { class: 'title', dir: 'auto' }, hunt.title || 'Untitled hunt'),
-          hunt.subtitle && h('p', { class: 'subtitle', dir: 'auto' }, hunt.subtitle)),
+          hunt.subtitle && h('p', { class: 'subtitle', dir: 'auto' }, hunt.subtitle),
+          progress.scenesSeen.length > 0 && h('button', { class: 'btn quiet story-link', onclick: () => go({ view: 'story' }) }, '📖 Story so far')),
         hunt.intro && h('section', { class: 'card paper body', dir: 'auto', html: md(hunt.intro) }),
         done && hunt.ending && h('section', { class: 'card body', style: { background: '#d9f0df' }, dir: 'auto' },
           h('div', { class: 'ribbon', style: { '--c': 'var(--basil)' } }, '★ Hunt complete'),
@@ -113,7 +164,7 @@
         h('footer', { class: 'footer muted' },
           opts.storage === 'local' && h('button', {
             class: 'linkish', onclick: () => {
-              if (confirm('Erase all progress on this device and start over?')) { progress = { solved: {}, guesses: {}, hints: {} }; save(); render(); }
+              if (confirm('Erase all progress on this device and start over?')) { progress = blankProgress(); save(); render(); }
             },
           }, 'Reset progress')),
       ];
@@ -188,6 +239,20 @@
             isSolved(ch.meta) && h('span', { class: 'answer' }, progress.solved[ch.meta.id]))));
     }
 
+    function puzzleBody(p) {
+      const el = h('section', { class: 'card paper body', dir: 'auto', html: md(p.body) || '<p class="muted">(No puzzle content yet.)</p>' });
+      window.HuntWidgets && window.HuntWidgets.hydrate(el, {
+        state: (progress.widgets[p.id] = progress.widgets[p.id] || {}),
+        onChange: save,
+        images: hunt.images,
+        useAnswer: isSolved(p) ? null : (text) => {
+          const input = root.querySelector('input[name=guess]');
+          if (input) { input.value = text; input.focus(); }
+        },
+      });
+      return el;
+    }
+
     function puzzleView(info) {
       const { puzzle: p, chapter: ch, kind } = info;
       const back = ch
@@ -208,7 +273,7 @@
             kicker && h('div', { class: 'ribbon' }, kicker),
             h('h1', { dir: 'auto' }, p.title || 'Untitled puzzle'))),
         p.flavor && h('p', { class: 'flavor', dir: 'auto' }, p.flavor),
-        h('section', { class: 'card paper body', dir: 'auto', html: md(p.body) || '<p class="muted">(No puzzle content yet.)</p>' }),
+        puzzleBody(p),
 
         h('section', { class: 'card answer-box' },
           solved
@@ -233,6 +298,18 @@
             : h('p', { class: 'muted', style: { marginTop: '10px' } }, 'That’s every hint for this one!')));
     }
 
+    function storyView() {
+      const scenes = progress.scenesSeen.map(sceneFor).filter((sc) => sc && sc.body);
+      return [
+        backHome(),
+        h('h1', { class: 'story-title' }, '📖 The story so far'),
+        scenes.length
+          ? scenes.map((sc) => h('section', { class: 'card paper body', dir: 'auto', style: sc.color ? { '--c': sc.color } : {} },
+            sc.title && h('div', { class: 'ribbon' }, sc.title), h('div', { html: md(sc.body) })))
+          : h('p', { class: 'muted' }, 'Nothing yet. The story unfolds as you solve!'),
+      ];
+    }
+
     function backHome() {
       return h('button', { class: 'back', onclick: () => go({ view: 'home' }) }, '← ', hunt.title || 'Home');
     }
@@ -252,6 +329,7 @@
         const newly = snapshotUnlocks().filter((x) => !before.includes(x));
         flash = { kind: 'right', text: newly.length ? `Correct! ${newly.join(' ')}` : 'Correct!' };
         celebrate();
+        setTimeout(() => playScene('p:' + p.id), 900);
       } else if (guesses.some((g) => normalizeAnswer(g.text) === norm)) {
         flash = { kind: 'wrong', text: `You already tried ${display}.` };
       } else {
@@ -299,9 +377,10 @@
     return {
       setHunt(next) { hunt = next; render(); },
       go,
-      reset() { progress = { solved: {}, guesses: {}, hints: {} }; save(); render(); },
+      reset() { progress = blankProgress(); save(); render(); },
     };
   }
 
+  HuntPlayer.showScene = showScene;
   window.HuntPlayer = HuntPlayer;
 })();
