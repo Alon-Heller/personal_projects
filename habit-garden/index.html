@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#f5f1e6">
+<title>Habit Garden</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌱</text></svg>">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main id="view" class="view"></main>
+
+<nav class="tabs" aria-label="Screens">
+  <a href="#today" data-tab="today"><span aria-hidden="true">☀️</span>Today</a>
+  <a href="#garden" data-tab="garden"><span aria-hidden="true">🌿</span>Garden</a>
+  <a href="#setup" data-tab="setup"><span aria-hidden="true">🛠️</span>Setup</a>
+</nav>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="js/util.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/model.js"></script>
+<script src="js/seed.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
