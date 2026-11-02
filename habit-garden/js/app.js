@@ -1,7 +1,7 @@
 // UI: tabs and screens.
 (function () {
   const HG = window.HG;
-  const { store, model, esc } = HG;
+  const { store, model, scoring, esc } = HG;
 
   const view = document.getElementById('view');
   const TABS = ['today', 'garden', 'setup'];
@@ -28,11 +28,18 @@
     const dateText = now.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
     const rows = model.todayRhythms(now);
     const pick = model.pickTodayDragon(now);
+    const pts = scoring.totals(now);
 
     view.innerHTML = `
-      <header class="top">
-        <h1>Today</h1>
-        <p class="sub">${esc(dateText)}</p>
+      <header class="top top-row">
+        <div>
+          <h1>Today</h1>
+          <p class="sub">${esc(dateText)}</p>
+        </div>
+        <a href="#garden" class="points" id="points" aria-label="${pts.total} points">
+          <span class="points-num">🌱 ${pts.total}</span>
+          <span class="points-today">${pts.today ? `+${pts.today} today` : 'points'}</span>
+        </a>
       </header>
 
       <section>
@@ -60,6 +67,7 @@
             ${today}
           </div>
           <div class="r-when">${when}${esc(model.targetLabel(r))}</div>
+          ${s.status === 'quiet' ? `<div class="r-welcome">Welcome back bonus waiting: +${scoring.rhythmLogPoints(r).bonus}</div>` : ''}
         </div>
         <button class="log-btn" data-log="${esc(r.id)}" aria-label="Log ${esc(r.name)}">
           <span class="tick" aria-hidden="true">✓</span><span>Did it</span>
@@ -116,29 +124,51 @@
     if (btn.dataset.log) {
       const r = store.get('rhythms', btn.dataset.log);
       if (!r) return;
-      const log = store.create('logs', { rhythmId: r.id, at: HG.nowIso() });
+      const p = scoring.rhythmLogPoints(r);
+      const log = store.create('logs', { rhythmId: r.id, at: HG.nowIso(), points: p.total, bonus: p.bonus });
       btn.classList.add('pop');
+      floatPoints(btn, p.comeback ? `+${p.total} welcome back!` : `+${p.total}`, p.comeback);
       setTimeout(render, 180);
-      toast(`Logged “${r.name}”`, () => store.remove('logs', log.id));
+      toast(p.comeback ? `Welcome back to “${r.name}” · +${p.total}` : `Logged “${r.name}” · +${p.total}`, () => store.remove('logs', log.id));
     }
 
     if (btn.dataset.stepDone) {
       const s = store.get('steps', btn.dataset.stepDone);
       if (!s) return;
-      store.update('steps', s.id, { doneAt: HG.nowIso() });
+      const pts = scoring.stepPoints();
+      store.update('steps', s.id, { doneAt: HG.nowIso(), points: pts });
+      floatPoints(btn, `+${pts}`);
       render();
-      toast('Step done', () => store.update('steps', s.id, { doneAt: null }));
+      toast(`Step done · +${pts}`, () => store.update('steps', s.id, { doneAt: null, points: null }));
     }
 
     if (btn.dataset.slay) {
       const d = store.get('dragons', btn.dataset.slay);
       if (!d) return;
       if (btn.dataset.early && !confirm(`Mark “${d.name}” as slain?`)) return;
-      store.update('dragons', d.id, { slainAt: HG.nowIso() });
+      const b = scoring.bounty(d.dread);
+      store.update('dragons', d.id, { slainAt: HG.nowIso(), bounty: b });
+      floatPoints(btn, `+${b} bounty!`, true);
       render();
-      toast(`“${d.name}” slain 🗡️`, () => store.update('dragons', d.id, { slainAt: null }));
+      toast(`“${d.name}” slain 🗡️ · +${b}`, () => store.update('dragons', d.id, { slainAt: null, bounty: null }));
     }
   });
+
+  // ---------- "+N" that floats up from where you tapped ----------
+
+  function floatPoints(anchor, text, big = false) {
+    const r = anchor.getBoundingClientRect();
+    const el = document.createElement('div');
+    el.className = 'float-pts' + (big ? ' big' : '');
+    el.textContent = text;
+    el.style.top = r.top + 'px';
+    document.body.appendChild(el);
+    // Keep the text on screen: centre it on the button, but clamp to the edges.
+    const half = el.offsetWidth * 0.55 + 16; // room for the 1.1× pop
+    const x = Math.min(Math.max(r.left + r.width / 2, half), window.innerWidth - half);
+    el.style.left = x + 'px';
+    el.addEventListener('animationend', () => el.remove());
+  }
 
   // ---------- Toast with undo ----------
 
