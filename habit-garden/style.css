@@ -118,7 +118,6 @@ button { font: inherit; color: inherit; }
 
 .r-welcome { font-size: 13px; color: var(--leaf); margin-top: 4px; font-weight: 500; }
 
-.today-count { font-size: 13px; color: var(--leaf); font-weight: 600; }
 
 .log-btn {
   flex: none;
@@ -140,7 +139,64 @@ button { font: inherit; color: inherit; }
 }
 .log-btn .tick { font-size: 20px; line-height: 1; }
 .log-btn:active { transform: scale(0.94); }
-.log-btn.pop { background: var(--leaf); color: #fff; transform: scale(1.06); }
+
+/* Done today: the button turns into a solid badge, the card gets a soft tint,
+   and logging again moves to a small "+ again" link. */
+.rhythm { transition: background 0.3s ease, border-color 0.3s ease; }
+.rhythm.done { background: #f0f6e8; border-color: #cfe2bf; }
+
+.done-wrap { flex: none; width: 76px; display: flex; flex-direction: column; align-items: center; }
+.done-badge {
+  position: relative;
+  width: 76px;
+  height: 64px;
+  border-radius: 14px;
+  background: var(--leaf);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+}
+.done-badge .tick { font-size: 22px; line-height: 1; }
+.done-badge.just { animation: done-pop 0.5s cubic-bezier(0.3, 1.6, 0.5, 1); }
+.done-badge.just .tick { animation: tick-in 0.5s ease-out; }
+.done-badge.just::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  border: 2px solid var(--leaf);
+  animation: ring-out 0.7s ease-out forwards;
+  pointer-events: none;
+}
+@keyframes done-pop {
+  0% { transform: scale(0.85); }
+  60% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+@keyframes tick-in {
+  0% { transform: scale(0) rotate(-30deg); }
+  70% { transform: scale(1.3) rotate(5deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+@keyframes ring-out {
+  from { opacity: 0.8; transform: scale(1); }
+  to { opacity: 0; transform: scale(1.45); }
+}
+
+.again-btn {
+  background: none;
+  border: none;
+  color: var(--leaf);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 6px 2px;
+  cursor: pointer;
+}
 
 /* ---------- Dragon card ---------- */
 

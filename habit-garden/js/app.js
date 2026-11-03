@@ -11,7 +11,13 @@
     return TABS.includes(t) ? t : 'today';
   }
 
-  function render() {
+  // The Today list keeps its order while you're on the screen, so a card you
+  // tap changes in place instead of jumping. It re-sorts when you come back.
+  let todayOrder = null;
+  let justLogged = null; // rhythm id whose done state should animate in
+
+  function render({ resort = false } = {}) {
+    if (resort) todayOrder = null;
     const tab = currentTab();
     document.querySelectorAll('.tabs [data-tab]').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
     if (tab === 'today') renderToday();
@@ -26,7 +32,12 @@
   function renderToday() {
     const now = new Date();
     const dateText = now.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
-    const rows = model.todayRhythms(now);
+    let rows = model.todayRhythms(now);
+    if (todayOrder) {
+      const pos = (id) => (todayOrder.includes(id) ? todayOrder.indexOf(id) : Infinity);
+      rows = rows.slice().sort((a, b) => pos(a.rhythm.id) - pos(b.rhythm.id));
+    }
+    todayOrder = rows.map((x) => x.rhythm.id);
     const pick = model.pickTodayDragon(now);
     const pts = scoring.totals(now);
 
@@ -53,25 +64,33 @@
         ${pick.reason === 'old' && pick.usual ? dragonCard(pick.usual, 'usual', true) : ''}
       </section>
     `;
+    justLogged = null;
   }
 
   function rhythmCard({ rhythm: r, state: s }) {
     const when = !s.everLogged ? 'not logged yet · ' : s.daysSince > 0 ? `last time ${HG.agoText(s.daysSince)} · ` : '';
-    const today = s.todayCount ? `<span class="today-count">✓ ${s.todayCount > 1 ? s.todayCount + '× ' : ''}today</span>` : '';
+    const done = s.todayCount > 0;
+    const action = done
+      ? `<div class="done-wrap">
+           <div class="done-badge ${justLogged === r.id ? 'just' : ''}" aria-label="Done today">
+             <span class="tick" aria-hidden="true">✓</span><span>${s.todayCount > 1 ? `Done ${s.todayCount}×` : 'Done'}</span>
+           </div>
+           <button class="again-btn" data-log="${esc(r.id)}" aria-label="Log ${esc(r.name)} again">+ again</button>
+         </div>`
+      : `<button class="log-btn" data-log="${esc(r.id)}" aria-label="Log ${esc(r.name)}">
+           <span class="tick" aria-hidden="true">✓</span><span>Did it</span>
+         </button>`;
     return `
-      <article class="card rhythm st-${s.status}">
+      <article class="card rhythm st-${s.status} ${done ? 'done' : ''}">
         <div class="r-main">
           <div class="r-name">${esc(r.name)}</div>
           <div class="r-meta">
             <span class="pill">${STATUS_LABEL[s.status]}</span>
-            ${today}
           </div>
           <div class="r-when">${when}${esc(model.targetLabel(r))}</div>
           ${s.status === 'quiet' ? `<div class="r-welcome">Welcome back bonus waiting: +${scoring.rhythmLogPoints(r).bonus}</div>` : ''}
         </div>
-        <button class="log-btn" data-log="${esc(r.id)}" aria-label="Log ${esc(r.name)}">
-          <span class="tick" aria-hidden="true">✓</span><span>Did it</span>
-        </button>
+        ${action}
       </article>`;
   }
 
@@ -126,9 +145,9 @@
       if (!r) return;
       const p = scoring.rhythmLogPoints(r);
       const log = store.create('logs', { rhythmId: r.id, at: HG.nowIso(), points: p.total, bonus: p.bonus });
-      btn.classList.add('pop');
       floatPoints(btn, p.comeback ? `+${p.total} welcome back!` : `+${p.total}`, p.comeback);
-      setTimeout(render, 180);
+      justLogged = r.id;
+      render();
       toast(p.comeback ? `Welcome back to “${r.name}” · +${p.total}` : `Logged “${r.name}” · +${p.total}`, () => store.remove('logs', log.id));
     }
 
@@ -207,14 +226,14 @@
 
   HG.seedIfFirstRun();
   window.addEventListener('hashchange', () => {
-    render();
+    render({ resort: true });
     window.scrollTo(0, 0);
   });
   // Re-render when the day changes or the app comes back to the foreground.
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) render();
+    if (!document.hidden) render({ resort: true });
   });
   // Another tab changed the data (storage.js has already dropped its cache).
-  window.addEventListener('storage', render);
-  render();
+  window.addEventListener('storage', () => render({ resort: true }));
+  render({ resort: true });
 })();
