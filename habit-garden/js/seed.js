@@ -5,6 +5,7 @@
 
   HG.seedIfFirstRun = function () {
     if (store.settings().seeded) return;
+    if (HG.isDemo) return HG.seedDemo();
     store.create('rhythms', { name: 'Meditate', kind: 'perWeek', n: 3, archived: false });
     store.create('rhythms', { name: 'See a friend', kind: 'every', n: 10, archived: false });
     store.create('rhythms', { name: 'Cook something new', kind: 'every', n: 7, archived: false });

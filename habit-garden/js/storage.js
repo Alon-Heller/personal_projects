@@ -8,7 +8,9 @@
 // To add server sync later, wrap or replace this module; keep the same API.
 (function () {
   const HG = window.HG;
-  const KEY = 'habitGarden.v1';
+  // Demo mode (index.html?demo) keeps its data under a separate key.
+  HG.isDemo = new URLSearchParams(location.search).has('demo');
+  const KEY = HG.isDemo ? 'habitGarden.demo.v1' : 'habitGarden.v1';
   const SCHEMA = 1;
   const KINDS = ['rhythms', 'logs', 'dragons', 'steps', 'treats'];
 
@@ -135,6 +137,12 @@
       const raw = JSON.parse(text);
       if (!raw || raw.app !== 'habit-garden') throw new Error('This is not a Habit Garden backup.');
       db = normalize(raw);
+      persist();
+    },
+
+    // Wipe everything in the current store (used by "Reset demo").
+    clearAll() {
+      db = emptyDb();
       persist();
     },
 

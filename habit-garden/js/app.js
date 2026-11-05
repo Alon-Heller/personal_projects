@@ -23,6 +23,27 @@
     if (tab === 'today') renderToday();
     else if (tab === 'garden') renderPlaceholder('Garden', '🌱', 'Your garden will grow here from the points you earn.');
     else renderPlaceholder('Setup', '🛠️', 'Adding and editing rhythms and dragons comes in a later step.');
+    renderDemoBanner();
+  }
+
+  // ---------- Demo banner ----------
+
+  function renderDemoBanner() {
+    if (!HG.isDemo) {
+      if (currentTab() === 'setup')
+        view.insertAdjacentHTML('beforeend', `<p class="demo-link"><a href="?demo#today">Try the demo with example data →</a><br><small>Kept separate from your own data.</small></p>`);
+      return;
+    }
+    view.insertAdjacentHTML(
+      'afterbegin',
+      `<div class="demo-banner">
+         <span>🧪 Demo data. Your own data isn't touched.</span>
+         <span class="demo-actions">
+           <button class="demo-btn" data-demo-reset>Reset</button>
+           <a class="demo-btn" href="${location.pathname}#today">Exit</a>
+         </span>
+       </div>`
+    );
   }
 
   // ---------- Today ----------
@@ -88,7 +109,7 @@
             <span class="pill">${STATUS_LABEL[s.status]}</span>
           </div>
           <div class="r-when">${when}${esc(model.targetLabel(r))}</div>
-          ${s.status === 'quiet' ? `<div class="r-welcome">Welcome back bonus waiting: +${scoring.rhythmLogPoints(r).bonus}</div>` : ''}
+          ${s.status === 'quiet' ? `<div class="r-welcome">${s.everLogged ? 'Welcome back' : 'First-time'} bonus waiting: +${scoring.rhythmLogPoints(r).bonus}</div>` : ''}
         </div>
         ${action}
       </article>`;
@@ -140,15 +161,28 @@
     const btn = e.target.closest('button');
     if (!btn) return;
 
+    if (btn.dataset.demoReset !== undefined) {
+      store.clearAll();
+      HG.seedDemo();
+      render({ resort: true });
+      toast('Demo reset to fresh example data');
+      return;
+    }
+
     if (btn.dataset.log) {
       const r = store.get('rhythms', btn.dataset.log);
       if (!r) return;
       const p = scoring.rhythmLogPoints(r);
+      const firstEver = !model.logsFor(r.id).length;
       const log = store.create('logs', { rhythmId: r.id, at: HG.nowIso(), points: p.total, bonus: p.bonus });
-      floatPoints(btn, p.comeback ? `+${p.total} welcome back!` : `+${p.total}`, p.comeback);
+      const cheer = firstEver ? 'first time!' : 'welcome back!';
+      floatPoints(btn, p.comeback ? `+${p.total} ${cheer}` : `+${p.total}`, p.comeback);
       justLogged = r.id;
       render();
-      toast(p.comeback ? `Welcome back to “${r.name}” · +${p.total}` : `Logged “${r.name}” · +${p.total}`, () => store.remove('logs', log.id));
+      toast(
+        p.comeback && firstEver ? `First “${r.name}” · +${p.total}`
+          : p.comeback ? `Welcome back to “${r.name}” · +${p.total}`
+          : `Logged “${r.name}” · +${p.total}`, () => store.remove('logs', log.id));
     }
 
     if (btn.dataset.stepDone) {

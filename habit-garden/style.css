@@ -297,3 +297,34 @@ button { font: inherit; color: inherit; }
   padding: 6px 8px;
   cursor: pointer;
 }
+
+/* ---------- Demo mode ---------- */
+
+.demo-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: #fff4cf;
+  border: 1px solid #ecd98f;
+  border-radius: 12px;
+  padding: 8px 8px 8px 12px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+.demo-actions { display: flex; gap: 6px; }
+.demo-btn {
+  background: #fff;
+  border: 1px solid #ecd98f;
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: none;
+  cursor: pointer;
+}
+.demo-link { text-align: center; margin-top: 8px; }
+.demo-link a { color: var(--leaf); font-weight: 600; }
+.demo-link small { color: var(--muted); }

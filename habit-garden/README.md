@@ -6,6 +6,8 @@ in this browser's localStorage.
 
 Open `index.html` (double-clicking works) or serve the folder statically.
 
+**Demo mode:** open `index.html?demo` (or Setup → "Try the demo") for backdated example data showing every rhythm state. It is stored separately, so your own data is never touched; *Reset* rebuilds it relative to today, *Exit* goes back to your data.
+
 | File | What it is |
 |---|---|
 | `js/storage.js` | The only code that reads/writes localStorage. Records have `id`, `createdAt`, `updatedAt`; deletes are tombstones. Swap or wrap this for sync. |
@@ -13,6 +15,7 @@ Open `index.html` (double-clicking works) or serve the folder statically.
 | `js/scoring.js` | Point rules and totals. |
 | `js/app.js` | Screens and taps. |
 | `js/seed.js` | First-run example rhythms and dragon. |
+| `js/demo.js` | Demo-mode data covering every rhythm state. |
 
 ## Rules so far
 - **Status:** on rhythm under 80% of the expected gap since the last log (or, for "N× a week", while the last 7 days hold N logs); due at 80–100%; quiet past the gap. The gap is N days, or 7/N for "N× a week".
