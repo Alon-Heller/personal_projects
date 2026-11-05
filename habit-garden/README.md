@@ -6,7 +6,7 @@ in this browser's localStorage.
 
 Open `index.html` (double-clicking works) or serve the folder statically.
 
-**Demo mode:** open `index.html?demo` (or Setup → "Try the demo") for backdated example data showing every rhythm state. It is stored separately, so your own data is never touched; *Reset* rebuilds it relative to today, *Exit* goes back to your data.
+**Demo mode:** Setup → "Try the demo" (or open `index.html?demo`) for backdated example data showing every rhythm state. It is stored separately, so your own data is never touched; *Reset* rebuilds it relative to today, *Exit* goes back to your data.
 
 | File | What it is |
 |---|---|

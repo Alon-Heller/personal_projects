@@ -9,7 +9,15 @@
 (function () {
   const HG = window.HG;
   // Demo mode (index.html?demo) keeps its data under a separate key.
-  HG.isDemo = new URLSearchParams(location.search).has('demo');
+  // Turned on by ?demo in the address, or by the in-app switch (a remembered
+  // flag, which also works where the address can't carry ?demo).
+  const MODE_KEY = 'habitGarden.mode';
+  let demoFlag = false;
+  try { demoFlag = localStorage.getItem(MODE_KEY) === 'demo'; } catch (_) {}
+  HG.isDemo = new URLSearchParams(location.search).has('demo') || demoFlag;
+  HG.setDemoMode = (on) => {
+    try { on ? localStorage.setItem(MODE_KEY, 'demo') : localStorage.removeItem(MODE_KEY); } catch (_) {}
+  };
   const KEY = HG.isDemo ? 'habitGarden.demo.v1' : 'habitGarden.v1';
   const SCHEMA = 1;
   const KINDS = ['rhythms', 'logs', 'dragons', 'steps', 'treats'];

@@ -31,7 +31,7 @@
   function renderDemoBanner() {
     if (!HG.isDemo) {
       if (currentTab() === 'setup')
-        view.insertAdjacentHTML('beforeend', `<p class="demo-link"><a href="?demo#today">Try the demo with example data →</a><br><small>Kept separate from your own data.</small></p>`);
+        view.insertAdjacentHTML('beforeend', `<p class="demo-link"><button class="btn link demo-try" data-demo-switch="on">Try the demo with example data →</button><br><small>Kept separate from your own data.</small></p>`);
       return;
     }
     view.insertAdjacentHTML(
@@ -40,7 +40,7 @@
          <span>🧪 Demo data. Your own data isn't touched.</span>
          <span class="demo-actions">
            <button class="demo-btn" data-demo-reset>Reset</button>
-           <a class="demo-btn" href="${location.pathname}#today">Exit</a>
+           <button class="demo-btn" data-demo-switch="off">Exit</button>
          </span>
        </div>`
     );
@@ -160,6 +160,17 @@
   view.addEventListener('click', (e) => {
     const btn = e.target.closest('button');
     if (!btn) return;
+
+    if (btn.dataset.demoSwitch) {
+      HG.setDemoMode(btn.dataset.demoSwitch === 'on');
+      // Reload without ?demo so the remembered flag decides the mode.
+      if (location.search) location.href = location.pathname + '#today';
+      else {
+        location.hash = 'today';
+        location.reload();
+      }
+      return;
+    }
 
     if (btn.dataset.demoReset !== undefined) {
       store.clearAll();

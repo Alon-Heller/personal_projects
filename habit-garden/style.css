@@ -326,5 +326,5 @@ button { font: inherit; color: inherit; }
   cursor: pointer;
 }
 .demo-link { text-align: center; margin-top: 8px; }
-.demo-link a { color: var(--leaf); font-weight: 600; }
+.demo-link a, .demo-try { color: var(--leaf); font-weight: 600; }
 .demo-link small { color: var(--muted); }
