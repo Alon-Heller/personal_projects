@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kazler's Kastle</title>
+<style>
+  :root { --ink: #3a281b; --paper: #f4e6c8; --gold: #c98a1a; --glow: #ffcf87; }
+  html, body { margin: 0; height: 100%; background: #120c08; overflow: hidden; font-family: Georgia, 'Times New Roman', serif; }
+  canvas#game { display: block; width: 100vw; height: 100vh; }
+  #crosshair { position: fixed; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%;
+    background: rgba(255, 240, 210, .75); box-shadow: 0 0 4px rgba(0,0,0,.6); pointer-events: none; transition: transform .12s, background .12s; }
+  #crosshair.active { transform: scale(2.2); background: var(--glow); }
+  #crosshair.writing { opacity: 0; }
+  .screen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at center, rgba(40,24,12,.55), rgba(10,6,3,.9)); color: var(--paper); cursor: pointer; }
+  .screen.hidden { display: none; }
+  .card { text-align: center; max-width: 520px; padding: 40px 48px; border-radius: 18px; background: rgba(28,18,10,.72);
+    border: 1px solid rgba(255,207,135,.25); box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+  h1 { margin: 0 0 6px; font-size: 44px; letter-spacing: .5px; color: var(--glow); text-shadow: 0 0 24px rgba(255,170,80,.35); }
+  .sub { margin: 0 0 26px; opacity: .75; font-style: italic; }
+  .play { display: inline-block; padding: 12px 28px; border-radius: 999px; background: var(--gold); color: #1d1208; font-weight: bold; font-size: 18px; }
+  .keys { margin: 26px auto 0; display: grid; grid-template-columns: auto auto; gap: 6px 16px; text-align: left; font-size: 14px; opacity: .85; width: max-content; }
+  kbd { display: inline-block; min-width: 18px; padding: 1px 6px; border-radius: 5px; border: 1px solid rgba(255,230,190,.4); background: rgba(255,230,190,.08); font-family: inherit; font-size: 13px; text-align: center; }
+  button.quiet { margin-top: 24px; background: none; border: none; color: var(--paper); opacity: .45; font-family: inherit; font-size: 12px; cursor: pointer; text-decoration: underline; }
+  button.quiet:hover { opacity: .8; }
+  #ending .card { cursor: default; }
+  #ending button.play { border: none; cursor: pointer; font-family: inherit; }
+  body:not(.ready) #overlay .play { opacity: .5; }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="crosshair"></div>
+
+<div id="overlay" class="screen">
+  <div class="card">
+    <h1>Kazler's Kastle</h1>
+    <p class="sub">The doors remember every word.</p>
+    <span class="play">Click to enter</span>
+    <div class="keys">
+      <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> + mouse</span><span>walk and look</span>
+      <span><kbd>Shift</kbd></span><span>hurry</span>
+      <span><kbd>Click</kbd> or <kbd>E</kbd></span><span>write on a panel</span>
+      <span><kbd>Enter</kbd> / <kbd>Tab</kbd></span><span>submit / step back</span>
+      <span><kbd>F</kbd> or right-click</span><span>lantern</span>
+      <span><kbd>Esc</kbd></span><span>pause</span>
+    </div>
+    <button id="reset" class="quiet">Start over</button>
+  </div>
+</div>
+
+<div id="ending" class="screen hidden">
+  <div class="card">
+    <h1>Kazler's Kastle</h1>
+    <p class="sub">Every lamp in this part of the castle is lit.<br>More of the castle is still asleep.</p>
+    <button id="keep" class="play">Keep wandering</button>
+  </div>
+</div>
+
+<script type="importmap">
+{ "imports": { "three": "./lib/three.module.min.js" } }
+</script>
+<script type="module" src="./js/main.js"></script>
+</body>
+</html>
