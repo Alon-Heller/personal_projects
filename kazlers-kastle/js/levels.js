@@ -200,7 +200,7 @@ export const PANELS = [
   // Glasshouse wing. Cistern Hall: glass tanks with a pull-chain that drops the clue's tiles into the water.
   { id: 'g-post', at: [50, 9], wall: 'N', kind: 'cistern', clue: 'SPOT', answer: 'POST', rev: 2, tank: true, height: 2.45, size: 0.9 },
   // one tile bounces out of the tank and lands face-down on the floor
-  { id: 'g-drive', at: [52, 9], wall: 'N', kind: 'cistern', clue: 'DIVER', lost: 2, answer: 'DRIVE', tank: true, height: 2.45, size: 0.9, rev: 3 },
+  { id: 'g-drive', at: [52, 9], wall: 'N', kind: 'cistern', clue: 'DIVER', lost: 2, answer: 'DRIVE', tank: true, height: 2.45, size: 0.9, rev: 4 },
   // cracked tanks: the same rule, but no water to show which tiles float. Split the letters into two groups
   // (each keeping its order), floaters first: only one such rearrangement is a word.
   { id: 'g-hatred', at: [54, 9], wall: 'N', kind: 'split', clue: 'THREAD', answer: 'HATRED', crest: 'star', height: 2.45, size: 0.9 },

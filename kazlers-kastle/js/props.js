@@ -478,7 +478,8 @@ export function makeTank(scene, M, def, cx, wallZ) {
     const m = tileMesh(ch);
     const fl = HOLED.has(ch);
     // position of this exact tile within its layer (repeated letters keep order)
-    const layer = ls.slice(0, i).filter((c) => HOLED.has(c) === fl).length;
+    // place among the tiles that actually land in the water (the lost one leaves no gap)
+    const layer = ls.slice(0, i).filter((c, j) => HOLED.has(c) === fl && j !== def.lost).length;
     m.userData = { from: new THREE.Vector3(x0 + i * step, rackY, 0.08), to: new THREE.Vector3(left + layer * step, fl ? surfY : floorY, 0.06), float: fl };
     if (def.lost === i) m.userData = { from: m.userData.from, to: new THREE.Vector3(0.35, 0.03, TD / 2 + 0.75), float: false, lost: true };
     m.position.copy(m.userData.from);
