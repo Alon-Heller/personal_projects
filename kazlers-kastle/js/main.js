@@ -369,7 +369,9 @@ for (const p of panels) {
   if (d.kind === 'ribbon') {
     const [x, y] = d.prop;
     makeRibbonProp(scene, M, d, x * CELL + 1, y * CELL + 1);
-    grid[y][x] = PROP;
+    // collide with the prop itself (its foot is the widest part), not the whole 2 m cell
+    const hx = 0.47, hz = d.faces === 3 ? 0.42 : 0.27;
+    obstacles.push({ x0: x * CELL + 1 - hx, x1: x * CELL + 1 + hx, z0: y * CELL + 1 - hz, z1: y * CELL + 1 + hz });
   }
 }
 const leverHits = tables.filter((t) => t.lever).flatMap((t) => t.lever.userData.hits);

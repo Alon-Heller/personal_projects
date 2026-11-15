@@ -87,16 +87,6 @@ function drawTable(ctx, t) {
     }
     ctx.closePath(); ctx.fill();
   }
-  // chain
-  const live = cups.filter((c) => c.alpha > 0.05);
-  if (live.length > 1) {
-    ctx.save();
-    ctx.strokeStyle = dark ? 'rgba(201,255,224,0.15)' : 'rgba(200,200,210,0.75)';
-    ctx.lineWidth = 4; ctx.setLineDash([8, 6]);
-    ctx.beginPath();
-    live.forEach((c, i) => (i ? ctx.lineTo(c.x, c.y + K * 0.36) : ctx.moveTo(c.x, c.y + K * 0.36)));
-    ctx.stroke(); ctx.restore();
-  }
   for (const c of cups) {
     if (c.alpha <= 0.02) continue;
     ctx.save();
@@ -116,12 +106,6 @@ function drawTable(ctx, t) {
       if (t.pegs) { ctx.fillStyle = '#2b2522'; ctx.beginPath(); ctx.arc(c.x - R - 6, c.y, 6, 0, Math.PI * 2); ctx.arc(c.x + R + 6, c.y, 6, 0, Math.PI * 2); ctx.fill(); }
     }
     ctx.restore();
-  }
-  // a little ring marking the start of the chain
-  if (!dark && live.length) {
-    const f = live[0];
-    ctx.fillStyle = '#b8bcc4';
-    ctx.beginPath(); ctx.arc(f.x - K * 0.5, f.y + K * 0.36, 7, 0, Math.PI * 2); ctx.fill();
   }
 }
 
