@@ -1,7 +1,7 @@
 // Checks that every panel's stated answer follows from its rules,
 // and that the map and doors are consistent. Run: node tools/verify.mjs
 import { derive, normalize } from '../js/rules.js';
-import { PANELS, DOORS, ROOMS, W, H, POOLS, BASINS, MIRRORS, CAPSTONES } from '../js/levels.js';
+import { PANELS, DOORS, ROOMS, W, H, POOLS, BASINS, MIRRORS, CAPSTONES, WALL_MIRRORS } from '../js/levels.js';
 
 let bad = 0;
 const fail = (m) => { bad++; console.log('FAIL', m); };
@@ -26,6 +26,8 @@ for (const d of DOORS) for (const r of d.requires) if (!ids.has(r)) fail(`door $
 for (const k in CAPSTONES) for (const r of CAPSTONES[k]) if (!ids.has(r)) fail(`capstone ${k} unknown ${r}`);
 for (const m of MIRRORS) if (!ids.has(m.panel)) fail(`mirror shows unknown ${m.panel}`);
 for (const c of [...POOLS, ...BASINS]) if (!inRoom(c)) fail(`pool/basin ${c} outside rooms`);
+for (const m of WALL_MIRRORS) if (!inRoom(m.at)) fail(`wall mirror ${m.at} not in a room`);
+for (const p of PANELS) if (p.kind === 'nest' && p.chain.filter((c) => c === null).length !== 1) fail(`${p.id}: a nest needs exactly one blank box`);
 for (const p of PANELS) if (p.prop && !inRoom(p.prop)) fail(`${p.id}: prop ${p.prop} outside rooms`);
 for (const r of ROOMS) if (r.x[1] >= W - 1 || r.y[1] >= H - 1 || r.x[0] < 1 || r.y[0] < 1) fail(`room ${r.id} touches the edge`);
 

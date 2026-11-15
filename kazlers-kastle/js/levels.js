@@ -29,8 +29,9 @@ export const ROOMS = [
   // Solar wing (south-east)
   { id: 'solarStair', x: [28, 28], y: [20, 25], light: 'warm' },
   { id: 'plankRoom', x: [27, 39], y: [27, 31], light: 'bright' },
-  { id: 'turnedRoom', x: [41, 46], y: [27, 31], light: 'bright' },
-  { id: 'pillarRoom', x: [30, 46], y: [33, 38], light: 'bright' },
+  { id: 'mirrorAlcove', x: [41, 46], y: [27, 31], light: 'bright' },
+  { id: 'nestRoom', x: [40, 46], y: [33, 38], light: 'bright' },
+  { id: 'workroom', x: [30, 38], y: [33, 38], light: 'bright' },
 ];
 
 // Plain gaps in walls.
@@ -54,8 +55,9 @@ export const DOORS = [
   { id: 'boltedWest', at: [1, 32], requires: ['b-spiral', 'b-ford'] },
   { id: 'westSteep', at: [7, 36], requires: ['b-dream', 'b-tardy'] },
   { id: 'steepCellar', at: [17, 36], requires: ['b-lantern', 'b-about', 'b-minute', 'l-scare', 'l-nit', 'l-ate'] },
-  { id: 'plankTurned', at: [40, 29], requires: ['r-chair', 'r-friends', 'r-stained'] },
-  { id: 'turnedPillar', at: [43, 32], requires: ['r-parrot', 'r-schooled'] },
+  { id: 'plankAlcove', at: [40, 29], requires: ['r-chair', 'r-friends', 'r-parrot'] },
+  { id: 'alcoveNest', at: [43, 32], requires: ['r-schooled', 'r-lowered'] },
+  { id: 'nestWork', at: [39, 36], requires: ['n-tree', 'n-foot', 'n-galaxy', 'n-day', 'n-letter'] },
 ];
 
 // Wing capstones: solving all of these lights that wing's brazier in the courtyard.
@@ -63,12 +65,17 @@ export const CAPSTONES = {
   lantern: ['l-scare', 'l-nit', 'l-ate'],
   water: ['w-mat', 'w-soon', 'w-son'],
   banquet: ['b-lantern', 'b-about', 'b-minute'],
-  solar: ['r-charity', 'r-limited', 'r-lowered'],
+  solar: ['n-hoe', 'n-bid'],
 };
 
 // Cells with water (a pool under a panel) or a dry basin. Both block walking.
 export const POOLS = [[35, 15], [37, 15], [39, 15]];
 export const BASINS = [[35, 1], [37, 1], [39, 1]];
+// Mirrors hung flat on a wall: cell `at`, on its `wall` side.
+export const WALL_MIRRORS = [
+  { at: [42, 27], wall: 'N' },
+  { at: [45, 27], wall: 'N' },
+];
 // Freestanding mirrors in cell `at`, their glass facing `facing` (towards the panel they show).
 export const MIRRORS = [
   { at: [42, 3], facing: 'N', panel: 'w-may' },
@@ -137,14 +144,24 @@ export const PANELS = [
   // crossing: the dark cellar table (lantern x tilt)
   { id: 'x-duet', at: [20, 33], wall: 'N', kind: 'tilt', frame: 'moon', sigils: ['tilt-w'], clue: 'FAIRLY', glow: mask('****.*'), tilt: -1, table: 'bolted', answer: 'DUET', height: 2.15 },
 
-  // Solar wing: ribbon-wound planks (2 faces) and pillars (3 faces). `prop` = where it stands.
+  // Solar wing: ribbon-wound planks (2 faces) and pillars (3 faces). `prop` = where it stands,
+  // `nudge` = metres it stands towards the panel's wall side, `turn` = extra rotation (radians).
   { id: 'r-count', at: [29, 27], wall: 'N', kind: 'ribbon', word: 'COUNT', faces: 2, prop: [29, 29], answer: 'COUNT', ghost: true, height: 2.6, size: 0.9 },
   { id: 'r-chair', at: [32, 27], wall: 'N', kind: 'ribbon', word: 'CHAIR', faces: 2, prop: [32, 29], answer: 'CHAIR', height: 2.6, size: 0.9 },
   { id: 'r-friends', at: [35, 27], wall: 'N', kind: 'ribbon', word: 'FRIENDS', faces: 2, prop: [35, 29], answer: 'FRIENDS', height: 2.6, size: 0.9 },
-  { id: 'r-stained', at: [38, 27], wall: 'N', kind: 'ribbon', word: 'STAINED', faces: 2, prop: [38, 29], answer: 'STAINED', height: 2.6, size: 0.9 },
-  { id: 'r-parrot', at: [42, 27], wall: 'N', kind: 'ribbon', word: 'PARROT', faces: 2, up: true, prop: [42, 29], answer: 'PARROT', height: 2.6, size: 0.9 },
-  { id: 'r-schooled', at: [45, 27], wall: 'N', kind: 'ribbon', word: 'SCHOOLED', faces: 2, up: true, prop: [45, 29], answer: 'SCHOOLED', height: 2.6, size: 0.9 },
-  { id: 'r-charity', at: [33, 33], wall: 'N', kind: 'ribbon', word: 'CHARITY', faces: 3, prop: [33, 35], answer: 'CHARITY', height: 2.6, size: 0.9 },
-  { id: 'r-limited', at: [37, 33], wall: 'N', kind: 'ribbon', word: 'LIMITED', faces: 3, prop: [37, 35], answer: 'LIMITED', height: 2.6, size: 0.9 },
-  { id: 'r-lowered', at: [41, 33], wall: 'N', kind: 'ribbon', word: 'LOWERED', faces: 3, prop: [41, 35], answer: 'LOWERED', height: 2.6, size: 0.9 },
+  { id: 'r-parrot', at: [38, 27], wall: 'N', kind: 'ribbon', word: 'PARROT', faces: 2, up: true, prop: [38, 29], answer: 'PARROT', height: 2.6, size: 0.9 },
+  // the mirror alcove: each prop stands close to a wall mirror, one side only visible in the glass
+  { id: 'r-schooled', at: [42, 31], wall: 'S', kind: 'ribbon', word: 'SCHOOLED', faces: 2, up: true, prop: [42, 27], backTo: 'N', answer: 'SCHOOLED', height: 2.4, size: 0.9 },
+  { id: 'r-lowered', at: [45, 31], wall: 'S', kind: 'ribbon', word: 'LOWERED', faces: 3, prop: [45, 27], backTo: 'N', answer: 'LOWERED', height: 2.4, size: 0.9 },
+
+  // Nest room: three nested boxes, smallest inside; one box's plaque is blank. `chain` runs inner -> outer.
+  { id: 'n-book', at: [41, 38], wall: 'S', kind: 'nest', chain: ['PAGE', null, 'LIBRARY'], word: 'BOOK', answer: 'BOOK', ghost: true, height: 2.75, size: 0.85 },
+  { id: 'n-tree', at: [43, 38], wall: 'S', kind: 'nest', chain: ['LEAF', null, 'FOREST'], word: 'TREE', answer: 'TREE', height: 2.75, size: 0.85 },
+  { id: 'n-foot', at: [45, 38], wall: 'S', kind: 'nest', chain: ['TOE', null, 'LEG'], word: 'FOOT', answer: 'FOOT', height: 2.75, size: 0.85 },
+  { id: 'n-galaxy', at: [46, 34], wall: 'E', kind: 'nest', chain: ['STAR', null, 'UNIVERSE'], word: 'GALAXY', answer: 'GALAXY', height: 2.75, size: 0.85 },
+  { id: 'n-day', at: [46, 36], wall: 'E', kind: 'nest', chain: ['MINUTE', 'HOUR', null], word: 'DAY', answer: 'DAY', height: 2.75, size: 0.85 },
+  { id: 'n-letter', at: [40, 34], wall: 'W', kind: 'nest', chain: [null, 'WORD', 'SENTENCE'], word: 'LETTER', answer: 'LETTER', height: 2.75, size: 0.85 },
+  // workroom (capstone): the nest, then a rule you already know
+  { id: 'n-hoe', at: [32, 38], wall: 'S', kind: 'nest', chain: ['KITCHEN', null, 'VILLAGE'], word: 'HOUSE', sigils: ['pool'], answer: 'HOE', height: 2.75, size: 0.85 },
+  { id: 'n-bid', at: [36, 38], wall: 'S', kind: 'nest', chain: ['FEATHER', null, 'FLOCK'], word: 'BIRD', sigils: ['pool'], answer: 'BID', height: 2.75, size: 0.85 },
 ];

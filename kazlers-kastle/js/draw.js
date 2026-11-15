@@ -73,6 +73,9 @@ function sigil(ctx, kind, cx, cy, color, glow) {
     ctx.beginPath(); ctx.arc(s * 18, -6, 11, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
     ctx.beginPath(); ctx.moveTo(cx + s * 30, cy - 30); ctx.lineTo(cx + s * 46, cy - 22); ctx.lineTo(cx + s * 30, cy - 14); ctx.stroke();
+  } else if (kind === 'nest') {
+    ctx.lineWidth = 5;
+    for (const r of [40, 27, 14]) ctx.strokeRect(cx - r, cy - r * 0.8, r * 2, r * 1.6);
   } else if (kind === 'ribbon') {
     ctx.beginPath();
     for (let i = 0; i <= 40; i++) { const y = cy - 40 + i * 2; const x = cx + Math.sin(i / 40 * Math.PI * 3) * 22; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
@@ -106,7 +109,7 @@ export function drawPanel(ctx, p, st) {
   ctx.strokeRect(9, 9, PW - 18, PH - 18);
   if (st.wrong) { ctx.lineWidth = 18; ctx.strokeStyle = '#b3261e'; ctx.strokeRect(9, 9, PW - 18, PH - 18); }
 
-  const kinds = [p.frame, ...(p.sigils || []), p.kind === 'ribbon' ? 'ribbon' : null].filter(Boolean);
+  const kinds = [p.frame, ...(p.sigils || []), p.kind === 'ribbon' ? 'ribbon' : null, p.kind === 'nest' ? 'nest' : null].filter(Boolean);
   if (kinds.length) sigilRow(ctx, kinds, dark ? GLOW : INK, dark);
 
   const cy = kinds.length ? 330 : 290;
@@ -123,7 +126,7 @@ export function drawPanel(ctx, p, st) {
     ctx.strokeRect(x, cy - box / 2, box, box);
     x += box + gap;
     word(ctx, b, x + wb / 2, cy, h, INK);
-  } else if (p.kind !== 'ribbon') {
+  } else if (p.kind !== 'ribbon' && p.kind !== 'nest') {
     const ls = lettersOf(p.clue);
     const { xs, size } = slots(ls.length);
     const glow = new Set(p.glow || []);

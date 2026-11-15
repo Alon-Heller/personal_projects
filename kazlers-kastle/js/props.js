@@ -243,7 +243,7 @@ function drawFace(ctx, def, face) {
   }
 }
 
-export function makeRibbonProp(scene, M, def, cx, cz) {
+export function makeRibbonProp(scene, M, def, cx, cz, turn = 0) {
   const g = new THREE.Group();
   const faces = def.faces;
   // apothem: distance from centre to each face
@@ -275,6 +275,54 @@ export function makeRibbonProp(scene, M, def, cx, cz) {
   foot.position.y = 0.15;
   g.add(cap, base, foot);
   g.position.set(cx, 0, cz);
+  g.rotation.y = turn;
+  scene.add(g);
+  return g;
+}
+
+// ---------------------------------------------------------------- nests: boxes inside boxes, hung on a wall
+// `chain` runs inner -> outer; null marks the box whose plaque is blank.
+function plaque(word, w, h) {
+  const c = document.createElement('canvas'); c.width = 512; c.height = Math.round(512 * h / w);
+  const g = c.getContext('2d');
+  const grd = g.createLinearGradient(0, 0, 0, c.height);
+  grd.addColorStop(0, '#e8c46a'); grd.addColorStop(1, '#a87a2c');
+  g.fillStyle = grd; g.fillRect(0, 0, c.width, c.height);
+  g.strokeStyle = '#5a3d14'; g.lineWidth = 6; g.strokeRect(5, 5, c.width - 10, c.height - 10);
+  if (word) {
+    const hgt = Math.min(c.height * 0.62, (c.width - 40) / (word.length * 0.82));
+    const adv = hgt * 0.8, x0 = c.width / 2 - (adv * word.length) / 2 + adv / 2;
+    [...word].forEach((ch, i) => glyph(g, ch, x0 + i * adv, c.height / 2, hgt, '#2a1a08'));
+  }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+  return new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshLambertMaterial({ map: t }));
+}
+
+export function makeNest(scene, M, def, pos, rotY) {
+  const g = new THREE.Group();
+  const sizes = [[0.62, 0.46, 0.14], [1.06, 0.86, 0.27], [1.5, 1.26, 0.4]]; // inner -> outer: w, h, depth
+  const woods = ['#8a5a33', '#6e4426', '#523119'].map((c) => new THREE.MeshLambertMaterial({ color: c }));
+  const T = 0.04;
+  sizes.forEach(([w, h, d], i) => {
+    const m = woods[i];
+    const box = new THREE.Group();
+    const back = new THREE.Mesh(new THREE.BoxGeometry(w, h, T), m); back.position.z = T / 2 + i * 0.002;
+    const top = new THREE.Mesh(new THREE.BoxGeometry(w, T, d), m); top.position.set(0, h / 2 - T / 2, d / 2);
+    const bot = top.clone(); bot.position.y = -h / 2 + T / 2;
+    const l = new THREE.Mesh(new THREE.BoxGeometry(T, h, d), m); l.position.set(-w / 2 + T / 2, 0, d / 2);
+    const r = l.clone(); r.position.x = w / 2 - T / 2;
+    box.add(back, top, bot, l, r);
+    // its plaque sits on the front edge of its lid
+    const word = def.chain[i];
+    const pw = Math.min(w * 0.92, 0.18 + 0.085 * Math.max(4, (word || 'XXXX').length)), ph = 0.14;
+    const p = plaque(word, pw, ph);
+    p.position.set(0, h / 2 + ph / 2 - 0.005, d + 0.004);
+    box.add(p);
+    g.add(box);
+  });
+  g.position.copy(pos);
+  g.position.y = 1.12;
+  g.rotation.y = rotY;
   scene.add(g);
   return g;
 }

@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import { Reflector } from 'three/addons/Reflector.js';
-import { CELL, W, H, ROOMS, OPENINGS, DOORS, PANELS, POOLS, BASINS, MIRRORS, START, CAPSTONES } from './levels.js';
+import { CELL, W, H, ROOMS, OPENINGS, DOORS, PANELS, POOLS, BASINS, MIRRORS, WALL_MIRRORS, START, CAPSTONES } from './levels.js';
 import { normalize } from './rules.js';
 import { drawPanel, PW, PH, stoneTexture, floorTexture, woodTexture, grassTexture, doorTexture } from './draw.js';
 import * as sfx from './audio.js';
-import { makeTable, updateTable, makeRibbonProp } from './props.js';
+import { makeTable, updateTable, makeRibbonProp, makeNest } from './props.js';
 
 // ---------------------------------------------------------------- save
 const SAVE_KEY = 'kazlers-kastle-v1';
@@ -368,11 +368,30 @@ for (const p of panels) {
   }
   if (d.kind === 'ribbon') {
     const [x, y] = d.prop;
-    makeRibbonProp(scene, M, d, x * CELL + 1, y * CELL + 1);
-    // collide with the prop itself (its foot is the widest part), not the whole 2 m cell
     const hx = 0.47, hz = d.faces === 3 ? 0.42 : 0.27;
-    obstacles.push({ x0: x * CELL + 1 - hx, x1: x * CELL + 1 + hx, z0: y * CELL + 1 - hz, z1: y * CELL + 1 + hz });
+    if (d.backTo === 'N') {
+      // stands close to a north-wall mirror; one side faces the glass. A railing stops you walking behind it.
+      const cz = y * CELL + 0.62 + hz;
+      makeRibbonProp(scene, M, d, x * CELL + 1, cz, d.faces === 3 ? Math.PI : 0);
+      obstacles.push({ x0: x * CELL + 1 - hx, x1: x * CELL + 1 + hx, z0: y * CELL, z1: cz + hz });
+      for (const s of [-1, 1]) {
+        const rail = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.9, 0.62), M.wood);
+        rail.position.set(x * CELL + 1 + s * hx, 0.45, y * CELL + 0.31);
+        scene.add(rail);
+      }
+    } else {
+      makeRibbonProp(scene, M, d, x * CELL + 1, y * CELL + 1);
+      // collide with the prop itself (its foot is the widest part), not the whole 2 m cell
+      obstacles.push({ x0: x * CELL + 1 - hx, x1: x * CELL + 1 + hx, z0: y * CELL + 1 - hz, z1: y * CELL + 1 + hz });
+    }
   }
+}
+for (const p of panels) {
+  const d = p.def;
+  if (d.kind !== 'nest') continue;
+  const c = cellCenter(...d.at), n = wallDir[d.wall];
+  const rot = { N: 0, S: Math.PI, W: Math.PI / 2, E: -Math.PI / 2 }[d.wall];
+  makeNest(scene, M, d, new THREE.Vector3(c.x + n[0] * (CELL / 2 - 0.01), 0, c.z + n[1] * (CELL / 2 - 0.01)), rot);
 }
 const leverHits = tables.filter((t) => t.lever).flatMap((t) => t.lever.userData.hits);
 
@@ -452,6 +471,23 @@ for (const m of MIRRORS) {
   r.position.set(c.x, MY, c.z).add(new THREE.Vector3(0, 0, 0.07).applyAxisAngle(new THREE.Vector3(0, 1, 0), rot));
   r.rotation.y = rot;
   grid[m.at[1]][m.at[0]] = PROP;
+}
+
+for (const m of WALL_MIRRORS) {
+  const c = cellCenter(...m.at), n = wallDir[m.wall];
+  const rot = { N: 0, S: Math.PI, W: Math.PI / 2, E: -Math.PI / 2 }[m.wall];
+  const MW = 2.0, MH = 2.7, MY = 1.55;
+  const frame = new THREE.Mesh(new THREE.BoxGeometry(MW + 0.18, MH + 0.18, 0.05), M.wood);
+  frame.position.set(c.x + n[0] * (CELL / 2 - 0.025), MY, c.z + n[1] * (CELL / 2 - 0.025));
+  frame.rotation.y = rot;
+  const fallback = new THREE.Mesh(new THREE.PlaneGeometry(MW, MH), M.mirror);
+  fallback.position.set(c.x + n[0] * (CELL / 2 - 0.055), MY, c.z + n[1] * (CELL / 2 - 0.055));
+  fallback.rotation.y = rot;
+  scene.add(frame, fallback);
+  const r = makeReflector(new THREE.PlaneGeometry(MW, MH),
+    { color: '#ece6dc', textureWidth: 900 * RES, textureHeight: 1200 * RES, shader: mirrorShader }, fallback);
+  r.position.set(c.x + n[0] * (CELL / 2 - 0.06), MY, c.z + n[1] * (CELL / 2 - 0.06));
+  r.rotation.y = rot;
 }
 
 // ---------------------------------------------------------------- the wanderer (you, as seen in reflections)

@@ -27,7 +27,7 @@ export const turnRead = (w) => letters(w).reverse().filter((c) => TURN_SAFE.has(
 export function derive(panel) {
   if (panel.kind === 'bridge' || panel.kind === 'plain') return panel.answer;
   if (panel.kind === 'ribbon') return letters(panel.word).join('');
-  let w = letters(panel.clue).join('');
+  let w = letters(panel.kind === 'nest' ? panel.word : panel.clue).join('');
   if (panel.frame === 'moon') w = glowLetters(panel.clue, panel.glow);
   if (panel.frame === 'sun') w = litLetters(panel.clue, panel.glow);
   const marks = panel.sigils || [];
