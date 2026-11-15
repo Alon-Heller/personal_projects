@@ -1,7 +1,8 @@
 import * as THREE from 'three';
+import { Reflector } from 'three/addons/Reflector.js';
 import { CELL, W, H, ROOMS, OPENINGS, DOORS, PANELS, POOLS, BASINS, MIRRORS, START, CAPSTONES } from './levels.js';
 import { normalize } from './rules.js';
-import { drawPanel, drawReflection, PW, PH, stoneTexture, floorTexture, woodTexture, grassTexture, doorTexture } from './draw.js';
+import { drawPanel, PW, PH, stoneTexture, floorTexture, woodTexture, grassTexture, doorTexture } from './draw.js';
 import * as sfx from './audio.js';
 
 // ---------------------------------------------------------------- save
@@ -331,54 +332,143 @@ const panels = PANELS.map((p) => {
   t.colorSpace = THREE.SRGBColorSpace;
   t.anisotropy = 8;
   const mat = new THREE.MeshBasicMaterial({ map: t, toneMapped: false });
-  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 1.0625), mat);
-  const frame = new THREE.Mesh(new THREE.BoxGeometry(1.86, 1.22, 0.08), M.wood);
+  const k = p.size || 1;
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1.7 * k, 1.0625 * k), mat);
+  const frame = new THREE.Mesh(new THREE.BoxGeometry(1.7 * k + 0.16, 1.0625 * k + 0.16, 0.08), M.wood);
   const c = cellCenter(...p.at);
   const n = wallDir[p.wall];
   const rot = { N: 0, S: Math.PI, W: Math.PI / 2, E: -Math.PI / 2 }[p.wall];
   const edge = CELL / 2;
-  mesh.position.set(c.x + n[0] * (edge - 0.1), 1.75, c.z + n[1] * (edge - 0.1));
-  frame.position.set(c.x + n[0] * (edge - 0.03), 1.75, c.z + n[1] * (edge - 0.03));
+  const py = p.height || 1.75;
+  mesh.position.set(c.x + n[0] * (edge - 0.1), py, c.z + n[1] * (edge - 0.1));
+  frame.position.set(c.x + n[0] * (edge - 0.03), py, c.z + n[1] * (edge - 0.03));
   mesh.rotation.y = rot; frame.rotation.y = rot;
   scene.add(frame, mesh);
   const panel = { def: p, mesh, ctx: cvs.getContext('2d'), tex: t, input: '', key: '', wrongUntil: 0, room: roomOf[p.at[1]][p.at[0]] };
   mesh.userData.panel = panel;
 
-  // reflections that show this panel
-  panel.reflections = [];
-  if (p.show === 'pool') {
-    const rc = document.createElement('canvas'); rc.width = PW; rc.height = PH;
-    drawReflection(rc.getContext('2d'), p.clue, 'pool');
-    const rt = new THREE.CanvasTexture(rc); rt.colorSpace = THREE.SRGBColorSpace; rt.anisotropy = 8;
-    const rm = new THREE.Mesh(new THREE.PlaneGeometry(1.76, 1.1), new THREE.MeshBasicMaterial({ map: rt, transparent: true, toneMapped: false, depthWrite: false }));
-    rm.rotation.set(-Math.PI / 2, 0, flatRot[p.wall]);
-    rm.position.set(c.x, -0.11, c.z);
-    scene.add(rm);
-  }
   return panel;
 });
 const panelById = Object.fromEntries(panels.map((p) => [p.def.id, p]));
 
-for (const m of MIRRORS) {
-  const p = panelById[m.panel].def;
-  const c = cellCenter(...m.at);
-  const n = wallDir[m.wall];
-  const rot = { N: 0, S: Math.PI, W: Math.PI / 2, E: -Math.PI / 2 }[m.wall];
-  const back = new THREE.Mesh(new THREE.BoxGeometry(1.9, 1.3, 0.06), M.mirror);
-  back.position.set(c.x + n[0] * (CELL / 2 - 0.03), 1.75, c.z + n[1] * (CELL / 2 - 0.03));
-  back.rotation.y = rot;
-  const frame = new THREE.Mesh(new THREE.BoxGeometry(2.02, 1.42, 0.04), M.wood);
-  frame.position.set(c.x + n[0] * (CELL / 2 - 0.01), 1.75, c.z + n[1] * (CELL / 2 - 0.01));
-  frame.rotation.y = rot;
-  const rc = document.createElement('canvas'); rc.width = PW; rc.height = PH;
-  const g = rc.getContext('2d');
-  drawReflection(g, p.clue, 'mirror');
-  const rt = new THREE.CanvasTexture(rc); rt.colorSpace = THREE.SRGBColorSpace; rt.anisotropy = 8;
-  const face = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 1.0625), new THREE.MeshBasicMaterial({ map: rt, transparent: true, toneMapped: false }));
-  face.position.set(c.x + n[0] * (CELL / 2 - 0.075), 1.75, c.z + n[1] * (CELL / 2 - 0.075));
-  face.rotation.y = rot;
-  scene.add(frame, back, face);
+// ---------------------------------------------------------------- real reflections
+// Every pool and mirror renders the scene again from a mirrored camera.
+// Layer 1 = the player's body (seen only in reflections), layer 2 = first-person lantern (never reflected).
+const reflectors = [];
+const rippleShader = {
+  name: 'PoolShader',
+  uniforms: { color: { value: null }, tDiffuse: { value: null }, textureMatrix: { value: null }, time: { value: 0 } },
+  vertexShader: Reflector.ReflectorShader.vertexShader,
+  fragmentShader: `uniform vec3 color; uniform sampler2D tDiffuse; uniform float time; varying vec4 vUv;
+    #include <logdepthbuf_pars_fragment>
+    void main() {
+      #include <logdepthbuf_fragment>
+      vec4 uv = vUv;
+      vec2 p = uv.xy / uv.w;
+      uv.xy += vec2(sin(p.y * 90.0 + time * 1.7), cos(p.x * 70.0 + time * 1.3)) * 0.0016 * uv.w;
+      vec3 base = texture2DProj(tDiffuse, uv).rgb;
+      gl_FragColor = vec4(mix(base * color, vec3(0.04, 0.13, 0.15), 0.18), 1.0);
+      #include <tonemapping_fragment>
+      #include <colorspace_fragment>
+    }`,
+};
+const mirrorShader = {
+  name: 'MirrorShader',
+  uniforms: { color: { value: null }, tDiffuse: { value: null }, textureMatrix: { value: null } },
+  vertexShader: Reflector.ReflectorShader.vertexShader,
+  fragmentShader: `uniform vec3 color; uniform sampler2D tDiffuse; varying vec4 vUv;
+    #include <logdepthbuf_pars_fragment>
+    void main() {
+      #include <logdepthbuf_fragment>
+      gl_FragColor = vec4(texture2DProj(tDiffuse, vUv).rgb * color, 1.0);
+      #include <tonemapping_fragment>
+      #include <colorspace_fragment>
+    }`,
+};
+let reflecting = false;
+function makeReflector(geo, opts, fallback) {
+  const r = new Reflector(geo, { clipBias: 0.003, multisample: 4, ...opts });
+  r.camera.layers.enable(1);
+  r.camera.layers.disable(2);
+  const draw = r.onBeforeRender;
+  r.onBeforeRender = function (...args) {
+    if (reflecting) return; // never render a reflection inside a reflection
+    reflecting = true; draw.apply(this, args); reflecting = false;
+  };
+  r.userData.fallback = fallback;
+  reflectors.push(r);
+  scene.add(r);
+  return r;
 }
+const RES = Math.min(window.devicePixelRatio, 2);
+for (const [x, y] of POOLS) {
+  const c = cellCenter(x, y);
+  const r = makeReflector(new THREE.PlaneGeometry(CELL - 0.3, CELL - 0.3),
+    { color: '#b9d6d2', textureWidth: 768 * RES, textureHeight: 768 * RES, shader: rippleShader }, null);
+  r.rotation.x = -Math.PI / 2;
+  r.position.set(c.x, -0.11, c.z);
+}
+for (const m of MIRRORS) {
+  const c = cellCenter(...m.at);
+  const rot = { N: Math.PI, S: 0, W: -Math.PI / 2, E: Math.PI / 2 }[m.facing]; // glass faces `facing`
+  const g = new THREE.Group();
+  const MH = 2.0, MY = 1.9;
+  const frame = new THREE.Mesh(new THREE.BoxGeometry(2.0, MH + 0.2, 0.12), M.wood);
+  frame.position.y = MY;
+  const legs = [-0.85, 0.85].map((dx) => { const l = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.8, 0.5), M.wood); l.position.set(dx, 0.4, 0); return l; });
+  const fallback = new THREE.Mesh(new THREE.PlaneGeometry(1.8, MH), M.mirror);
+  fallback.position.set(0, MY, 0.065);
+  g.add(frame, ...legs, fallback);
+  g.position.set(c.x, 0, c.z);
+  g.rotation.y = rot;
+  scene.add(g);
+  const r = makeReflector(new THREE.PlaneGeometry(1.8, MH),
+    { color: '#ece6dc', textureWidth: 900 * RES, textureHeight: 1000 * RES, shader: mirrorShader }, fallback);
+  r.position.set(c.x, MY, c.z).add(new THREE.Vector3(0, 0, 0.07).applyAxisAngle(new THREE.Vector3(0, 1, 0), rot));
+  r.rotation.y = rot;
+  grid[m.at[1]][m.at[0]] = PROP;
+}
+
+// ---------------------------------------------------------------- the wanderer (you, as seen in reflections)
+const body = new THREE.Group();
+{
+  const cloak = new THREE.MeshLambertMaterial({ color: '#8a3b26' });
+  const inner = new THREE.MeshLambertMaterial({ color: '#1a120e' });
+  const scarf = new THREE.MeshLambertMaterial({ color: '#d29a2e' });
+  const robe = new THREE.Mesh(new THREE.ConeGeometry(0.42, 1.45, 18, 1, true), cloak);
+  robe.position.y = 0.72;
+  const hem = new THREE.Mesh(new THREE.CircleGeometry(0.42, 18).rotateX(Math.PI / 2), inner);
+  hem.position.y = 0.0;
+  const hood = new THREE.Mesh(new THREE.SphereGeometry(0.24, 18, 14), cloak);
+  hood.position.y = 1.62; hood.scale.set(1, 1.08, 1.05);
+  const tip = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.32, 12), cloak);
+  tip.position.set(0, 1.78, 0.14); tip.rotation.x = 0.9;
+  const face = new THREE.Mesh(new THREE.SphereGeometry(0.17, 16, 12), inner);
+  face.position.set(0, 1.6, -0.1); face.scale.set(1, 1.05, 0.8);
+  const eyeMat = new THREE.MeshBasicMaterial({ color: '#ffd27a' });
+  const eyes = [-0.06, 0.06].map((dx) => { const e = new THREE.Mesh(new THREE.SphereGeometry(0.022, 8, 6), eyeMat); e.position.set(dx, 1.63, -0.235); e.scale.y = 1.4; return e; });
+  const band = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.055, 8, 18), scarf);
+  band.position.y = 1.42; band.rotation.x = Math.PI / 2;
+  const tail = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.38, 0.04), scarf);
+  tail.position.set(0.1, 1.24, -0.2); tail.rotation.z = 0.15;
+  const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.55, 8), cloak);
+  arm.position.set(0.3, 1.12, -0.12); arm.rotation.x = 0.5;
+  // the lantern in hand
+  const held = new THREE.Group();
+  const brass = new THREE.MeshLambertMaterial({ color: '#9a7638' });
+  const cage = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.16, 10), new THREE.MeshBasicMaterial({ color: '#ffcf87', transparent: true, opacity: 0.5 }));
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.07, 0.05, 10), brass);
+  cap.position.y = 0.1;
+  const flame = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 6), new THREE.MeshBasicMaterial({ color: '#ffd27a' }));
+  held.add(cage, cap, flame);
+  held.position.set(0.34, 0.86, -0.3);
+  body.add(robe, hem, hood, tip, face, ...eyes, band, tail, arm, held);
+  body.userData = { held: flame, cage };
+  body.traverse((o) => o.layers.set(1));
+  scene.add(body);
+}
+camera.layers.enable(2);
+lanternProp.traverse((o) => o.layers.set(2));
 
 // ---------------------------------------------------------------- player
 const player = { x: 0, z: 0, yaw: 0, pitch: 0, bob: 0 };
@@ -618,6 +708,19 @@ function frame() {
   poolLights.forEach((l, i) => { l.intensity = l.userData.on ? 7 * (0.9 + Math.sin(now * 0.013 + i * 2) * 0.06 + Math.sin(now * 0.041 + i) * 0.04) : 0; });
   for (const s of sconces) s.flame.scale.set(1, 1.6 + Math.sin(now * 0.02 + s.pos.x) * 0.2, 1);
   for (const b of Object.values(braziers)) if (b.lit) { b.fire.scale.y = 1 + Math.sin(now * 0.015) * 0.12; b.light.intensity = 30 + Math.sin(now * 0.02) * 4; }
+
+  // body + reflections
+  body.position.set(player.x, Math.abs(Math.sin(player.bob)) * 0.03, player.z);
+  body.rotation.y = player.yaw;
+  body.userData.held.visible = on;
+  body.userData.cage.material.opacity = on ? 0.55 : 0.15;
+  rippleShader.time = (rippleShader.time || 0) + dt;
+  for (const r of reflectors) {
+    const near = r.position.distanceToSquared(camera.position) < 15 * 15;
+    r.visible = near;
+    if (r.userData.fallback) r.userData.fallback.visible = !near;
+    if (r.material.uniforms.time) r.material.uniforms.time.value = rippleShader.time;
+  }
 
   // doors
   for (const d of doors) {

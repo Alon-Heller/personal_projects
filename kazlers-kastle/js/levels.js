@@ -32,7 +32,7 @@ export const DOORS = [
   { id: 'cryptAB', at: [11, 8], requires: ['l-plan', 'l-carpet'] },
   { id: 'cryptBC', at: [7, 4], requires: ['l-chart', 'l-pant'] },
   { id: 'poolDry', at: [37, 8], requires: ['w-hike', 'w-bide'] },
-  { id: 'dryMirror', at: [41, 4], requires: ['w-cooked', 'w-book'] },
+  { id: 'dryMirror', at: [41, 6], requires: ['w-cooked', 'w-book'] },
   { id: 'mirrorCap', at: [44, 8], requires: ['w-way'] },
   { id: 'shrine', at: [24, 3], requires: ['l-scare', 'l-nit', 'l-ate', 'w-mat', 'w-soon', 'w-son'] },
 ];
@@ -46,10 +46,10 @@ export const CAPSTONES = {
 // Cells with water (a pool under a panel) or a dry basin. Both block walking.
 export const POOLS = [[35, 15], [37, 15], [39, 15]];
 export const BASINS = [[35, 1], [37, 1], [39, 1]];
-// Mirrors: a mirror on wall `wall` of cell `at`, showing panel `panel`.
+// Freestanding mirrors in cell `at`, their glass facing `facing` (towards the panel they show).
 export const MIRRORS = [
-  { at: [43, 7], wall: 'S', panel: 'w-may' },
-  { at: [45, 7], wall: 'S', panel: 'w-way' },
+  { at: [42, 3], facing: 'N', panel: 'w-may' },
+  { at: [46, 3], facing: 'N', panel: 'w-way' },
 ];
 
 export const START = { at: [24, 22], facing: 'N' };
@@ -89,8 +89,8 @@ export const PANELS = [
   { id: 'w-cooked', at: [37, 1], wall: 'N', kind: 'mark', sigils: ['pool'], clue: 'CROOKED', answer: 'COOKED' },
   { id: 'w-book', at: [39, 1], wall: 'N', kind: 'mark', sigils: ['pool'], clue: 'BROOKS', answer: 'BOOK' },
   // the mirror room
-  { id: 'w-may', at: [43, 1], wall: 'N', kind: 'mark', sigils: ['mirror'], clue: 'YAMS', answer: 'MAY', ghost: true },
-  { id: 'w-way', at: [45, 1], wall: 'N', kind: 'mark', sigils: ['mirror'], clue: 'YAWN', answer: 'WAY' },
+  { id: 'w-may', at: [42, 1], wall: 'N', kind: 'mark', sigils: ['mirror'], clue: 'YAMS', answer: 'MAY', ghost: true, size: 1.2, height: 2.95 },
+  { id: 'w-way', at: [46, 1], wall: 'N', kind: 'mark', sigils: ['mirror'], clue: 'YAWN', answer: 'WAY', size: 1.2, height: 2.95 },
   // capstone: nothing to look into
   { id: 'w-mat', at: [42, 15], wall: 'S', kind: 'mark', sigils: ['mirror'], clue: 'STAMPED', answer: 'MAT' },
   { id: 'w-soon', at: [44, 15], wall: 'S', kind: 'mark', sigils: ['pool', 'mirror'], clue: 'NOOSE', answer: 'SOON' },
