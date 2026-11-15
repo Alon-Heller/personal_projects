@@ -1,8 +1,7 @@
 // Canvas drawing for panels, reflections and procedural textures.
-import { POOL_SAFE, MIRROR_SAFE } from './rules.js';
+import { glyph, word, ADVANCE } from './glyphs.js';
 
 export const PW = 1024, PH = 640;
-const SERIF = '"Georgia", "Times New Roman", serif';
 const INK = '#3a281b';
 const PAPER = '#f1e2c2';
 const GLOW = '#c9ffe0';
@@ -14,7 +13,7 @@ const lettersOf = (s) => [...s.toUpperCase()].filter((c) => c >= 'A' && c <= 'Z'
 function slots(n) {
   const w = Math.min(150, 900 / n);
   const x0 = PW / 2 - (w * n) / 2 + w / 2;
-  return { w, xs: Array.from({ length: n }, (_, i) => x0 + i * w), size: Math.round(w * 0.98) };
+  return { w, xs: Array.from({ length: n }, (_, i) => x0 + i * w), size: Math.round(w * 0.95) };
 }
 
 function paper(ctx) {
@@ -76,13 +75,6 @@ function sigilRow(ctx, kinds, color, glow) {
   kinds.forEach((k, i) => sigil(ctx, k, x0 + i * gap, 92, color, glow));
 }
 
-function fitText(ctx, text, max, start) {
-  let s = start;
-  ctx.font = `bold ${s}px ${SERIF}`;
-  while (ctx.measureText(text).width > max && s > 20) { s -= 4; ctx.font = `bold ${s}px ${SERIF}`; }
-  return s;
-}
-
 // ---- panels ---------------------------------------------------------------
 // state: { dark, solved, input, focused, hover, wrong, caret }
 export function drawPanel(ctx, p, st) {
@@ -101,36 +93,27 @@ export function drawPanel(ctx, p, st) {
   if (kinds.length) sigilRow(ctx, kinds, dark ? GLOW : INK, dark);
 
   const cy = kinds.length ? 330 : 290;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-
   if (p.kind === 'bridge') {
     const [a, b] = p.clue.split('|');
-    ctx.fillStyle = INK;
-    const s = fitText(ctx, `${a}  ##  ${b}`, 900, 104);
-    ctx.font = `bold ${s}px ${SERIF}`;
-    const box = s * 0.9;
-    const wa = ctx.measureText(a).width, wb = ctx.measureText(b).width;
-    const total = wa + wb + box + s * 1.2;
-    let x = PW / 2 - total / 2;
-    ctx.textAlign = 'left';
-    ctx.fillText(a, x, cy);
-    x += wa + s * 0.6;
+    const units = (a.length + b.length) * ADVANCE + 2.2;
+    const h = Math.min(104, 900 / units);
+    const box = h * 0.9, gap = h * 0.5;
+    const wa = a.length * h * ADVANCE, wb = b.length * h * ADVANCE;
+    let x = PW / 2 - (wa + wb + box + gap * 2) / 2;
+    word(ctx, a, x + wa / 2, cy, h, INK);
+    x += wa + gap;
     ctx.lineWidth = 6; ctx.strokeStyle = INK;
     ctx.strokeRect(x, cy - box / 2, box, box);
-    x += box + s * 0.6;
-    ctx.fillText(b, x, cy);
-    ctx.textAlign = 'center';
+    x += box + gap;
+    word(ctx, b, x + wb / 2, cy, h, INK);
   } else {
     const ls = lettersOf(p.clue);
     const { xs, size } = slots(ls.length);
     const glow = new Set(p.glow || []);
-    ctx.font = `bold ${size}px ${SERIF}`;
     ls.forEach((c, i) => {
-      if (!dark) { ctx.fillStyle = INK; ctx.fillText(c, xs[i], cy); return; }
+      if (!dark) { glyph(ctx, c, xs[i], cy, size, INK); return; }
       if (glow.has(i)) {
-        ctx.save(); ctx.shadowColor = GLOW; ctx.shadowBlur = 26; ctx.fillStyle = GLOW;
-        ctx.fillText(c, xs[i], cy); ctx.restore();
+        glyph(ctx, c, xs[i], cy, size, GLOW, { glow: 26 });
       } else if (p.gaps) {
         ctx.save(); ctx.shadowColor = GLOW; ctx.shadowBlur = 12; ctx.fillStyle = 'rgba(201,255,224,0.55)';
         ctx.beginPath(); ctx.arc(xs[i], cy + size * 0.32, 7, 0, Math.PI * 2); ctx.fill(); ctx.restore();
@@ -147,20 +130,14 @@ export function drawPanel(ctx, p, st) {
   if (p.ghost) { shown = p.answer; color = dark ? 'rgba(201,138,26,0.8)' : GHOST; }
   const sw = Math.min(84, 640 / n), ly = 540;
   const sx0 = PW / 2 - (sw * n) / 2 + sw / 2;
-  const s2 = Math.round(sw * 0.86);
-  ctx.font = `bold ${s2}px ${SERIF}`;
+  const s2 = Math.round(sw * 0.8);
   for (let i = 0; i < n; i++) {
     const x = sx0 + i * sw;
     ctx.lineWidth = 4;
     ctx.strokeStyle = dark ? 'rgba(201,255,224,0.25)' : 'rgba(58,40,27,0.4)';
     if (st.focused && i === shown.length && st.caret && !st.solved) ctx.strokeStyle = dark ? GLOW : '#a0522d';
     ctx.beginPath(); ctx.moveTo(x - sw * 0.36, ly + s2 * 0.5); ctx.lineTo(x + sw * 0.36, ly + s2 * 0.5); ctx.stroke();
-    if (shown[i]) {
-      ctx.fillStyle = color;
-      if (dark && (st.solved || p.ghost)) { ctx.shadowColor = GOLD; ctx.shadowBlur = 18; }
-      ctx.fillText(shown[i], x, ly);
-      ctx.shadowBlur = 0;
-    }
+    if (shown[i]) glyph(ctx, shown[i], x, ly, s2, color, { glow: dark && (st.solved || p.ghost) ? 18 : 0 });
   }
   if (done) {
     ctx.strokeStyle = dark ? 'rgba(201,138,26,0.8)' : (p.ghost ? GHOST : GOLD);
@@ -170,38 +147,18 @@ export function drawPanel(ctx, p, st) {
 }
 
 // ---- reflections ----------------------------------------------------------
-// A true reflection: every letter in the same full ink, just flipped.
-// Letters that look the same flipped are drawn upright so the font's tiny serif quirks don't muddy them.
-function flippedGlyph(ctx, c, x, y, size, flipX, flipY) {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.scale(flipX ? -1 : 1, flipY ? -1 : 1);
-  ctx.font = `bold ${size}px ${SERIF}`;
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillStyle = INK;
-  ctx.fillText(c, 0, 0);
-  ctx.restore();
-}
-
+// A true reflection: every letter in the same full ink, honestly flipped.
 // mode: 'pool' (top-bottom flip, order kept) or 'mirror' (left-right flip, order reversed)
-export function drawReflection(ctx, word, mode) {
+export function drawReflection(ctx, w, mode) {
   ctx.clearRect(0, 0, PW, PH);
   ctx.fillStyle = 'rgba(241,226,194,0.55)';
   ctx.fillRect(30, 140, PW - 60, 380);
-  const ls = lettersOf(word);
+  const ls = lettersOf(w);
   const { xs, size } = slots(ls.length);
   const n = ls.length;
-  const safe = mode === 'pool' ? POOL_SAFE : MIRROR_SAFE;
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ls.forEach((c, i) => {
     const x = mode === 'mirror' ? xs[n - 1 - i] : xs[i];
-    if (safe.has(c)) {
-      ctx.font = `bold ${size}px ${SERIF}`;
-      ctx.fillStyle = INK;
-      ctx.fillText(c, x, 330);
-    } else {
-      flippedGlyph(ctx, c, x, 330, size, mode === 'mirror', mode === 'pool');
-    }
+    glyph(ctx, c, x, 330, size, INK, { flipX: mode === 'mirror', flipY: mode === 'pool' });
   });
 }
 
