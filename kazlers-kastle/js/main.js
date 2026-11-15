@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import { Reflector } from 'three/addons/Reflector.js';
-import { CELL, W, H, ROOMS, OPENINGS, DOORS, PANELS, POOLS, BASINS, MIRRORS, WALL_MIRRORS, START, CAPSTONES } from './levels.js';
+import { CELL, W, H, ROOMS, OPENINGS, DOORS, PANELS, POOLS, BASINS, MIRRORS, WALL_MIRRORS, BASKETS, START, CAPSTONES } from './levels.js';
 import { normalize } from './rules.js';
 import { drawPanel, PW, PH, stoneTexture, floorTexture, woodTexture, grassTexture, doorTexture } from './draw.js';
 import * as sfx from './audio.js';
-import { makeTable, updateTable, makeRibbonProp, makeNest } from './props.js';
+import { makeTable, updateTable, makeRibbonProp, makeNest, makeBasket, makeScrap } from './props.js';
 
 // ---------------------------------------------------------------- save
 const SAVE_KEY = 'kazlers-kastle-v1';
@@ -372,13 +372,14 @@ for (const p of panels) {
     obstacles.push(t.box);
     if (t.lever) for (const h of t.lever.userData.hits) h.userData.table = t;
   }
-  if (d.kind === 'ribbon') {
+  if (d.kind === 'ribbon' || (d.kind === 'nest' && d.twin)) {
     const [x, y] = d.prop;
-    const hx = 0.47, hz = d.faces === 3 ? 0.42 : 0.27;
+    const shown = solved.has(d.id) ? { ...d, torn: [] } : d;
+    const hx = 0.47, hz = d.faces === 3 || d.twin ? 0.42 : 0.27;
     if (d.backTo === 'N') {
       // stands close to a north-wall mirror; one side faces the glass. A railing stops you walking behind it.
       const cz = y * CELL + 0.62 + hz;
-      makeRibbonProp(scene, M, d, x * CELL + 1, cz, d.faces === 3 ? Math.PI : 0);
+      p.prop = makeRibbonProp(scene, M, shown, x * CELL + 1, cz, d.faces === 3 ? Math.PI : 0);
       obstacles.push({ x0: x * CELL + 1 - hx, x1: x * CELL + 1 + hx, z0: y * CELL, z1: cz + hz });
       // a railing along the whole mirror wall keeps you far enough out that the far side can't be seen directly
       const room = roomOf[y][x];
@@ -397,15 +398,30 @@ for (const p of panels) {
         }
       }
     } else {
-      makeRibbonProp(scene, M, d, x * CELL + 1, y * CELL + 1);
+      p.prop = makeRibbonProp(scene, M, d.twin ? { ...shown, faces: 3 } : shown, x * CELL + 1, y * CELL + 1);
+      if (d.footScrap) {
+        // the ghost's torn piece lies at its foot, already matched up
+        const sc = makeScrap(normalize(d.word)[d.torn[0]], 77);
+        sc.position.set(x * CELL + 1 + 0.15, 0.02, y * CELL + 1 + 0.55);
+        sc.rotation.z = 0.4;
+        scene.add(sc);
+      }
       // collide with the prop itself (its foot is the widest part), not the whole 2 m cell
       obstacles.push({ x0: x * CELL + 1 - hx, x1: x * CELL + 1 + hx, z0: y * CELL + 1 - hz, z1: y * CELL + 1 + hz });
     }
   }
 }
+// baskets of scraps; a scrap leaves the basket once its ribbon is mended
+const scrapMeshes = {};
+for (const b of BASKETS) {
+  const [x, y] = b.at;
+  const g = makeBasket(scene, M, x * CELL + 1, y * CELL + 1, b.scraps.map(([ch]) => ch));
+  b.scraps.forEach(([, id], i) => { scrapMeshes[id] = g.children[3 + i]; if (solved.has(id)) g.children[3 + i].visible = false; });
+  obstacles.push({ x0: x * CELL + 1 - 0.45, x1: x * CELL + 1 + 0.45, z0: y * CELL + 1 - 0.45, z1: y * CELL + 1 + 0.45 });
+}
 for (const p of panels) {
   const d = p.def;
-  if (d.kind !== 'nest') continue;
+  if (d.kind !== 'nest' || d.twin) continue;
   const c = cellCenter(...d.at), n = wallDir[d.wall];
   const rot = { N: 0, S: Math.PI, W: Math.PI / 2, E: -Math.PI / 2 }[d.wall];
   makeNest(scene, M, d, new THREE.Vector3(c.x + n[0] * (CELL / 2 - 0.01), 0, c.z + n[1] * (CELL / 2 - 0.01)), rot);
@@ -671,6 +687,8 @@ function submit(p) {
   if (normalize(p.input) === normalize(p.def.answer)) {
     solved.add(p.def.id);
     save();
+    if (p.def.torn && p.prop) p.prop.userData.redraw({ ...p.def, torn: [] });
+    if (scrapMeshes[p.def.id]) scrapMeshes[p.def.id].visible = false;
     sfx.chime();
     burst(p.mesh.position, p.mesh.getWorldDirection(new THREE.Vector3()));
     setFocus(null);

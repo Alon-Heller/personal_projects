@@ -1,7 +1,7 @@
 // Checks that every panel's stated answer follows from its rules,
 // and that the map and doors are consistent. Run: node tools/verify.mjs
 import { derive, normalize } from '../js/rules.js';
-import { PANELS, DOORS, ROOMS, W, H, POOLS, BASINS, MIRRORS, CAPSTONES, WALL_MIRRORS } from '../js/levels.js';
+import { PANELS, DOORS, ROOMS, W, H, POOLS, BASINS, MIRRORS, CAPSTONES, WALL_MIRRORS, BASKETS } from '../js/levels.js';
 
 let bad = 0;
 const fail = (m) => { bad++; console.log('FAIL', m); };
@@ -28,6 +28,13 @@ for (const m of MIRRORS) if (!ids.has(m.panel)) fail(`mirror shows unknown ${m.p
 for (const c of [...POOLS, ...BASINS]) if (!inRoom(c)) fail(`pool/basin ${c} outside rooms`);
 for (const m of WALL_MIRRORS) if (!inRoom(m.at)) fail(`wall mirror ${m.at} not in a room`);
 for (const p of PANELS) if (p.kind === 'nest' && p.chain.filter((c) => c === null).length !== 1) fail(`${p.id}: a nest needs exactly one blank box`);
+// torn ribbons: each torn letter must be a scrap in a basket, and the scraps must allow exactly one way to fill every gap
+{
+  const torn = PANELS.filter((p) => p.torn && !p.ghost);
+  const scraps = BASKETS.flatMap((b) => b.scraps);
+  for (const p of torn) for (const i of p.torn) if (!scraps.some(([ch, id]) => id === p.id && ch === normalize(p.word)[i])) fail(`${p.id}: torn letter ${normalize(p.word)[i]} has no scrap`);
+  if (scraps.length !== torn.reduce((n, p) => n + p.torn.length, 0)) fail('scrap count differs from torn-letter count');
+}
 for (const p of PANELS) if (p.prop && !inRoom(p.prop)) fail(`${p.id}: prop ${p.prop} outside rooms`);
 for (const r of ROOMS) if (r.x[1] >= W - 1 || r.y[1] >= H - 1 || r.x[0] < 1 || r.y[0] < 1) fail(`room ${r.id} touches the edge`);
 

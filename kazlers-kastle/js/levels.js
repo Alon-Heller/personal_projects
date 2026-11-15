@@ -29,6 +29,7 @@ export const ROOMS = [
   // Solar wing (south-east)
   { id: 'solarStair', x: [28, 28], y: [20, 25], light: 'warm' },
   { id: 'plankRoom', x: [27, 39], y: [27, 31], light: 'bright' },
+  { id: 'tailor', x: [22, 25], y: [25, 31], light: 'bright' },
   { id: 'mirrorAlcove', x: [41, 46], y: [27, 31], light: 'bright' },
   { id: 'nestRoom', x: [40, 46], y: [33, 38], light: 'bright' },
   { id: 'workroom', x: [30, 38], y: [33, 38], light: 'bright' },
@@ -55,7 +56,8 @@ export const DOORS = [
   { id: 'boltedWest', at: [1, 32], requires: ['b-spiral', 'b-ford'] },
   { id: 'westSteep', at: [7, 36], requires: ['b-dream', 'b-tardy'] },
   { id: 'steepCellar', at: [17, 36], requires: ['b-lantern', 'b-about', 'b-minute', 'l-scare', 'l-nit', 'l-ate'] },
-  { id: 'plankAlcove', at: [40, 29], requires: ['r-chair', 'r-friends', 'r-parrot'] },
+  { id: 'plankTailor', at: [26, 29], requires: ['r-chair', 'r-friends', 'r-parrot'] },
+  { id: 'plankAlcove', at: [40, 29], requires: ['t-ghost', 't-blow', 't-toast', 't-wick'] },
   { id: 'alcoveNest', at: [43, 32], requires: ['r-schooled', 'r-lowered'] },
   { id: 'nestWork', at: [39, 36], requires: ['n-tree', 'n-foot', 'n-galaxy', 'n-day', 'n-letter'] },
 ];
@@ -65,12 +67,17 @@ export const CAPSTONES = {
   lantern: ['l-scare', 'l-nit', 'l-ate'],
   water: ['w-mat', 'w-soon', 'w-son'],
   banquet: ['b-lantern', 'b-about', 'b-minute'],
-  solar: ['n-hoe', 'n-bid'],
+  solar: ['n-hoe', 'n-bid', 'n-flower', 'n-chapter'],
 };
 
 // Cells with water (a pool under a panel) or a dry basin. Both block walking.
 export const POOLS = [[35, 15], [37, 15], [39, 15]];
 export const BASINS = [[35, 1], [37, 1], [39, 1]];
+// Baskets of torn ribbon scraps: [letter, the panel whose ribbon it was torn from].
+export const BASKETS = [
+  { at: [24, 28], scraps: [['B', 't-blow'], ['W', 't-wick'], ['G', 't-ghost'], ['T', 't-toast']] },
+];
+
 // Mirrors hung flat on a wall: cell `at`, on its `wall` side.
 export const WALL_MIRRORS = [
   { at: [42, 27], wall: 'N' },
@@ -150,6 +157,12 @@ export const PANELS = [
   { id: 'r-chair', at: [32, 27], wall: 'N', kind: 'ribbon', word: 'CHAIR', faces: 2, prop: [32, 29], answer: 'CHAIR', height: 2.6, size: 0.9 },
   { id: 'r-friends', at: [35, 27], wall: 'N', kind: 'ribbon', word: 'FRIENDS', faces: 2, prop: [35, 29], answer: 'FRIENDS', height: 2.6, size: 0.9 },
   { id: 'r-parrot', at: [38, 27], wall: 'N', kind: 'ribbon', word: 'PARROT', faces: 2, up: true, prop: [38, 29], answer: 'PARROT', height: 2.6, size: 0.9 },
+  // the tailor's room: torn ribbons; every missing letter is a scrap in the basket. `torn` = letter positions torn away.
+  { id: 't-tower', at: [22, 26], wall: 'W', kind: 'ribbon', word: 'TOWER', faces: 2, torn: [2], footScrap: true, prop: [23, 26], answer: 'TOWER', ghost: true, height: 2.6, size: 0.9 },
+  { id: 't-ghost', at: [25, 26], wall: 'E', kind: 'ribbon', word: 'GHOST', faces: 3, torn: [0], prop: [24, 26], answer: 'GHOST', height: 2.6, size: 0.9 },
+  { id: 't-blow', at: [22, 28], wall: 'W', kind: 'ribbon', word: 'BLOW', faces: 2, torn: [0], prop: [23, 28], answer: 'BLOW', height: 2.6, size: 0.9 },
+  { id: 't-toast', at: [22, 30], wall: 'W', kind: 'ribbon', word: 'TOAST', faces: 3, up: true, torn: [0], prop: [23, 30], answer: 'TOAST', height: 2.6, size: 0.9 },
+  { id: 't-wick', at: [25, 30], wall: 'E', kind: 'ribbon', word: 'WICK', faces: 2, torn: [0], prop: [24, 30], answer: 'WICK', height: 2.6, size: 0.9 },
   // the mirror alcove: each prop stands close to a wall mirror, one side only visible in the glass
   { id: 'r-schooled', at: [42, 31], wall: 'S', kind: 'ribbon', word: 'SCHOOLED', faces: 2, up: true, prop: [42, 27], backTo: 'N', answer: 'SCHOOLED', height: 2.4, size: 0.9 },
   { id: 'r-lowered', at: [45, 31], wall: 'S', kind: 'ribbon', word: 'LOWERED', faces: 3, prop: [45, 27], backTo: 'N', answer: 'LOWERED', height: 2.4, size: 0.9 },
@@ -163,5 +176,7 @@ export const PANELS = [
   { id: 'n-letter', at: [40, 34], wall: 'W', kind: 'nest', chain: [null, 'WORD', 'SENTENCE'], word: 'LETTER', answer: 'LETTER', height: 2.75, size: 0.85 },
   // workroom (capstone): the nest, then a rule you already know
   { id: 'n-hoe', at: [32, 38], wall: 'S', kind: 'nest', chain: ['KITCHEN', null, 'VILLAGE'], word: 'HOUSE', sigils: ['pool'], answer: 'HOE', height: 2.75, size: 0.85 },
+  { id: 'n-flower', at: [32, 33], wall: 'N', kind: 'nest', twin: true, chain: ['PETAL', null, 'GARDEN'], prop: [32, 35], word: 'FLOWER', answer: 'FLOWER', height: 2.75, size: 0.85 },
+  { id: 'n-chapter', at: [36, 33], wall: 'N', kind: 'nest', twin: true, chain: ['PAGE', null, 'BOOK'], prop: [36, 35], word: 'CHAPTER', answer: 'CHAPTER', height: 2.75, size: 0.85 },
   { id: 'n-bid', at: [36, 38], wall: 'S', kind: 'nest', chain: ['FEATHER', null, 'FLOCK'], word: 'BIRD', sigils: ['pool'], answer: 'BID', height: 2.75, size: 0.85 },
 ];

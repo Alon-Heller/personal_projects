@@ -110,7 +110,7 @@ export function drawPanel(ctx, p, st) {
   if (st.wrong) { ctx.lineWidth = 18; ctx.strokeStyle = '#b3261e'; ctx.strokeRect(9, 9, PW - 18, PH - 18); }
 
   // left to right is the order the rules apply: the panel's own kind first, then anything done to its result
-  const kinds = [p.kind === 'ribbon' ? 'ribbon' : null, p.kind === 'nest' ? 'nest' : null, p.frame, ...(p.sigils || [])].filter(Boolean);
+  const kinds = [p.kind === 'ribbon' || p.twin ? 'ribbon' : null, p.kind === 'nest' ? 'nest' : null, p.frame, ...(p.sigils || [])].filter(Boolean);
   if (kinds.length) sigilRow(ctx, kinds, dark ? GLOW : INK, dark);
 
   const cy = kinds.length ? 330 : 290;

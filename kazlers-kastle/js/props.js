@@ -203,9 +203,28 @@ export function updateTable(t, dt, dark) {
 const FW = 256, FH = 768;            // canvas per face
 const FACE_W = 0.62, FACE_H = 1.86;  // metres
 
+// Which ribbons wind round a prop. One ribbon normally; a "twin" nest prop carries two, interleaved.
+export const RIBBON_COLORS = ['#8a2f2a', '#2c4a8a'];
+function ribbonsOf(def) {
+  if (def.kind === 'nest') return [def.chain[0], def.chain[2]].map((w, r) => ({ word: lettersOf(w), color: RIBBON_COLORS[r], torn: new Set() }));
+  return [{ word: lettersOf(def.word), color: RIBBON_COLORS[0], torn: new Set(def.torn || []) }];
+}
+
+function rng(seed) { let s = seed % 2147483647 || 7; return () => ((s = (s * 16807) % 2147483647) / 2147483647); }
+// a ragged outline: where a piece of ribbon was torn away (and the matching scrap)
+export function ragged(seed, hw, hh) {
+  const r = rng(seed), pts = [];
+  for (let i = 0; i <= 6; i++) pts.push([-hw + (i / 6) * 2 * hw, -hh + (r() - 0.5) * 12]);
+  for (let i = 0; i <= 4; i++) pts.push([hw + (r() - 0.5) * 14, -hh + (i / 4) * 2 * hh]);
+  for (let i = 6; i >= 0; i--) pts.push([-hw + (i / 6) * 2 * hw, hh + (r() - 0.5) * 12]);
+  for (let i = 4; i >= 0; i--) pts.push([-hw + (r() - 0.5) * 14, -hh + (i / 4) * 2 * hh]);
+  return pts;
+}
+
 function drawFace(ctx, def, face) {
-  const word = lettersOf(def.word);
-  const n = word.length, faces = def.faces;
+  const faces = def.faces;
+  const ribbons = ribbonsOf(def);
+  const R = ribbons.length;
   ctx.fillStyle = '#e9dcc0'; ctx.fillRect(0, 0, FW, FH);
   // silk weave
   ctx.globalAlpha = 0.08; ctx.fillStyle = '#7a5a3a';
@@ -215,32 +234,84 @@ function drawFace(ctx, def, face) {
   ctx.fillStyle = 'rgba(176,70,80,0.18)';
   for (let i = 0; i < 6; i++) { ctx.beginPath(); ctx.arc((i * 97 + face * 53) % FW, (i * 211 + face * 89) % FH, 10, 0, Math.PI * 2); ctx.fill(); }
   const top = 60, bottom = FH - 60;
-  const dh = Math.min(150, (bottom - top) / n);
-  const yOf = (k) => (def.up ? bottom - dh / 2 - k * dh : top + dh / 2 + k * dh);
-  for (let k = 0; k < n; k++) {
-    if (k % faces !== face) continue;
-    const y = yOf(k);
-    const dy = (def.up ? -1 : 1) * (dh * faces) / 2 / faces; // slope: one step per face
-    // band
-    ctx.save();
-    ctx.fillStyle = '#8a2f2a';
-    ctx.beginPath();
-    ctx.moveTo(0, y - dy - 30); ctx.lineTo(FW, y + dy - 30); ctx.lineTo(FW, y + dy + 30); ctx.lineTo(0, y - dy + 30);
-    ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = '#d29a2e'; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(0, y - dy - 30); ctx.lineTo(FW, y + dy - 30); ctx.moveTo(0, y - dy + 30); ctx.lineTo(FW, y + dy + 30); ctx.stroke();
-    ctx.restore();
-    glyph(ctx, word[k], FW / 2, y, 50, '#f6ead0');
-    if (k === 0) {
-      // the tassel hangs where the ribbon begins
-      const tx = 18, ty = y - dy;
-      ctx.strokeStyle = '#d29a2e'; ctx.lineWidth = 4;
-      ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(tx, ty + 46); ctx.stroke();
-      ctx.fillStyle = '#d29a2e';
-      ctx.beginPath(); ctx.moveTo(tx - 12, ty + 46); ctx.lineTo(tx + 12, ty + 46); ctx.lineTo(tx + 6, ty + 96); ctx.lineTo(tx - 6, ty + 96); ctx.closePath(); ctx.fill();
-      ctx.beginPath(); ctx.arc(tx, ty + 44, 9, 0, Math.PI * 2); ctx.fill();
-    }
-  }
+  const slots = Math.max(...ribbons.map((rb) => rb.word.length)) * R;
+  const dh = Math.min(150, (bottom - top) / slots);
+  const half = Math.min(30, dh * 0.42);
+  ribbons.forEach((rb, r) => {
+    const yOf = (k) => { const sl = k * R + r; return def.up ? bottom - dh / 2 - sl * dh : top + dh / 2 + sl * dh; };
+    const dy = (def.up ? -1 : 1) * (R * dh) / 2; // the band drops (or climbs) one letter-step per face
+    rb.word.forEach((ch, k) => {
+      if ((k + r) % faces !== face) return;
+      const y = yOf(k);
+      ctx.save();
+      ctx.fillStyle = rb.color;
+      ctx.beginPath();
+      ctx.moveTo(0, y - dy - half); ctx.lineTo(FW, y + dy - half); ctx.lineTo(FW, y + dy + half); ctx.lineTo(0, y - dy + half);
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#d29a2e'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(0, y - dy - half); ctx.lineTo(FW, y + dy - half); ctx.moveTo(0, y - dy + half); ctx.lineTo(FW, y + dy + half); ctx.stroke();
+      if (rb.torn.has(k)) {
+        // torn away: the bare silk shows through a ragged hole, with loose threads at the edge
+        const pts = ragged(1000 + k * 37 + face, 54, half + 6);
+        ctx.beginPath();
+        pts.forEach(([px, py], i) => (i ? ctx.lineTo(FW / 2 + px, y + py) : ctx.moveTo(FW / 2 + px, y + py)));
+        ctx.closePath();
+        ctx.fillStyle = '#e9dcc0'; ctx.fill();
+        ctx.strokeStyle = rb.color; ctx.lineWidth = 2; ctx.setLineDash([3, 4]); ctx.stroke(); ctx.setLineDash([]);
+      } else {
+        glyph(ctx, ch, FW / 2, y, Math.min(50, half * 1.7), '#f6ead0');
+      }
+      if (k === 0) {
+        const tx = 18, ty = y - dy;
+        ctx.strokeStyle = '#d29a2e'; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(tx, ty + 46); ctx.stroke();
+        ctx.fillStyle = '#d29a2e';
+        ctx.beginPath(); ctx.moveTo(tx - 12, ty + 46); ctx.lineTo(tx + 12, ty + 46); ctx.lineTo(tx + 6, ty + 96); ctx.lineTo(tx - 6, ty + 96); ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.arc(tx, ty + 44, 9, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.restore();
+    });
+  });
+}
+
+// A loose scrap of torn ribbon carrying one letter (lies in a basket or on the floor).
+export function makeScrap(letter, seed) {
+  const c = document.createElement('canvas'); c.width = 160; c.height = 110;
+  const g = c.getContext('2d');
+  const pts = ragged(seed, 66, 40);
+  g.beginPath();
+  pts.forEach(([px, py], i) => (i ? g.lineTo(80 + px, 55 + py) : g.moveTo(80 + px, 55 + py)));
+  g.closePath();
+  g.fillStyle = RIBBON_COLORS[0]; g.fill();
+  g.strokeStyle = '#d29a2e'; g.lineWidth = 3; g.stroke();
+  glyph(g, letter, 80, 55, 56, '#f6ead0');
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.235), new THREE.MeshLambertMaterial({ map: t, transparent: true, alphaTest: 0.5, side: THREE.DoubleSide }));
+  m.rotation.x = -Math.PI / 2;
+  return m;
+}
+
+export function makeBasket(scene, M, x, z, letters) {
+  const g = new THREE.Group();
+  const wicker = new THREE.MeshLambertMaterial({ color: '#b08a4f' });
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.34, 0.32, 18, 1, true), wicker);
+  body.position.y = 0.16;
+  const floor = new THREE.Mesh(new THREE.CircleGeometry(0.34, 18).rotateX(-Math.PI / 2), wicker);
+  floor.position.y = 0.2;
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.03, 6, 24), new THREE.MeshLambertMaterial({ color: '#8a6a38' }));
+  rim.rotation.x = Math.PI / 2; rim.position.y = 0.32;
+  g.add(body, floor, rim);
+  // scraps heaped on top, a little jumbled
+  letters.forEach((ch, i) => {
+    const s = makeScrap(ch, 500 + i * 13);
+    const a = (i / letters.length) * Math.PI * 2;
+    s.position.set(Math.cos(a) * 0.14, 0.22 + i * 0.012, Math.sin(a) * 0.14);
+    s.rotation.z = a + 0.6;
+    g.add(s);
+  });
+  g.position.set(x, 0, z);
+  scene.add(g);
+  return g;
 }
 
 export function makeRibbonProp(scene, M, def, cx, cz, turn = 0) {
@@ -248,10 +319,12 @@ export function makeRibbonProp(scene, M, def, cx, cz, turn = 0) {
   const faces = def.faces;
   // apothem: distance from centre to each face
   const apo = faces === 2 ? 0.05 : FACE_W / (2 * Math.sqrt(3));
+  const faceTex = [];
   for (let f = 0; f < faces; f++) {
     const cvs = document.createElement('canvas'); cvs.width = FW; cvs.height = FH;
     drawFace(cvs.getContext('2d'), def, f);
     const tex = new THREE.CanvasTexture(cvs); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+    faceTex.push({ ctx: cvs.getContext('2d'), tex });
     const plane = new THREE.Mesh(new THREE.PlaneGeometry(FACE_W, FACE_H), new THREE.MeshLambertMaterial({ map: tex }));
     const a = (f * 2 * Math.PI) / faces;
     plane.rotation.y = a;
@@ -276,6 +349,8 @@ export function makeRibbonProp(scene, M, def, cx, cz, turn = 0) {
   g.add(cap, base, foot);
   g.position.set(cx, 0, cz);
   g.rotation.y = turn;
+  // redraw (e.g. a torn ribbon mended once solved)
+  g.userData.redraw = (d) => faceTex.forEach(({ ctx, tex }, f) => { drawFace(ctx, d, f); tex.needsUpdate = true; });
   scene.add(g);
   return g;
 }
