@@ -83,9 +83,22 @@
     setTimeout(() => { if (!document.body.classList.contains('ready')) show('The game did not finish starting.'); }, 8000);
   })();
 </script>
-<script type="importmap">
-{ "imports": { "three": "./lib/three.module.min.js", "three/addons/": "./lib/addons/" } }
+<script>
+  // Load the game's own modules with a fresh version tag on every visit, so a browser can never
+  // mix a cached old file with a new one after an update. Three.js itself never changes, so it stays cached.
+  (function () {
+    const v = Date.now();
+    const imports = { three: './lib/three.module.min.js', 'three/addons/': './lib/addons/' };
+    for (const m of ['main', 'rules', 'levels', 'draw', 'glyphs', 'props', 'audio']) imports[`./js/${m}.js`] = `./js/${m}.js?v=${v}`;
+    const map = document.createElement('script');
+    map.type = 'importmap';
+    map.textContent = JSON.stringify({ imports });
+    document.head.appendChild(map);
+    const main = document.createElement('script');
+    main.type = 'module';
+    main.src = `./js/main.js?v=${v}`;
+    document.body.appendChild(main);
+  })();
 </script>
-<script type="module" src="./js/main.js"></script>
 </body>
 </html>
