@@ -20,6 +20,7 @@ Desktop only: keyboard and mouse.
 | Click or E | write on the panel you're looking at |
 | Enter / Tab | submit / step back |
 | F or right-click | lantern |
+| H | flash arrows toward the nearest puzzle you can reach |
 | Esc | pause |
 
 Progress saves in your browser. "Start over" on the pause screen wipes it.

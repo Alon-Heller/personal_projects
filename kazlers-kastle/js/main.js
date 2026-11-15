@@ -575,6 +575,7 @@ document.addEventListener('keydown', (e) => {
   }
   keys.add(e.code);
   if (e.code === 'KeyF') toggleLantern();
+  if (e.code === 'KeyH') showWay();
   if (e.code === 'KeyE' && hoverLever) pullLever(hoverLever);
   else if (e.code === 'KeyE' && hover && canWrite(hover)) setFocus(hover);
 });
@@ -675,6 +676,73 @@ document.getElementById('keep').addEventListener('click', () => {
   canvas.requestPointerLock();
 });
 let night = solved.has('final') ? 1 : 0;
+
+// ---------------------------------------------------------------- way-finding (H)
+// Walk the grid (open doors only) from the player to the nearest reachable unsolved panel,
+// then flash a short trail of arrows on the floor along that route.
+const WAY_TIME = 3.2, WAY_N = 6;
+const arrowShape = new THREE.Shape();
+arrowShape.moveTo(0, 0.55); arrowShape.lineTo(0.42, 0.05); arrowShape.lineTo(0.16, 0.05); arrowShape.lineTo(0.16, -0.45);
+arrowShape.lineTo(-0.16, -0.45); arrowShape.lineTo(-0.16, 0.05); arrowShape.lineTo(-0.42, 0.05); arrowShape.closePath();
+const arrowGeo = new THREE.ShapeGeometry(arrowShape).rotateX(-Math.PI / 2);
+const wayArrows = Array.from({ length: WAY_N }, (_, i) => {
+  const a = new THREE.Mesh(arrowGeo, new THREE.MeshBasicMaterial({ color: '#ffd27a', transparent: true, opacity: 0, depthWrite: false, toneMapped: false }));
+  a.visible = false; a.userData.i = i;
+  scene.add(a);
+  return a;
+});
+const walkable = (x, y) => {
+  const v = grid[y]?.[x];
+  if (v === FLOOR) return true;
+  if (v === DOOR) return doors.find((d) => d.at[0] === x && d.at[1] === y).open;
+  return false;
+};
+function showWay() {
+  const sx = Math.floor(player.x / CELL), sy = Math.floor(player.z / CELL);
+  // goal cells: where you stand to work on each unsolved panel
+  const goals = new Map();
+  for (const p of panels) {
+    if (p.def.ghost || solved.has(p.def.id)) continue;
+    const [x, y] = p.def.at;
+    for (const [dx, dy] of [[0, 0], [0, 1], [0, -1], [1, 0], [-1, 0]]) if (walkable(x + dx, y + dy)) goals.set(`${x + dx},${y + dy}`, p);
+  }
+  const prev = new Map([[`${sx},${sy}`, null]]);
+  const queue = [[sx, sy]];
+  let end = null;
+  while (queue.length) {
+    const [x, y] = queue.shift();
+    if (goals.has(`${x},${y}`)) { end = [x, y]; break; }
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = x + dx, ny = y + dy, k = `${nx},${ny}`;
+      if (prev.has(k) || !walkable(nx, ny)) continue;
+      prev.set(k, [x, y]);
+      queue.push([nx, ny]);
+    }
+  }
+  if (!end) { sfx.fizzle(); return; }
+  const path = [];
+  for (let c = end; c; c = prev.get(`${c[0]},${c[1]}`)) path.unshift(c);
+  // points along the route: the player, then cell centres; the last arrow points at the panel itself
+  const target = goals.get(`${end[0]},${end[1]}`).mesh.position;
+  const pts = [new THREE.Vector3(player.x, 0, player.z), ...path.slice(1).map(([x, y]) => cellCenter(x, y)), new THREE.Vector3(target.x, 0, target.z)];
+  // place arrows every ~1.6 m along that polyline
+  let placed = 0, dist = 1.2;
+  for (let i = 0; i < pts.length - 1 && placed < WAY_N; i++) {
+    const a = pts[i], b = pts[i + 1], seg = a.distanceTo(b);
+    while (dist <= seg && placed < WAY_N) {
+      const p = a.clone().lerp(b, dist / seg);
+      const arrow = wayArrows[placed];
+      arrow.position.set(p.x, 0.03, p.z);
+      arrow.rotation.y = Math.atan2(-(b.x - a.x), -(b.z - a.z));
+      arrow.userData.life = WAY_TIME; arrow.userData.delay = placed * 0.12;
+      arrow.visible = true;
+      placed++; dist += 1.6;
+    }
+    dist -= seg;
+  }
+  for (let i = placed; i < WAY_N; i++) wayArrows[i].visible = false;
+  sfx.click();
+}
 
 // ---------------------------------------------------------------- loop
 const ray = new THREE.Raycaster();
@@ -794,6 +862,16 @@ function frame() {
     }
   }
 
+  // way-finding arrows
+  for (const a of wayArrows) {
+    if (!a.visible) continue;
+    a.userData.life -= dt;
+    const life = a.userData.life, delay = a.userData.delay;
+    const t = WAY_TIME - life - delay;
+    a.material.opacity = t < 0 ? 0 : Math.max(0, Math.min(1, t * 4, life * 1.5)) * (0.65 + 0.35 * Math.sin(now * 0.012 - a.userData.i));
+    if (life <= 0) a.visible = false;
+  }
+
   // sparkles
   for (let i = sparkles.length - 1; i >= 0; i--) {
     const s = sparkles[i];
@@ -814,5 +892,5 @@ function frame() {
 requestAnimationFrame(frame);
 
 // for automated checks
-window.__kastle = { player, panels, doors, solved, tables, pullLever, get region() { return region?.id; }, get lanternOn() { return lanternOn; }, toggleLantern, submit, setFocus, camera };
+window.__kastle = { showWay, player, panels, doors, solved, tables, pullLever, get region() { return region?.id; }, get lanternOn() { return lanternOn; }, toggleLantern, submit, setFocus, camera };
 document.body.classList.add('ready');
