@@ -1,6 +1,6 @@
 // Checks that every panel's stated answer follows from its rules,
 // and that the map and doors are consistent. Run: node tools/verify.mjs
-import { derive, normalize, cisternRead, isSplit, layoutPond, rippleRead } from '../js/rules.js';
+import { derive, normalize, cisternRead, isSplit, layoutPond, rippleRead, WORD_RULES, OPEN_RULES } from '../js/rules.js';
 import { PANELS, DOORS, ROOMS, W, H, POOLS, BASINS, MIRRORS, CAPSTONES, WALL_MIRRORS, BASKETS } from '../js/levels.js';
 
 let bad = 0;
@@ -49,10 +49,14 @@ for (const p of PANELS) if (p.decoy) {
   for (const q of pads) if (Math.hypot(q.x, q.z) > 2.0) fail(`${p.id}: pad ${q.ch} outside the pond`);
   if (p.pre === 'ripple' && rippleRead(pads) !== normalize(p.order)) fail(`${p.id}: bad ripple`);
 }
-for (const p of PANELS) if (p.kind === 'initials') {
-  const got = p.refs.map((id) => normalize(PANELS.find((q) => q.id === id)?.answer || '?')[0]).join('');
-  if (got !== normalize(p.answer)) fail(`${p.id}: initials give ${got}`);
-  for (const id of p.refs) if (!PANELS.find((q) => q.id === id)?.crest) fail(`${p.id}: ${id} has no crest`);
+// chains: mechanical steps must follow from the previous word; open steps must be a known open rule
+for (const p of PANELS) if (p.kind === 'chain') {
+  let w = normalize(p.clue);
+  for (const [rule, out] of p.steps) {
+    if (WORD_RULES[rule]) { if (WORD_RULES[rule](w) !== out) fail(`${p.id}: ${rule}(${w}) is not ${out}`); }
+    else if (!OPEN_RULES.includes(rule)) fail(`${p.id}: unknown rule ${rule}`);
+    w = out;
+  }
 }
 for (const p of PANELS) if (p.prop && !inRoom(p.prop)) fail(`${p.id}: prop ${p.prop} outside rooms`);
 for (const r of ROOMS) if (r.x[1] >= W - 1 || r.y[1] >= H - 1 || r.x[0] < 1 || r.y[0] < 1) fail(`room ${r.id} touches the edge`);

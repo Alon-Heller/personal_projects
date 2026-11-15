@@ -87,32 +87,18 @@ function sigil(ctx, kind, cx, cy, color, glow) {
     ctx.lineWidth = 4;
     for (const r of [12, 26, 40]) { ctx.beginPath(); ctx.ellipse(cx, cy, r, r * 0.55, 0, 0, Math.PI * 2); ctx.stroke(); }
     ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.fill();
-  } else if (kind === 'echo') {
-    // sounds alike: two mouths of sound facing each other
-    ctx.lineWidth = 4;
-    for (const r of [10, 22, 34]) {
-      ctx.beginPath(); ctx.arc(cx - 40, cy, r, -0.6, 0.6); ctx.stroke();
-      ctx.beginPath(); ctx.arc(cx + 40, cy, r, Math.PI - 0.6, Math.PI + 0.6); ctx.stroke();
-    }
-  } else if (kind === 'turn' || kind === 'turn-l') {
-    // a block of letters with an arrow carrying the end one round to the other end
-    const s = kind === 'turn' ? 1 : -1;
-    for (let i = 0; i < 4; i++) ctx.fillRect(cx - 40 + i * 21, cy + 6, 15, 22);
-    ctx.lineWidth = 5; ctx.beginPath();
-    ctx.moveTo(cx - s * 32, cy); ctx.bezierCurveTo(cx - s * 30, cy - 46, cx + s * 30, cy - 46, cx + s * 32, cy - 4); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cx + s * 32, cy - 2); ctx.lineTo(cx + s * 22, cy - 14); ctx.lineTo(cx + s * 40, cy - 14); ctx.closePath(); ctx.fill();
-  } else if (kind === 'back') {
-    // an arrow running right to left over a line of letters
-    for (let i = 0; i < 4; i++) ctx.fillRect(cx - 40 + i * 21, cy + 6, 15, 22);
-    ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(cx + 42, cy - 16); ctx.lineTo(cx - 34, cy - 16); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cx - 44, cy - 16); ctx.lineTo(cx - 30, cy - 26); ctx.lineTo(cx - 30, cy - 6); ctx.closePath(); ctx.fill();
-  } else if (kind === 'comb') {
-    // a comb: every other tooth
-    ctx.fillRect(cx - 44, cy - 26, 88, 12);
-    for (let i = 0; i < 9; i++) ctx.fillRect(cx - 42 + i * 10, cy - 14, 5, i % 2 ? 14 : 36);
-  } else if (kind === 'initials') {
-    // short lines, each with a bold first mark
-    for (let i = 0; i < 3; i++) { ctx.fillRect(cx - 36, cy - 30 + i * 22, 14, 14); ctx.fillRect(cx - 16, cy - 26 + i * 22, 50, 6); }
+  } else if (kind === 'knot') {
+    ctx.lineWidth = 6; ctx.beginPath(); ctx.ellipse(cx - 16, cy, 16, 24, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(cx + 16, cy, 16, 24, 0, 0, Math.PI * 2); ctx.stroke();
+  } else if (kind === 'tri') {
+    ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(cx, cy - 32); ctx.lineTo(cx + 34, cy + 26); ctx.lineTo(cx - 34, cy + 26); ctx.closePath(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy + 8, 7, 0, Math.PI * 2); ctx.fill();
+  } else if (kind === 'hour') {
+    ctx.beginPath(); ctx.moveTo(cx - 26, cy - 32); ctx.lineTo(cx + 26, cy - 32); ctx.lineTo(cx, cy); ctx.lineTo(cx + 26, cy + 32); ctx.lineTo(cx - 26, cy + 32); ctx.lineTo(cx, cy); ctx.closePath(); ctx.fill();
+  } else if (kind === 'arch') {
+    ctx.lineWidth = 9; ctx.beginPath(); ctx.moveTo(cx - 28, cy + 30); ctx.lineTo(cx - 28, cy - 4); ctx.arc(cx, cy - 4, 28, Math.PI, 0); ctx.lineTo(cx + 28, cy + 30); ctx.stroke();
+  } else if (kind === 'bar') {
+    ctx.fillRect(cx - 34, cy - 6, 68, 12); ctx.fillRect(cx - 34, cy - 30, 12, 60); ctx.fillRect(cx + 22, cy - 30, 12, 60);
   } else if (kind === 'seesaw') {
     ctx.beginPath(); ctx.moveTo(cx, cy + 4); ctx.lineTo(cx - 14, cy + 30); ctx.lineTo(cx + 14, cy + 30); ctx.closePath(); ctx.fill();
     ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(cx - 44, cy + 14); ctx.lineTo(cx + 44, cy - 6); ctx.stroke();
@@ -155,7 +141,10 @@ export function drawPanel(ctx, p, st) {
 
   // left to right is the order the rules apply: the panel's own kind first, then anything done to its result
   if (p.crest) crestMark(ctx, p.crest, 70, 70, dark);
-  const kinds = [p.kind === 'ribbon' || p.twin ? 'ribbon' : null, p.kind === 'nest' ? 'nest' : null, p.pre || null, p.kind === 'cistern' || p.kind === 'split' ? 'cistern' : null, p.kind === 'echo' ? 'echo' : null, p.kind === 'initials' ? 'initials' : null, p.kind === 'seesaw' ? 'seesaw' : null, p.frame, ...(p.sigils || [])].filter(Boolean);
+  const RUNE = { back: 'tri', syn: 'hour', kind: 'arch', echo: 'knot', opp: 'bar' };
+  const chainRunes = p.kind === 'chain' ? p.steps.map(([r]) => RUNE[r]) : [];
+  const kinds0 = [p.kind === 'ribbon' || p.twin ? 'ribbon' : null, p.kind === 'nest' ? 'nest' : null, p.pre || null, p.kind === 'cistern' || p.kind === 'split' ? 'cistern' : null,  p.kind === 'seesaw' ? 'seesaw' : null, p.frame, ...(p.sigils || [])].filter(Boolean);
+  const kinds = [...kinds0.map((k) => RUNE[k] || k), ...chainRunes];
   if (kinds.length) sigilRow(ctx, kinds, dark ? GLOW : INK, dark);
 
   const cy = kinds.length ? 330 : 290;
@@ -172,8 +161,6 @@ export function drawPanel(ctx, p, st) {
     ctx.strokeRect(x, cy - box / 2, box, box);
     x += box + gap;
     word(ctx, b, x + wb / 2, cy, h, INK);
-  } else if (p.kind === 'initials') {
-    p.refs.forEach((id, i) => crestMark(ctx, p.crestOf(id), PW / 2 + (i - 1) * 130, cy, dark, 1.4));
   } else if (p.kind !== 'ribbon' && p.kind !== 'nest') {
     const ls = lettersOf(p.clue || '');
     const { xs, size } = slots(ls.length);

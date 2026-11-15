@@ -25,7 +25,8 @@ export const turnRead = (w) => letters(w).reverse().filter((c) => TURN_SAFE.has(
 
 // Apply a panel's rules in order and return the word the panel wants.
 export function derive(panel) {
-  if (panel.kind === 'bridge' || panel.kind === 'plain' || panel.kind === 'split' || panel.kind === 'initials') return panel.answer;
+  if (panel.kind === 'bridge' || panel.kind === 'plain' || panel.kind === 'split') return panel.answer;
+  if (panel.kind === 'chain') return panel.steps.at(-1)[1];
   if (panel.kind === 'ripple') return rippleRead(layoutPond(panel.decoy, panel.order));
   let w = letters(['nest', 'seesaw', 'ribbon', 'echo'].includes(panel.kind) ? panel.word : panel.clue).join('');
   if (panel.kind === 'cistern') w = cisternRead(w);
@@ -103,9 +104,9 @@ export function rippleRead(pads) {
 }
 
 // Sign-only word rules. Each takes a word and gives a word; they chain in sign order.
+// (Only rules with exactly one outcome live here; open rules like synonyms are checked by hand.)
 export const WORD_RULES = {
-  turn: (w) => w.slice(1) + w[0],              // the first letter moves to the end
-  'turn-l': (w) => w.slice(-1) + w.slice(0, -1), // the last letter moves to the front
-  back: (w) => [...w].reverse().join(''),        // the word read backwards
-  comb: (w) => [...w].filter((_, i) => i % 2 === 0).join(''), // every other letter, from the first
+  back: (w) => [...w].reverse().join(''), // the word read backwards
 };
+// Open rules: meaning or sound. Each sign is an arbitrary rune that does not depict the rule.
+export const OPEN_RULES = ['syn', 'kind', 'echo', 'opp'];
