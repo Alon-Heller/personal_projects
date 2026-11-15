@@ -364,7 +364,7 @@ for (const p of panels) {
     t.room = p.room;
     tables.push(t);
     obstacles.push(t.box);
-    if (t.lever) { t.lever.userData.hit.userData.table = t; }
+    if (t.lever) for (const h of t.lever.userData.hits) h.userData.table = t;
   }
   if (d.kind === 'ribbon') {
     const [x, y] = d.prop;
@@ -372,7 +372,7 @@ for (const p of panels) {
     grid[y][x] = PROP;
   }
 }
-const leverHits = tables.filter((t) => t.lever).map((t) => t.lever.userData.hit);
+const leverHits = tables.filter((t) => t.lever).flatMap((t) => t.lever.userData.hits);
 
 // ---------------------------------------------------------------- real reflections
 // Every pool and mirror renders the scene again from a mirrored camera.

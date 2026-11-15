@@ -166,10 +166,14 @@ export function makeTable(scene, M, def, cx, wallZ) {
     lever.add(base, pivot);
     lever.userData.pivot = pivot;
     lever.position.set(cx + TABLE_W / 2 + 0.18, TABLE_Y - 0.1, cz);
-    const hit = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.9, 0.35), new THREE.MeshBasicMaterial({ visible: false }));
-    hit.position.y = 0.35;
-    lever.add(hit);
-    lever.userData.hit = hit;
+    // invisible click target: rides on the handle (so it leans with it) and is a little larger than it
+    const hidden = new THREE.MeshBasicMaterial({ visible: false });
+    const hit = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.8, 0.3), hidden);
+    hit.position.y = 0.36;
+    pivot.add(hit);
+    const baseHit = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.3), hidden);
+    lever.add(baseHit);
+    lever.userData.hits = [hit, baseHit];
     scene.add(lever);
   }
 
