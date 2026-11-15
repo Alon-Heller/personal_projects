@@ -60,6 +60,12 @@ function sigil(ctx, kind, cx, cy, color, glow) {
       }
       ctx.stroke();
     }
+  } else if (kind === 'tilt') {
+    // a level plank with a plumb line: "a table rule; the table shows how"
+    ctx.fillRect(cx - 46, cy + 14, 92, 9);
+    ctx.beginPath(); ctx.moveTo(cx - 30, cy - 34); ctx.lineTo(cx + 30, cy - 34); ctx.stroke();
+    ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(cx, cy - 34); ctx.lineTo(cx, cy - 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx - 8, cy - 4); ctx.lineTo(cx + 8, cy - 4); ctx.lineTo(cx, cy + 10); ctx.closePath(); ctx.fill();
   } else if (kind === 'tilt-e' || kind === 'tilt-w') {
     const s = kind === 'tilt-e' ? 1 : -1;
     ctx.save(); ctx.translate(cx, cy + 10); ctx.rotate(s * 0.22);

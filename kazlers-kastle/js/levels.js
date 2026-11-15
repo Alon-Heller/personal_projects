@@ -123,17 +123,17 @@ export const PANELS = [
   { id: 'final', at: [24, 1], wall: 'N', kind: 'ink', frame: 'moon', sigils: ['pool'], clue: 'WHISKERS', glow: mask('.**.****'), answer: 'HIKE', final: true },
 
   // Banquet wing: keyboard tables. `tilt` = keys slid (+ east). `table`: lever | bolted | fixed
-  { id: 'b-rust', at: [9, 27], wall: 'N', kind: 'tilt', clue: 'RUST', tilt: 1, table: 'lever', answer: 'TIDY', ghost: true, height: 2.15 },
-  { id: 'b-views', at: [12, 27], wall: 'N', kind: 'tilt', clue: 'VIEWS', tilt: 1, table: 'lever', answer: 'BORED', height: 2.15 },
-  { id: 'b-super', at: [15, 27], wall: 'N', kind: 'tilt', clue: 'SUPER', tilt: 1, table: 'lever', answer: 'DIRT', height: 2.15 },
-  { id: 'b-vital', at: [18, 27], wall: 'N', kind: 'tilt', clue: 'VITAL', tilt: 1, table: 'lever', answer: 'BOYS', height: 2.15 },
+  { id: 'b-rust', at: [9, 27], wall: 'N', kind: 'tilt', sigils: ['tilt'], clue: 'RUST', tilt: 1, table: 'lever', answer: 'TIDY', ghost: true, height: 2.15 },
+  { id: 'b-views', at: [12, 27], wall: 'N', kind: 'tilt', sigils: ['tilt'], clue: 'VIEWS', tilt: 1, table: 'lever', answer: 'BORED', height: 2.15 },
+  { id: 'b-super', at: [15, 27], wall: 'N', kind: 'tilt', sigils: ['tilt'], clue: 'SUPER', tilt: 1, table: 'lever', answer: 'DIRT', height: 2.15 },
+  { id: 'b-vital', at: [18, 27], wall: 'N', kind: 'tilt', sigils: ['tilt'], clue: 'VITAL', tilt: 1, table: 'lever', answer: 'BOYS', height: 2.15 },
   { id: 'b-spiral', at: [2, 27], wall: 'N', kind: 'tilt', clue: 'SPIRAL', tilt: 1, table: 'bolted', sigils: ['tilt-e'], answer: 'DOTS', height: 2.15 },
   { id: 'b-ford', at: [5, 27], wall: 'N', kind: 'tilt', clue: 'DIES', tilt: 1, table: 'bolted', sigils: ['tilt-e'], answer: 'FORD', height: 2.15 },
-  { id: 'b-dream', at: [3, 33], wall: 'N', kind: 'tilt', clue: 'DREAM', tilt: -1, table: 'fixed', answer: 'SEWN', height: 2.15 },
-  { id: 'b-tardy', at: [5, 33], wall: 'N', kind: 'tilt', clue: 'TARDY', tilt: -1, table: 'fixed', answer: 'REST', height: 2.15 },
-  { id: 'b-lantern', at: [9, 33], wall: 'N', kind: 'tilt', clue: 'LANTERN', tilt: 2, table: 'fixed', answer: 'DUTY', height: 2.15 },
-  { id: 'b-about', at: [12, 33], wall: 'N', kind: 'tilt', clue: 'ABOUT', tilt: -2, table: 'fixed', answer: 'CUTE', height: 2.15 },
-  { id: 'b-minute', at: [15, 33], wall: 'N', kind: 'tilt', clue: 'MINUTE', tilt: 2, table: 'fixed', answer: 'POUT', height: 2.15 },
+  { id: 'b-dream', at: [3, 33], wall: 'N', kind: 'tilt', sigils: ['tilt'], clue: 'DREAM', tilt: -1, table: 'fixed', answer: 'SEWN', height: 2.15 },
+  { id: 'b-tardy', at: [5, 33], wall: 'N', kind: 'tilt', sigils: ['tilt'], clue: 'TARDY', tilt: -1, table: 'fixed', answer: 'REST', height: 2.15 },
+  { id: 'b-lantern', at: [9, 33], wall: 'N', kind: 'tilt', sigils: ['tilt'], clue: 'LANTERN', tilt: 2, table: 'fixed', answer: 'DUTY', height: 2.15 },
+  { id: 'b-about', at: [12, 33], wall: 'N', kind: 'tilt', sigils: ['tilt'], clue: 'ABOUT', tilt: -2, table: 'fixed', answer: 'CUTE', height: 2.15 },
+  { id: 'b-minute', at: [15, 33], wall: 'N', kind: 'tilt', sigils: ['tilt'], clue: 'MINUTE', tilt: 2, table: 'fixed', answer: 'POUT', height: 2.15 },
   // crossing: the dark cellar table (lantern x tilt)
   { id: 'x-duet', at: [20, 33], wall: 'N', kind: 'tilt', frame: 'moon', sigils: ['tilt-w'], clue: 'FAIRLY', glow: mask('****.*'), tilt: -1, table: 'bolted', answer: 'DUET', height: 2.15 },
 

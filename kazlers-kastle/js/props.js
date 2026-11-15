@@ -30,14 +30,41 @@ function drawTable(ctx, t) {
     for (let i = 0; i < 60; i++) { ctx.fillStyle = i % 2 ? '#3b2412' : '#8a5a33'; ctx.fillRect(0, (i * 37) % TH, TW, 3); }
     ctx.globalAlpha = 1;
   }
-  // keys
+  // cups
+  const cups = t.cups.map((cup) => {
+    const shift = cup.fallsAt !== null ? t.slide : t.slide;
+    let col = cup.col + shift;
+    const len = KEY_ROWS[cup.row].length;
+    let [x, y] = keyPos(cup.row, Math.max(-0.5, Math.min(len - 0.5, col)));
+    let alpha = 1, scale = 1;
+    const over = col < -0.5 ? -0.5 - col : col > len - 0.5 ? col - (len - 0.5) : 0;
+    if (over > 0) { x += Math.sign(col) * over * K * 0.9; alpha = Math.max(0, 1 - over * 2.2); scale = 1 - over * 0.6; }
+    return { ...cup, x, y, alpha, scale, onKey: over === 0 ? Math.round(col) : null };
+  });
+  // keys: square, then the warm light of any cup over it, then the key's own letter (letters never move)
+  const near = (r, c) => {
+    const [x, y] = keyPos(r, c);
+    let best = 0;
+    for (const cup of cups) {
+      if (cup.alpha <= 0.02 || (dark && !cup.glow)) continue;
+      const d = Math.hypot(cup.x - x, cup.y - y) / K;
+      best = Math.max(best, (1 - Math.min(1, d * 1.6)) * cup.alpha);
+    }
+    return best;
+  };
   for (let r = 0; r < 3; r++) for (let c = 0; c < KEY_ROWS[r].length; c++) {
     const [x, y] = keyPos(r, c);
+    const lit = near(r, c);
     if (!dark) {
       ctx.fillStyle = '#d8b98a';
       ctx.fillRect(x - K / 2 + 5, y - K / 2 + 5, K - 10, K - 10);
+      if (lit > 0) { ctx.fillStyle = `rgba(255,190,80,${0.8 * lit})`; ctx.fillRect(x - K / 2 + 5, y - K / 2 + 5, K - 10, K - 10); }
       ctx.strokeStyle = '#3b2412'; ctx.lineWidth = 3; ctx.strokeRect(x - K / 2 + 5, y - K / 2 + 5, K - 10, K - 10);
       glyph(ctx, KEY_ROWS[r][c], x, y, K * 0.5, INK);
+    } else if (lit > 0.05) {
+      ctx.save(); ctx.globalAlpha = lit;
+      glyph(ctx, KEY_ROWS[r][c], x, y, K * 0.5, GLOW, { glow: 16 });
+      ctx.restore();
     }
   }
   // troughs at the row ends
@@ -60,17 +87,6 @@ function drawTable(ctx, t) {
     }
     ctx.closePath(); ctx.fill();
   }
-  // cups
-  const cups = t.cups.map((cup) => {
-    const shift = cup.fallsAt !== null ? t.slide : t.slide;
-    let col = cup.col + shift;
-    const len = KEY_ROWS[cup.row].length;
-    let [x, y] = keyPos(cup.row, Math.max(-0.5, Math.min(len - 0.5, col)));
-    let alpha = 1, scale = 1;
-    const over = col < -0.5 ? -0.5 - col : col > len - 0.5 ? col - (len - 0.5) : 0;
-    if (over > 0) { x += Math.sign(col) * over * K * 0.9; alpha = Math.max(0, 1 - over * 2.2); scale = 1 - over * 0.6; }
-    return { ...cup, x, y, alpha, scale, onKey: over === 0 ? Math.round(col) : null };
-  });
   // chain
   const live = cups.filter((c) => c.alpha > 0.05);
   if (live.length > 1) {
@@ -91,12 +107,8 @@ function drawTable(ctx, t) {
       ctx.shadowColor = GLOW; ctx.shadowBlur = 18;
       ctx.strokeStyle = GLOW; ctx.lineWidth = 6;
       ctx.beginPath(); ctx.arc(c.x, c.y, R, 0, Math.PI * 2); ctx.stroke();
-      if (c.onKey !== null) glyph(ctx, KEY_ROWS[c.row][c.onKey], c.x, c.y, K * 0.5, GLOW, { glow: 16 });
     } else {
-      // a pewter cup rim: the key inside glows warm so the letter under the cup stands out
-      ctx.fillStyle = 'rgba(255,196,92,0.75)';
-      ctx.beginPath(); ctx.arc(c.x, c.y, R, 0, Math.PI * 2); ctx.fill();
-      if (c.onKey !== null) glyph(ctx, KEY_ROWS[c.row][c.onKey], c.x, c.y, K * 0.55, '#2a160a');
+      // a pewter cup rim (an open ring: the key's letter shows through)
       ctx.strokeStyle = '#4b4f58'; ctx.lineWidth = 13;
       ctx.beginPath(); ctx.arc(c.x, c.y, R, 0, Math.PI * 2); ctx.stroke();
       ctx.strokeStyle = '#d6dae2'; ctx.lineWidth = 4;
