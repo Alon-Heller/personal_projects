@@ -9,8 +9,14 @@ import { makeTable, updateTable, makeRibbonProp, makeNest } from './props.js';
 // ---------------------------------------------------------------- save
 const SAVE_KEY = 'kazlers-kastle-v1';
 let solved = new Set();
-try { solved = new Set(JSON.parse(localStorage.getItem(SAVE_KEY) || '{}').solved || []); } catch { /* fresh start */ }
-const save = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify({ solved: [...solved] })); } catch { /* ignore */ } };
+const SOLAR_VERSION = 2; // bump when the Solar's puzzles change, so old progress there is cleared once
+try {
+  const data = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
+  solved = new Set(data.solved || []);
+  if ((data.solar || 1) < SOLAR_VERSION) for (const id of [...solved]) if (/^(r|n)-/.test(id)) solved.delete(id);
+} catch { /* fresh start */ }
+const save = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify({ solved: [...solved], solar: SOLAR_VERSION })); } catch { /* ignore */ } };
+save();
 
 // ---------------------------------------------------------------- grid
 const FLOOR = 1, WALL = 0, DOOR = 2, POOL = 3, BASIN = 4, PROP = 5;
