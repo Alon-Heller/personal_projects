@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { CELL, W, H, ROOMS, OPENINGS, DOORS, PANELS, POOLS, BASINS, MIRRORS, START, CAPSTONES } from './levels.js';
 import { normalize } from './rules.js';
-import { drawPanel, drawReflection, PW, PH, stoneTexture, floorTexture, woodTexture, grassTexture } from './draw.js';
+import { drawPanel, drawReflection, PW, PH, stoneTexture, floorTexture, woodTexture, grassTexture, doorTexture } from './draw.js';
 import * as sfx from './audio.js';
 
 // ---------------------------------------------------------------- save
@@ -135,6 +135,7 @@ const M = {
   rim: new THREE.MeshLambertMaterial({ map: tex(stoneTexture(256, 21, [170, 140, 104])) }),
   flame: new THREE.MeshBasicMaterial({ color: '#ffcf70' }),
   candle: new THREE.MeshLambertMaterial({ color: '#efe3c8' }),
+  door: new THREE.MeshLambertMaterial({ map: tex(doorTexture()) }),
   mirror: new THREE.MeshStandardMaterial({ color: '#c8ccd4', metalness: 0.9, roughness: 0.15 }),
 };
 
@@ -256,14 +257,11 @@ const doors = DOORS.map((d) => {
   const [x, y] = d.at;
   const horiz = grid[y][x - 1] === WALL && grid[y][x + 1] === WALL; // wall runs east-west
   const g = new THREE.Group();
-  const slab = new THREE.Mesh(new THREE.BoxGeometry(horiz ? CELL : 0.35, DOOR_H, horiz ? 0.35 : CELL), M.wood);
+  // planks on both faces, plain wood on the edges
+  const faces = horiz ? [M.wood, M.wood, M.wood, M.wood, M.door, M.door] : [M.door, M.door, M.wood, M.wood, M.wood, M.wood];
+  const slab = new THREE.Mesh(new THREE.BoxGeometry(horiz ? CELL : 0.3, DOOR_H, horiz ? 0.3 : CELL), faces);
   slab.position.y = DOOR_H / 2;
   g.add(slab);
-  for (const yy of [0.6, DOOR_H - 0.6]) {
-    const band = new THREE.Mesh(new THREE.BoxGeometry(horiz ? CELL + 0.02 : 0.38, 0.12, horiz ? 0.38 : CELL + 0.02), M.iron);
-    band.position.y = yy;
-    g.add(band);
-  }
   g.position.set(x * CELL + 1, 0, y * CELL + 1);
   scene.add(g);
   return { ...d, mesh: g, open: false, t: 0 };
@@ -454,7 +452,7 @@ document.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { submit(focus); e.preventDefault(); return; }
     if (e.key === 'Backspace') { focus.input = focus.input.slice(0, -1); e.preventDefault(); return; }
     if (e.key === 'Tab') { setFocus(null); e.preventDefault(); return; }
-    if (/^[a-zA-Z]$/.test(e.key)) { if (focus.input.length < 14) focus.input += e.key.toUpperCase(); sfx.click(); return; }
+    if (/^[a-zA-Z]$/.test(e.key)) { if (focus.input.length < normalize(focus.def.answer).length) { focus.input += e.key.toUpperCase(); sfx.click(); } return; }
     return;
   }
   keys.add(e.code);

@@ -138,24 +138,29 @@ export function drawPanel(ctx, p, st) {
     });
   }
 
-  // answer line
-  const ly = 540;
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = dark ? 'rgba(201,255,224,0.12)' : 'rgba(58,40,27,0.35)';
-  ctx.beginPath(); ctx.moveTo(220, ly + 42); ctx.lineTo(PW - 220, ly + 42); ctx.stroke();
+  // answer line: one slot per letter of the answer
+  const ans = lettersOf(p.answer);
+  const n = ans.length;
   let shown = st.input || '';
   let color = dark ? GLOW : INK;
   if (st.solved) { shown = p.answer; color = GOLD; }
   if (p.ghost) { shown = p.answer; color = dark ? 'rgba(201,138,26,0.8)' : GHOST; }
-  const s2 = fitText(ctx, shown || 'M', 560, 92);
+  const sw = Math.min(84, 640 / n), ly = 540;
+  const sx0 = PW / 2 - (sw * n) / 2 + sw / 2;
+  const s2 = Math.round(sw * 0.86);
   ctx.font = `bold ${s2}px ${SERIF}`;
-  ctx.fillStyle = color;
-  if (dark && (st.solved || p.ghost)) { ctx.shadowColor = GOLD; ctx.shadowBlur = 18; }
-  ctx.fillText(shown, PW / 2, ly);
-  ctx.shadowBlur = 0;
-  if (st.focused && st.caret && !st.solved) {
-    const w = ctx.measureText(shown).width;
-    ctx.fillRect(PW / 2 + w / 2 + 8, ly - s2 * 0.42, 6, s2 * 0.84);
+  for (let i = 0; i < n; i++) {
+    const x = sx0 + i * sw;
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = dark ? 'rgba(201,255,224,0.25)' : 'rgba(58,40,27,0.4)';
+    if (st.focused && i === shown.length && st.caret && !st.solved) ctx.strokeStyle = dark ? GLOW : '#a0522d';
+    ctx.beginPath(); ctx.moveTo(x - sw * 0.36, ly + s2 * 0.5); ctx.lineTo(x + sw * 0.36, ly + s2 * 0.5); ctx.stroke();
+    if (shown[i]) {
+      ctx.fillStyle = color;
+      if (dark && (st.solved || p.ghost)) { ctx.shadowColor = GOLD; ctx.shadowBlur = 18; }
+      ctx.fillText(shown[i], x, ly);
+      ctx.shadowBlur = 0;
+    }
   }
   if (done) {
     ctx.strokeStyle = dark ? 'rgba(201,138,26,0.8)' : (p.ghost ? GHOST : GOLD);
@@ -180,12 +185,13 @@ function smearGlyph(ctx, c, x, y, size, flipX, flipY) {
   g.fillStyle = INK;
   g.fillText(c, 0, 0);
   g.restore();
+  // the flipped letter stays clearly visible, just upside down or backwards, with a gentle ripple
   ctx.save();
-  ctx.globalAlpha = 0.3;
-  ctx.filter = 'blur(8px)';
-  for (let row = 0; row < s; row += 4) {
-    const dx = Math.sin(row / 6) * 14;
-    ctx.drawImage(scratch, 0, row, s, 4, x - s / 2 + dx, y - s / 2 + row, s, 4);
+  ctx.globalAlpha = 0.6;
+  ctx.filter = 'blur(1px)';
+  for (let row = 0; row < s; row += 3) {
+    const dx = Math.sin(row / 9) * 3;
+    ctx.drawImage(scratch, 0, row, s, 3, x - s / 2 + dx, y - s / 2 + row, s, 3);
   }
   ctx.restore();
 }
@@ -277,5 +283,30 @@ export function grassTexture(size = 512, seed = 5) {
     g.fillStyle = k < 0.4 ? 'rgba(60,80,25,0.5)' : k < 0.8 ? 'rgba(150,160,70,0.45)' : 'rgba(210,180,90,0.4)';
     g.fillRect(r() * size, r() * size, 2, 5);
   }
+  return c;
+}
+
+export function doorTexture(w = 512, h = 800, seed = 17) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d'); const r = rng(seed);
+  const planks = 5, pw = w / planks;
+  for (let i = 0; i < planks; i++) {
+    const k = 0.85 + r() * 0.25;
+    g.fillStyle = `rgb(${[92, 58, 34].map((v) => (v * k) | 0)})`;
+    g.fillRect(i * pw, 0, pw, h);
+    for (let j = 0; j < 40; j++) {
+      g.strokeStyle = `rgba(${r() < 0.5 ? '35,18,8' : '150,105,60'},${0.12 + r() * 0.15})`;
+      const x = i * pw + r() * pw;
+      g.beginPath(); g.moveTo(x, 0); g.bezierCurveTo(x + r() * 6 - 3, h / 3, x + r() * 6 - 3, (2 * h) / 3, x, h); g.stroke();
+    }
+    g.fillStyle = 'rgba(20,10,4,0.7)'; g.fillRect(i * pw, 0, 4, h);
+  }
+  for (const y of [0.18, 0.82]) {
+    g.fillStyle = '#2b2522'; g.fillRect(0, y * h - 22, w, 44);
+    g.fillStyle = '#4a403a';
+    for (let i = 0; i < planks; i++) { g.beginPath(); g.arc(i * pw + pw / 2, y * h, 9, 0, Math.PI * 2); g.fill(); }
+  }
+  g.fillStyle = '#2b2522'; g.beginPath(); g.arc(w * 0.8, h * 0.52, 22, 0, Math.PI * 2); g.fill();
+  g.strokeStyle = '#4a403a'; g.lineWidth = 7; g.beginPath(); g.arc(w * 0.8, h * 0.52 + 26, 20, 0, Math.PI * 2); g.stroke();
   return c;
 }
