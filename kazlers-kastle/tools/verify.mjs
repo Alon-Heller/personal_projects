@@ -26,6 +26,7 @@ for (const d of DOORS) for (const r of d.requires) if (!ids.has(r)) fail(`door $
 for (const k in CAPSTONES) for (const r of CAPSTONES[k]) if (!ids.has(r)) fail(`capstone ${k} unknown ${r}`);
 for (const m of MIRRORS) if (!ids.has(m.panel)) fail(`mirror shows unknown ${m.panel}`);
 for (const c of [...POOLS, ...BASINS]) if (!inRoom(c)) fail(`pool/basin ${c} outside rooms`);
+for (const p of PANELS) if (p.prop && !inRoom(p.prop)) fail(`${p.id}: prop ${p.prop} outside rooms`);
 for (const r of ROOMS) if (r.x[1] >= W - 1 || r.y[1] >= H - 1 || r.x[0] < 1 || r.y[0] < 1) fail(`room ${r.id} touches the edge`);
 
 const solvable = PANELS.filter((p) => !p.ghost).length;

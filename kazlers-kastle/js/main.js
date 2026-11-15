@@ -4,6 +4,7 @@ import { CELL, W, H, ROOMS, OPENINGS, DOORS, PANELS, POOLS, BASINS, MIRRORS, STA
 import { normalize } from './rules.js';
 import { drawPanel, PW, PH, stoneTexture, floorTexture, woodTexture, grassTexture, doorTexture } from './draw.js';
 import * as sfx from './audio.js';
+import { makeTable, updateTable, makeRibbonProp } from './props.js';
 
 // ---------------------------------------------------------------- save
 const SAVE_KEY = 'kazlers-kastle-v1';
@@ -251,6 +252,8 @@ const braziers = {};
   };
   make('lantern', 19.5 * CELL + 1, 10 * CELL + 1);
   make('water', 28.5 * CELL - 1 + 2, 10 * CELL + 1);
+  make('banquet', 21 * CELL + 1, 17 * CELL + 1);
+  make('solar', 27 * CELL + 1, 17 * CELL + 1);
 }
 
 // doors
@@ -350,6 +353,26 @@ const panels = PANELS.map((p) => {
   return panel;
 });
 const panelById = Object.fromEntries(panels.map((p) => [p.def.id, p]));
+
+// keyboard tables and ribbon props
+const obstacles = [];
+const tables = [];
+for (const p of panels) {
+  const d = p.def;
+  if (d.kind === 'tilt') {
+    const t = makeTable(scene, M, d, d.at[0] * CELL + 1, d.at[1] * CELL);
+    t.room = p.room;
+    tables.push(t);
+    obstacles.push(t.box);
+    if (t.lever) { t.lever.userData.hit.userData.table = t; }
+  }
+  if (d.kind === 'ribbon') {
+    const [x, y] = d.prop;
+    makeRibbonProp(scene, M, d, x * CELL + 1, y * CELL + 1);
+    grid[y][x] = PROP;
+  }
+}
+const leverHits = tables.filter((t) => t.lever).map((t) => t.lever.userData.hit);
 
 // ---------------------------------------------------------------- real reflections
 // Every pool and mirror renders the scene again from a mirrored camera.
@@ -496,6 +519,10 @@ function collides(px, pz) {
     if ((px - nx) ** 2 + (pz - nz) ** 2 < RADIUS * RADIUS) return true;
   }
   for (const p of courtProps) if ((px - p.x) ** 2 + (pz - p.z) ** 2 < (p.r + RADIUS) ** 2) return true;
+  for (const b of obstacles) {
+    const nx = Math.max(b.x0, Math.min(px, b.x1)), nz = Math.max(b.z0, Math.min(pz, b.z1));
+    if ((px - nx) ** 2 + (pz - nz) ** 2 < RADIUS * RADIUS) return true;
+  }
   return false;
 }
 
@@ -531,6 +558,7 @@ document.addEventListener('mousedown', (e) => {
   if (!locked) return;
   if (e.button === 2) { toggleLantern(); return; }
   if (e.button !== 0) return;
+  if (hoverLever) { pullLever(hoverLever); return; }
   if (hover && hover !== focus && canWrite(hover)) setFocus(hover);
   else if (!hover) setFocus(null);
 });
@@ -547,17 +575,25 @@ document.addEventListener('keydown', (e) => {
   }
   keys.add(e.code);
   if (e.code === 'KeyF') toggleLantern();
-  if (e.code === 'KeyE' && hover && canWrite(hover)) setFocus(hover);
+  if (e.code === 'KeyE' && hoverLever) pullLever(hoverLever);
+  else if (e.code === 'KeyE' && hover && canWrite(hover)) setFocus(hover);
 });
 document.addEventListener('keyup', (e) => keys.delete(e.code));
 window.addEventListener('blur', () => keys.clear());
 
+let hoverLever = null;
+function pullLever(t) {
+  if (t.def.ghost) return;
+  t.target = t.target ? 0 : t.def.tilt;
+  sfx.click(); sfx.creak();
+}
 const canWrite = (p) => !p.def.ghost && !solved.has(p.def.id);
 function setFocus(p) {
   if (focus === p) return;
   focus = p;
   keys.clear();
   crosshair.classList.toggle('writing', !!p);
+  document.body.classList.toggle('writing', !!p);
 }
 
 // ---------------------------------------------------------------- lantern + regions
@@ -569,7 +605,7 @@ function toggleLantern() {
   sfx.click();
 }
 let flicker = 0;
-const panelDark = (p) => p.def.kind === 'ink' && p.room.light === 'dark' && !(lanternOn && !lanternBlocked());
+const panelDark = (p) => !!p.def.glow && p.room.light === 'dark' && !(lanternOn && !lanternBlocked());
 
 // ---------------------------------------------------------------- solving
 const sparkles = [];
@@ -607,7 +643,8 @@ function burst(pos, normal) {
 
 function checkProgress(animate) {
   for (const d of doors) {
-    if (!d.open && d.requires.every((r) => solved.has(r))) {
+    const wings = Object.values(CAPSTONES).filter((ids) => ids.every((r) => solved.has(r))).length;
+    if (!d.open && d.requires.every((r) => solved.has(r)) && wings >= (d.capstones || 0)) {
       d.open = true;
       if (animate) { sfx.rumble(); } else { d.t = 1; }
     }
@@ -641,7 +678,7 @@ let night = solved.has('final') ? 1 : 0;
 
 // ---------------------------------------------------------------- loop
 const ray = new THREE.Raycaster();
-ray.far = 5;
+ray.far = 7;
 const panelMeshes = panels.map((p) => p.mesh);
 const clock = new THREE.Clock();
 let lightTimer = 0;
@@ -654,6 +691,7 @@ function updateRegion() {
   if (r && r !== region) region = r;
   const L = region?.light || 'warm';
   if (L === 'sky') { target.hemi = 0.95 - night * 0.6; target.sun = 1.9 * (1 - night); target.fog.copy(FOG_SKY).lerp(new THREE.Color('#1b1a2e'), night); target.near = 18; target.far = 75; }
+  else if (L === 'bright') { target.hemi = 0.7; target.sun = 0; target.fog.set('#3a2a1c'); target.near = 10; target.far = 45; }
   else if (L === 'warm') { target.hemi = 0.22; target.sun = 0; target.fog.copy(FOG_IN); target.near = 6; target.far = 30; }
   else { target.hemi = 0.012; target.sun = 0; target.fog.set('#050406'); target.near = 3; target.far = 18; }
 }
@@ -730,14 +768,16 @@ function frame() {
   }
 
   // aim
-  hover = null;
+  hover = null; hoverLever = null;
   if (locked) {
     ray.setFromCamera({ x: 0, y: 0 }, camera);
-    const hit = ray.intersectObjects(panelMeshes, false)[0];
-    if (hit) hover = hit.object.userData.panel;
+    const hit = ray.intersectObjects([...panelMeshes, ...leverHits], false)[0];
+    if (hit && hit.distance < 4.5 && hit.object.userData.table) hoverLever = hit.object.userData.table;
+    else if (hit && hit.object.userData.panel) hover = hit.object.userData.panel;
   }
   if (focus && hover !== focus) setFocus(null);
-  crosshair.classList.toggle('active', !!hover && canWrite(hover));
+  crosshair.classList.toggle('active', (!!hover && canWrite(hover)) || (!!hoverLever && !hoverLever.def.ghost));
+  for (const t of tables) updateTable(t, dt, t.room.light === 'dark' && !(lanternOn && !lanternBlocked()));
 
   // panels
   const caret = Math.floor(now / 500) % 2 === 0;
@@ -774,5 +814,5 @@ function frame() {
 requestAnimationFrame(frame);
 
 // for automated checks
-window.__kastle = { player, panels, doors, solved, get region() { return region?.id; }, get lanternOn() { return lanternOn; }, toggleLantern, submit, setFocus, camera };
+window.__kastle = { player, panels, doors, solved, tables, pullLever, get region() { return region?.id; }, get lanternOn() { return lanternOn; }, toggleLantern, submit, setFocus, camera };
 document.body.classList.add('ready');

@@ -61,3 +61,8 @@ export function fanfare() {
   });
   tone(1567.98, 0.6, 1.2, 'sine', 0.08);
 }
+
+export function creak() {
+  tone(90, 0, 0.5, 'sawtooth', 0.05, 60);
+  tone(180, 0.05, 0.35, 'triangle', 0.05, 120);
+}

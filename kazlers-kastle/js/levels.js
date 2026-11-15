@@ -3,9 +3,9 @@
 
 export const CELL = 2;
 export const W = 48;
-export const H = 25;
+export const H = 41;
 
-// Interior rectangles (inclusive). `light`: sky | warm | dark.
+// Interior rectangles (inclusive). `light`: sky | bright | warm | dark.
 export const ROOMS = [
   { id: 'gatehouse', x: [22, 26], y: [20, 23], light: 'warm' },
   { id: 'courtyard', x: [19, 29], y: [4, 18], light: 'sky' },
@@ -19,10 +19,22 @@ export const ROOMS = [
   { id: 'dryRoom', x: [34, 40], y: [1, 7], light: 'warm' },
   { id: 'mirrorRoom', x: [42, 46], y: [1, 7], light: 'warm' },
   { id: 'capRoom', x: [42, 46], y: [9, 15], light: 'warm' },
+  // Banquet wing (south-west)
+  { id: 'banquetHall', x: [20, 20], y: [20, 25], light: 'warm' },
+  { id: 'tiltHall', x: [8, 20], y: [27, 31], light: 'warm' },
+  { id: 'boltedHall', x: [1, 6], y: [27, 31], light: 'warm' },
+  { id: 'westGallery', x: [1, 6], y: [33, 38], light: 'warm' },
+  { id: 'steepHall', x: [8, 16], y: [33, 38], light: 'warm' },
+  { id: 'cellar', x: [18, 21], y: [33, 38], light: 'dark' },
+  // Solar wing (south-east)
+  { id: 'solarStair', x: [28, 28], y: [20, 25], light: 'warm' },
+  { id: 'plankRoom', x: [27, 39], y: [27, 31], light: 'bright' },
+  { id: 'turnedRoom', x: [41, 46], y: [27, 31], light: 'bright' },
+  { id: 'pillarRoom', x: [30, 46], y: [33, 38], light: 'bright' },
 ];
 
 // Plain gaps in walls.
-export const OPENINGS = [[15, 12], [33, 12]];
+export const OPENINGS = [[15, 12], [33, 12], [20, 26], [28, 26]];
 
 // Doors open once every panel in `requires` is solved.
 export const DOORS = [
@@ -35,12 +47,23 @@ export const DOORS = [
   { id: 'dryMirror', at: [41, 6], requires: ['w-cooked', 'w-book'] },
   { id: 'mirrorCap', at: [44, 8], requires: ['w-way'] },
   { id: 'shrine', at: [24, 3], requires: ['l-scare', 'l-nit', 'l-ate', 'w-mat', 'w-soon', 'w-son'] },
+  // `capstones: n` = opens once any n wings are complete
+  { id: 'banquet', at: [20, 19], requires: [], capstones: 1 },
+  { id: 'solar', at: [28, 19], requires: [], capstones: 1 },
+  { id: 'tiltBolted', at: [7, 29], requires: ['b-views', 'b-super', 'b-vital'] },
+  { id: 'boltedWest', at: [1, 32], requires: ['b-spiral', 'b-ford'] },
+  { id: 'westSteep', at: [7, 36], requires: ['b-dream', 'b-tardy'] },
+  { id: 'steepCellar', at: [17, 36], requires: ['b-lantern', 'b-about', 'b-minute', 'l-scare', 'l-nit', 'l-ate'] },
+  { id: 'plankTurned', at: [40, 29], requires: ['r-chair', 'r-friends', 'r-stained'] },
+  { id: 'turnedPillar', at: [43, 32], requires: ['r-parrot', 'r-schooled'] },
 ];
 
 // Wing capstones: solving all of these lights that wing's brazier in the courtyard.
 export const CAPSTONES = {
   lantern: ['l-scare', 'l-nit', 'l-ate'],
   water: ['w-mat', 'w-soon', 'w-son'],
+  banquet: ['b-lantern', 'b-about', 'b-minute'],
+  solar: ['r-charity', 'r-limited', 'r-lowered'],
 };
 
 // Cells with water (a pool under a panel) or a dry basin. Both block walking.
@@ -98,4 +121,30 @@ export const PANELS = [
 
   // The shrine
   { id: 'final', at: [24, 1], wall: 'N', kind: 'ink', frame: 'moon', sigils: ['pool'], clue: 'WHISKERS', glow: mask('.**.****'), answer: 'HIKE', final: true },
+
+  // Banquet wing: keyboard tables. `tilt` = keys slid (+ east). `table`: lever | bolted | fixed
+  { id: 'b-rust', at: [9, 27], wall: 'N', kind: 'tilt', clue: 'RUST', tilt: 1, table: 'lever', answer: 'TIDY', ghost: true, height: 2.15 },
+  { id: 'b-views', at: [12, 27], wall: 'N', kind: 'tilt', clue: 'VIEWS', tilt: 1, table: 'lever', answer: 'BORED', height: 2.15 },
+  { id: 'b-super', at: [15, 27], wall: 'N', kind: 'tilt', clue: 'SUPER', tilt: 1, table: 'lever', answer: 'DIRT', height: 2.15 },
+  { id: 'b-vital', at: [18, 27], wall: 'N', kind: 'tilt', clue: 'VITAL', tilt: 1, table: 'lever', answer: 'BOYS', height: 2.15 },
+  { id: 'b-spiral', at: [2, 27], wall: 'N', kind: 'tilt', clue: 'SPIRAL', tilt: 1, table: 'bolted', sigils: ['tilt-e'], answer: 'DOTS', height: 2.15 },
+  { id: 'b-ford', at: [5, 27], wall: 'N', kind: 'tilt', clue: 'DIES', tilt: 1, table: 'bolted', sigils: ['tilt-e'], answer: 'FORD', height: 2.15 },
+  { id: 'b-dream', at: [3, 33], wall: 'N', kind: 'tilt', clue: 'DREAM', tilt: -1, table: 'fixed', answer: 'SEWN', height: 2.15 },
+  { id: 'b-tardy', at: [5, 33], wall: 'N', kind: 'tilt', clue: 'TARDY', tilt: -1, table: 'fixed', answer: 'REST', height: 2.15 },
+  { id: 'b-lantern', at: [9, 33], wall: 'N', kind: 'tilt', clue: 'LANTERN', tilt: 2, table: 'fixed', answer: 'DUTY', height: 2.15 },
+  { id: 'b-about', at: [12, 33], wall: 'N', kind: 'tilt', clue: 'ABOUT', tilt: -2, table: 'fixed', answer: 'CUTE', height: 2.15 },
+  { id: 'b-minute', at: [15, 33], wall: 'N', kind: 'tilt', clue: 'MINUTE', tilt: 2, table: 'fixed', answer: 'POUT', height: 2.15 },
+  // crossing: the dark cellar table (lantern x tilt)
+  { id: 'x-duet', at: [20, 33], wall: 'N', kind: 'tilt', frame: 'moon', sigils: ['tilt-w'], clue: 'FAIRLY', glow: mask('****.*'), tilt: -1, table: 'bolted', answer: 'DUET', height: 2.15 },
+
+  // Solar wing: ribbon-wound planks (2 faces) and pillars (3 faces). `prop` = where it stands.
+  { id: 'r-count', at: [29, 27], wall: 'N', kind: 'ribbon', word: 'COUNT', faces: 2, prop: [29, 29], answer: 'COUNT', ghost: true, height: 2.6, size: 0.9 },
+  { id: 'r-chair', at: [32, 27], wall: 'N', kind: 'ribbon', word: 'CHAIR', faces: 2, prop: [32, 29], answer: 'CHAIR', height: 2.6, size: 0.9 },
+  { id: 'r-friends', at: [35, 27], wall: 'N', kind: 'ribbon', word: 'FRIENDS', faces: 2, prop: [35, 29], answer: 'FRIENDS', height: 2.6, size: 0.9 },
+  { id: 'r-stained', at: [38, 27], wall: 'N', kind: 'ribbon', word: 'STAINED', faces: 2, prop: [38, 29], answer: 'STAINED', height: 2.6, size: 0.9 },
+  { id: 'r-parrot', at: [42, 27], wall: 'N', kind: 'ribbon', word: 'PARROT', faces: 2, up: true, prop: [42, 29], answer: 'PARROT', height: 2.6, size: 0.9 },
+  { id: 'r-schooled', at: [45, 27], wall: 'N', kind: 'ribbon', word: 'SCHOOLED', faces: 2, up: true, prop: [45, 29], answer: 'SCHOOLED', height: 2.6, size: 0.9 },
+  { id: 'r-charity', at: [33, 33], wall: 'N', kind: 'ribbon', word: 'CHARITY', faces: 3, prop: [33, 35], answer: 'CHARITY', height: 2.6, size: 0.9 },
+  { id: 'r-limited', at: [37, 33], wall: 'N', kind: 'ribbon', word: 'LIMITED', faces: 3, prop: [37, 35], answer: 'LIMITED', height: 2.6, size: 0.9 },
+  { id: 'r-lowered', at: [41, 33], wall: 'N', kind: 'ribbon', word: 'LOWERED', faces: 3, prop: [41, 35], answer: 'LOWERED', height: 2.6, size: 0.9 },
 ];

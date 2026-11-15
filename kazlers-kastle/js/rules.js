@@ -26,6 +26,7 @@ export const turnRead = (w) => letters(w).reverse().filter((c) => TURN_SAFE.has(
 // Apply a panel's rules in order and return the word the panel wants.
 export function derive(panel) {
   if (panel.kind === 'bridge' || panel.kind === 'plain') return panel.answer;
+  if (panel.kind === 'ribbon') return letters(panel.word).join('');
   let w = letters(panel.clue).join('');
   if (panel.frame === 'moon') w = glowLetters(panel.clue, panel.glow);
   if (panel.frame === 'sun') w = litLetters(panel.clue, panel.glow);
@@ -35,7 +36,22 @@ export function derive(panel) {
   if (hasPool && hasMirror) w = turnRead(w);
   else if (hasPool) w = poolRead(w);
   else if (hasMirror) w = mirrorRead(w);
+  if (panel.kind === 'tilt') w = tiltSlide(w, panel.tilt);
   return w;
 }
 
 export const normalize = (s) => letters(s).join('');
+
+// Keyboard tilt: every letter slides `n` keys along its QWERTY row (+ = right/east).
+// A letter pushed past the end of its row falls off.
+export const KEY_ROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
+export function keyOf(c) {
+  for (let r = 0; r < 3; r++) { const i = KEY_ROWS[r].indexOf(c); if (i >= 0) return [r, i]; }
+  return null;
+}
+export function tiltSlide(word, n) {
+  return letters(word).map((c) => {
+    const [r, i] = keyOf(c);
+    return KEY_ROWS[r][i + n] || '';
+  }).join('');
+}
