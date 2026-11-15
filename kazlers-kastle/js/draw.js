@@ -124,7 +124,7 @@ export function drawPanel(ctx, p, st) {
   if (st.wrong) { ctx.lineWidth = 18; ctx.strokeStyle = '#b3261e'; ctx.strokeRect(9, 9, PW - 18, PH - 18); }
 
   // left to right is the order the rules apply: the panel's own kind first, then anything done to its result
-  const kinds = [p.kind === 'ribbon' || p.twin ? 'ribbon' : null, p.kind === 'nest' ? 'nest' : null, p.pre || null, p.kind === 'cistern' ? 'cistern' : null, p.kind === 'split' ? 'cracked' : null, p.kind === 'seesaw' ? 'seesaw' : null, p.frame, ...(p.sigils || [])].filter(Boolean);
+  const kinds = [p.kind === 'ribbon' || p.twin ? 'ribbon' : null, p.kind === 'nest' ? 'nest' : null, p.pre || null, p.kind === 'cistern' || p.kind === 'split' ? 'cistern' : null, p.kind === 'seesaw' ? 'seesaw' : null, p.frame, ...(p.sigils || [])].filter(Boolean);
   if (kinds.length) sigilRow(ctx, kinds, dark ? GLOW : INK, dark);
 
   const cy = kinds.length ? 330 : 290;
@@ -146,7 +146,6 @@ export function drawPanel(ctx, p, st) {
     const { xs, size } = slots(ls.length);
     const glow = new Set(p.glow || []);
     ls.forEach((c, i) => {
-      if (p.lost === i) { ctx.fillStyle = dark ? GLOW : INK; ctx.fillRect(xs[i] - size * 0.3, cy + size * 0.42, size * 0.6, 5); return; }
       if (!dark) { glyph(ctx, c, xs[i], cy, size, INK); return; }
       if (glow.has(i)) {
         glyph(ctx, c, xs[i], cy, size, GLOW, { glow: 26 });

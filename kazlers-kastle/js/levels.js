@@ -62,7 +62,7 @@ export const DOORS = [
   { id: 'westSteep', at: [7, 36], requires: ['b-dream', 'b-tardy'] },
   { id: 'steepCellar', at: [17, 36], requires: ['b-lantern', 'b-about', 'b-minute', 'l-scare', 'l-nit', 'l-ate'] },
   { id: 'glass', at: [47, 12], requires: [], capstones: 2 },
-  { id: 'cisternSeesaw', at: [53, 8], requires: ['g-post', 'g-drive', 'g-unclear', 'g-potion', 'g-whoever', 'g-outlook'] },
+  { id: 'cisternSeesaw', at: [53, 8], requires: ['g-post', 'g-drive', 'g-hatred', 'g-canoe', 'g-whoever', 'g-outlook'] },
   { id: 'seesawGlass', at: [57, 4], requires: ['s-down', 's-full', 's-awake', 's-modern', 's-wide'] },
   { id: 'plankTailor', at: [26, 29], requires: ['r-count', 'r-chair', 'r-friends', 'r-parrot'] },
   { id: 'plankAlcove', at: [40, 29], requires: ['t-tower', 't-ghost', 't-blow', 't-toast', 't-wick'] },
@@ -191,12 +191,12 @@ export const PANELS = [
 
   // Glasshouse wing. Cistern Hall: glass tanks with a pull-chain that drops the clue's tiles into the water.
   { id: 'g-post', at: [50, 9], wall: 'N', kind: 'cistern', clue: 'SPOT', answer: 'POST', rev: 2, tank: true, height: 2.45, size: 0.9 },
-  // one tile bounces out of the tank and lands face-down; the clue shows a gap where it was
-  { id: 'g-drive', at: [52, 9], wall: 'N', kind: 'cistern', clue: 'DIVER', lost: 2, answer: 'DRIVE', tank: true, height: 2.45, size: 0.9, rev: 2 },
-  // cracked tanks: no water, the tiles just fall in a heap. Split the letters into two groups (each keeping its order),
-  // put one group first: only one such rearrangement is a word.
-  { id: 'g-unclear', at: [54, 9], wall: 'N', kind: 'split', clue: 'NUCLEAR', answer: 'UNCLEAR', height: 2.45, size: 0.9 },
-  { id: 'g-potion', at: [56, 9], wall: 'N', kind: 'split', clue: 'OPTION', answer: 'POTION', height: 2.45, size: 0.9 },
+  // one tile bounces out of the tank and lands face-down on the floor
+  { id: 'g-drive', at: [52, 9], wall: 'N', kind: 'cistern', clue: 'DIVER', lost: 2, answer: 'DRIVE', tank: true, height: 2.45, size: 0.9, rev: 3 },
+  // cracked tanks: the same rule, but no water to show which tiles float. Split the letters into two groups
+  // (each keeping its order), floaters first: only one such rearrangement is a word.
+  { id: 'g-hatred', at: [54, 9], wall: 'N', kind: 'split', clue: 'THREAD', answer: 'HATRED', height: 2.45, size: 0.9 },
+  { id: 'g-canoe', at: [56, 9], wall: 'N', kind: 'split', clue: 'OCEAN', answer: 'CANOE', height: 2.45, size: 0.9 },
   { id: 'g-whoever', at: [51, 15], wall: 'S', kind: 'split', clue: 'HOWEVER', answer: 'WHOEVER', height: 2.45, size: 0.9 },
   { id: 'g-outlook', at: [55, 15], wall: 'S', kind: 'split', clue: 'LOOKOUT', answer: 'OUTLOOK', height: 2.45, size: 0.9 },
   // Seesaw Room: the word on the low end; the answer is what balances it on the high end.
