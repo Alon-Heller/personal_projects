@@ -63,6 +63,26 @@
   </div>
 </div>
 
+<div id="crash" class="screen hidden"><div class="card">
+  <h1>The castle stumbled</h1>
+  <p class="sub">The game hit an error while starting. Usually this is the browser holding on to old files after an update.<br><br>
+  Try a hard refresh (<kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd>), or open the page in a private window.</p>
+  <p id="crash-msg" style="font-family: monospace; font-size: 12px; opacity: .7; text-align: left; white-space: pre-wrap;"></p>
+</div></div>
+<script>
+  // Show start-up errors on screen instead of a silent blank page.
+  (function () {
+    const show = (msg) => {
+      if (document.body.classList.contains('ready')) return;
+      document.getElementById('crash').classList.remove('hidden');
+      document.getElementById('overlay').classList.add('hidden');
+      document.getElementById('crash-msg').textContent += msg + '\n';
+    };
+    window.addEventListener('error', (e) => show(e.message || ('Could not load ' + (e.target && (e.target.src || e.target.href)))), true);
+    window.addEventListener('unhandledrejection', (e) => show(String(e.reason)));
+    setTimeout(() => { if (!document.body.classList.contains('ready')) show('The game did not finish starting.'); }, 8000);
+  })();
+</script>
 <script type="importmap">
 { "imports": { "three": "./lib/three.module.min.js", "three/addons/": "./lib/addons/" } }
 </script>
