@@ -170,29 +170,16 @@ export function drawPanel(ctx, p, st) {
 }
 
 // ---- reflections ----------------------------------------------------------
-const scratch = typeof document !== 'undefined' ? document.createElement('canvas') : null;
-
-function smearGlyph(ctx, c, x, y, size, flipX, flipY) {
-  const s = Math.ceil(size * 1.4);
-  scratch.width = s; scratch.height = s;
-  const g = scratch.getContext('2d');
-  g.clearRect(0, 0, s, s);
-  g.save();
-  g.translate(s / 2, s / 2);
-  g.scale(flipX ? -1 : 1, flipY ? -1 : 1);
-  g.font = `bold ${size}px ${SERIF}`;
-  g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.fillStyle = INK;
-  g.fillText(c, 0, 0);
-  g.restore();
-  // the flipped letter stays clearly visible, just upside down or backwards, with a gentle ripple
+// A true reflection: every letter in the same full ink, just flipped.
+// Letters that look the same flipped are drawn upright so the font's tiny serif quirks don't muddy them.
+function flippedGlyph(ctx, c, x, y, size, flipX, flipY) {
   ctx.save();
-  ctx.globalAlpha = 0.6;
-  ctx.filter = 'blur(1px)';
-  for (let row = 0; row < s; row += 3) {
-    const dx = Math.sin(row / 9) * 3;
-    ctx.drawImage(scratch, 0, row, s, 3, x - s / 2 + dx, y - s / 2 + row, s, 3);
-  }
+  ctx.translate(x, y);
+  ctx.scale(flipX ? -1 : 1, flipY ? -1 : 1);
+  ctx.font = `bold ${size}px ${SERIF}`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = INK;
+  ctx.fillText(c, 0, 0);
   ctx.restore();
 }
 
@@ -213,7 +200,7 @@ export function drawReflection(ctx, word, mode) {
       ctx.fillStyle = INK;
       ctx.fillText(c, x, 330);
     } else {
-      smearGlyph(ctx, c, x, 330, size, mode === 'mirror', mode === 'pool');
+      flippedGlyph(ctx, c, x, 330, size, mode === 'mirror', mode === 'pool');
     }
   });
 }
