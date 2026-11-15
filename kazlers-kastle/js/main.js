@@ -380,10 +380,21 @@ for (const p of panels) {
       const cz = y * CELL + 0.62 + hz;
       makeRibbonProp(scene, M, d, x * CELL + 1, cz, d.faces === 3 ? Math.PI : 0);
       obstacles.push({ x0: x * CELL + 1 - hx, x1: x * CELL + 1 + hx, z0: y * CELL, z1: cz + hz });
-      for (const s of [-1, 1]) {
-        const rail = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.9, 0.62), M.wood);
-        rail.position.set(x * CELL + 1 + s * hx, 0.45, y * CELL + 0.31);
-        scene.add(rail);
+      // a railing along the whole mirror wall keeps you far enough out that the far side can't be seen directly
+      const room = roomOf[y][x];
+      if (!room.userData) {
+        room.userData = true;
+        const RZ = y * CELL + 1.5, x0 = room.x[0] * CELL, x1 = (room.x[1] + 1) * CELL;
+        obstacles.push({ x0, x1, z0: y * CELL, z1: RZ });
+        const bar = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, 0.07, 0.07), M.wood);
+        bar.position.set((x0 + x1) / 2, 0.95, RZ);
+        const low = bar.clone(); low.position.y = 0.5;
+        scene.add(bar, low);
+        for (let px = x0 + 0.1; px <= x1; px += 1.0) {
+          const post = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.0, 0.08), M.wood);
+          post.position.set(Math.min(px, x1 - 0.1), 0.5, RZ);
+          scene.add(post);
+        }
       }
     } else {
       makeRibbonProp(scene, M, d, x * CELL + 1, y * CELL + 1);
@@ -586,6 +597,7 @@ overlay.addEventListener('click', (e) => {
 document.addEventListener('pointerlockchange', () => {
   locked = document.pointerLockElement === canvas;
   overlay.classList.toggle('hidden', locked || ended);
+  updateCount();
   if (!locked) setFocus(null);
 });
 document.getElementById('reset').addEventListener('click', () => {
@@ -705,6 +717,12 @@ function checkProgress(animate) {
 }
 checkProgress(false);
 
+const TOTAL = PANELS.filter((p) => !p.ghost).length;
+function updateCount() {
+  const n = PANELS.filter((p) => !p.ghost && solved.has(p.id)).length;
+  document.getElementById('count').textContent = `${n} / ${TOTAL} puzzles solved`;
+}
+updateCount();
 let ended = false;
 function finish() {
   ended = true;
