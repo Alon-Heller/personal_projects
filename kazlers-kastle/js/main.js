@@ -4,7 +4,7 @@ import { CELL, W, H, ROOMS, OPENINGS, DOORS, PANELS, POOLS, BASINS, MIRRORS, WAL
 import { normalize } from './rules.js';
 import { drawPanel, PW, PH, stoneTexture, floorTexture, woodTexture, grassTexture, doorTexture } from './draw.js';
 import * as sfx from './audio.js';
-import { makeTable, updateTable, makeRibbonProp, makeNest, makeBasket, makeScrap, makeTank, updateTank, makeSeesaw, updateSeesaw } from './props.js';
+import { makeTable, updateTable, makeRibbonProp, makeNest, makeBasket, makeScrap, makeTank, updateTank, makeSeesaw, updateSeesaw, makeCracked } from './props.js';
 
 // ---------------------------------------------------------------- save
 const SAVE_KEY = 'kazlers-kastle-v1';
@@ -14,8 +14,13 @@ try {
   const data = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
   solved = new Set(data.solved || []);
   if ((data.solar || 1) < SOLAR_VERSION) for (const id of [...solved]) if (/^(r|n)-/.test(id)) solved.delete(id);
+  const revs = data.revs || {};
+  for (const p of PANELS) if ((p.rev || 1) > (revs[p.id] || 1)) solved.delete(p.id);
 } catch { /* fresh start */ }
-const save = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify({ solved: [...solved], solar: SOLAR_VERSION })); } catch { /* ignore */ } };
+const save = () => {
+  const revs = Object.fromEntries(PANELS.filter((p) => p.rev).map((p) => [p.id, p.rev]));
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ solved: [...solved], solar: SOLAR_VERSION, revs })); } catch { /* ignore */ }
+};
 save();
 
 // ---------------------------------------------------------------- grid
@@ -425,7 +430,7 @@ for (const p of panels) {
   if (d.kind !== 'nest' || d.twin) continue;
   const c = cellCenter(...d.at), n = wallDir[d.wall];
   const rot = { N: 0, S: Math.PI, W: Math.PI / 2, E: -Math.PI / 2 }[d.wall];
-  makeNest(scene, M, d, new THREE.Vector3(c.x + n[0] * (CELL / 2 - 0.01), 0, c.z + n[1] * (CELL / 2 - 0.01)), rot);
+  makeNest(scene, M, { ...d, crestOf: (id) => PANELS.find((q) => q.id === id).crest }, new THREE.Vector3(c.x + n[0] * (CELL / 2 - 0.01), 0, c.z + n[1] * (CELL / 2 - 0.01)), rot);
 }
 // cistern tanks and seesaws
 const tanks = [], seesaws = [];
@@ -434,6 +439,12 @@ for (const p of panels) {
   if (d.kind === 'cistern' && d.tank) {
     const t = makeTank(scene, M, d, d.at[0] * CELL + 1, d.at[1] * CELL);
     tanks.push(t); obstacles.push(t.box);
+  }
+  if (d.kind === 'split') {
+    const c = cellCenter(...d.at), n = wallDir[d.wall];
+    const cx = c.x + n[0] * (CELL / 2 - 0.9), cz = c.z + n[1] * (CELL / 2 - 0.9);
+    makeCracked(scene, M, d, cx, cz, { N: 0, S: Math.PI, W: Math.PI / 2, E: -Math.PI / 2 }[d.wall]);
+    obstacles.push({ x0: cx - 0.85, x1: cx + 0.85, z0: cz - 0.3, z1: cz + 0.3 });
   }
   if (d.kind === 'seesaw' && !d.noProp) {
     const c = cellCenter(...d.at), n = wallDir[d.wall];

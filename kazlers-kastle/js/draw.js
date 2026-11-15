@@ -78,6 +78,11 @@ function sigil(ctx, kind, cx, cy, color, glow) {
     ctx.lineWidth = 5; ctx.strokeRect(cx - 40, cy - 34, 80, 68);
     ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(cx - 40, cy - 14); ctx.lineTo(cx + 40, cy - 14); ctx.stroke();
     ctx.fillRect(cx - 26, cy - 24, 16, 16); ctx.fillRect(cx + 8, cy + 14, 16, 16);
+  } else if (kind === 'cracked') {
+    // a tank with a crack through it, tiles fallen below
+    ctx.lineWidth = 5; ctx.strokeRect(cx - 40, cy - 40, 80, 56);
+    ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(cx + 6, cy - 40); ctx.lineTo(cx - 6, cy - 22); ctx.lineTo(cx + 8, cy - 8); ctx.lineTo(cx - 2, cy + 16); ctx.stroke();
+    ctx.fillRect(cx - 34, cy + 26, 14, 14); ctx.save(); ctx.translate(cx + 22, cy + 32); ctx.rotate(0.5); ctx.fillRect(-7, -7, 14, 14); ctx.restore();
   } else if (kind === 'seesaw') {
     ctx.beginPath(); ctx.moveTo(cx, cy + 4); ctx.lineTo(cx - 14, cy + 30); ctx.lineTo(cx + 14, cy + 30); ctx.closePath(); ctx.fill();
     ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(cx - 44, cy + 14); ctx.lineTo(cx + 44, cy - 6); ctx.stroke();
@@ -119,7 +124,7 @@ export function drawPanel(ctx, p, st) {
   if (st.wrong) { ctx.lineWidth = 18; ctx.strokeStyle = '#b3261e'; ctx.strokeRect(9, 9, PW - 18, PH - 18); }
 
   // left to right is the order the rules apply: the panel's own kind first, then anything done to its result
-  const kinds = [p.kind === 'ribbon' || p.twin ? 'ribbon' : null, p.kind === 'nest' ? 'nest' : null, p.pre || null, p.kind === 'cistern' ? 'cistern' : null, p.kind === 'seesaw' ? 'seesaw' : null, p.frame, ...(p.sigils || [])].filter(Boolean);
+  const kinds = [p.kind === 'ribbon' || p.twin ? 'ribbon' : null, p.kind === 'nest' ? 'nest' : null, p.pre || null, p.kind === 'cistern' ? 'cistern' : null, p.kind === 'split' ? 'cracked' : null, p.kind === 'seesaw' ? 'seesaw' : null, p.frame, ...(p.sigils || [])].filter(Boolean);
   if (kinds.length) sigilRow(ctx, kinds, dark ? GLOW : INK, dark);
 
   const cy = kinds.length ? 330 : 290;
@@ -141,6 +146,7 @@ export function drawPanel(ctx, p, st) {
     const { xs, size } = slots(ls.length);
     const glow = new Set(p.glow || []);
     ls.forEach((c, i) => {
+      if (p.lost === i) { ctx.fillStyle = dark ? GLOW : INK; ctx.fillRect(xs[i] - size * 0.3, cy + size * 0.42, size * 0.6, 5); return; }
       if (!dark) { glyph(ctx, c, xs[i], cy, size, INK); return; }
       if (glow.has(i)) {
         glyph(ctx, c, xs[i], cy, size, GLOW, { glow: 26 });

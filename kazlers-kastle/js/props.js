@@ -103,7 +103,6 @@ function drawTable(ctx, t) {
       ctx.beginPath(); ctx.arc(c.x, c.y, R, 0, Math.PI * 2); ctx.stroke();
       ctx.strokeStyle = '#d6dae2'; ctx.lineWidth = 4;
       ctx.beginPath(); ctx.arc(c.x, c.y, R - 3, Math.PI * 1.1, Math.PI * 1.7); ctx.stroke();
-      if (t.pegs) { ctx.fillStyle = '#2b2522'; ctx.beginPath(); ctx.arc(c.x - R - 6, c.y, 6, 0, Math.PI * 2); ctx.arc(c.x + R + 6, c.y, 6, 0, Math.PI * 2); ctx.fill(); }
     }
     ctx.restore();
   }
@@ -130,7 +129,7 @@ export function makeTable(scene, M, def, cx, wallZ) {
 
   // the clue's cups: one per letter, on its key, in chain order
   const glowSet = new Set(def.glow || []);
-  const cups = lettersOf(def.clue).map((c, i) => { const [row, col] = keyOf(c); return { row, col, glow: glowSet.has(i), fallsAt: null }; });
+  const cups = def.table === 'fixed' ? [] : lettersOf(def.clue).map((c, i) => { const [row, col] = keyOf(c); return { row, col, glow: glowSet.has(i), fallsAt: null }; });
 
   // plumb bob: a post at the west end with an arm over the scale
   const metal = M.iron;
@@ -234,14 +233,18 @@ function drawFace(ctx, def, face) {
   ctx.fillStyle = 'rgba(176,70,80,0.18)';
   for (let i = 0; i < 6; i++) { ctx.beginPath(); ctx.arc((i * 97 + face * 53) % FW, (i * 211 + face * 89) % FH, 10, 0, Math.PI * 2); ctx.fill(); }
   const top = 60, bottom = FH - 60;
-  const slots = Math.max(...ribbons.map((rb) => rb.word.length)) * R;
+  const slots = Math.max(...ribbons.map((rb) => Math.min(rb.word.length, (def.fold ?? 99) + 1.5))) * R;
   const dh = Math.min(150, (bottom - top) / slots);
   const half = Math.min(30, dh * 0.42);
+  const fold = def.fold ?? Infinity;
   ribbons.forEach((rb, r) => {
-    const yOf = (k) => { const sl = k * R + r; return def.up ? bottom - dh / 2 - sl * dh : top + dh / 2 + sl * dh; };
-    const dy = (def.up ? -1 : 1) * (R * dh) / 2; // the band drops (or climbs) one letter-step per face
+    const base = (k) => { const sl = k * R + r; return def.up ? bottom - dh / 2 - sl * dh : top + dh / 2 + sl * dh; };
+    // past the fold the band climbs back, half a step off from where it came down
+    const yOf = (k) => (k <= fold ? base(k) : base(2 * fold - k) + (def.up ? -1 : 1) * dh * 0.5);
     rb.word.forEach((ch, k) => {
       if ((k + r) % faces !== face) return;
+      const back = k > fold;
+      const dy = (def.up !== back ? -1 : 1) * (R * dh) / 2; // the band drops (or climbs) one letter-step per face
       const y = yOf(k);
       ctx.save();
       ctx.fillStyle = rb.color;
@@ -260,6 +263,11 @@ function drawFace(ctx, def, face) {
         ctx.strokeStyle = rb.color; ctx.lineWidth = 2; ctx.setLineDash([3, 4]); ctx.stroke(); ctx.setLineDash([]);
       } else {
         glyph(ctx, ch, FW / 2, y, Math.min(50, half * 1.7), '#f6ead0');
+      }
+      if (k === fold) {
+        // the brass peg the ribbon turns around
+        ctx.fillStyle = '#c9a24a'; ctx.strokeStyle = '#5a3d14'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(FW - 14, y + dy, 13, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
       }
       if (k === 0) {
         const tx = 18, ty = y - dy;
@@ -357,6 +365,16 @@ export function makeRibbonProp(scene, M, def, cx, cz, turn = 0) {
 
 // ---------------------------------------------------------------- nests: boxes inside boxes, hung on a wall
 // `chain` runs inner -> outer; null marks the box whose plaque is blank.
+function emblem(g, kind, x, y, r, color) {
+  g.save(); g.fillStyle = color; g.strokeStyle = color; g.lineWidth = r * 0.18;
+  if (kind === 'sun') {
+    g.beginPath(); g.arc(x, y, r * 0.45, 0, Math.PI * 2); g.fill();
+    for (let i = 0; i < 8; i++) { const a = (i * Math.PI) / 4; g.beginPath(); g.moveTo(x + Math.cos(a) * r * 0.65, y + Math.sin(a) * r * 0.65); g.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); g.stroke(); }
+  } else if (kind === 'moon') {
+    g.beginPath(); g.arc(x, y, r * 0.9, Math.PI * 0.3, Math.PI * 1.7); g.arc(x + r * 0.42, y, r * 0.7, Math.PI * 1.62, Math.PI * 0.38, true); g.closePath(); g.fill();
+  }
+  g.restore();
+}
 function plaque(word, w, h) {
   const c = document.createElement('canvas'); c.width = 512; c.height = Math.round(512 * h / w);
   const g = c.getContext('2d');
@@ -364,7 +382,8 @@ function plaque(word, w, h) {
   grd.addColorStop(0, '#e8c46a'); grd.addColorStop(1, '#a87a2c');
   g.fillStyle = grd; g.fillRect(0, 0, c.width, c.height);
   g.strokeStyle = '#5a3d14'; g.lineWidth = 6; g.strokeRect(5, 5, c.width - 10, c.height - 10);
-  if (word) {
+  if (word && word.crest) emblem(g, word.crest, c.width / 2, c.height / 2, c.height * 0.36, '#2a1a08');
+  else if (word) {
     const hgt = Math.min(c.height * 0.62, (c.width - 40) / (word.length * 0.82));
     const adv = hgt * 0.8, x0 = c.width / 2 - (adv * word.length) / 2 + adv / 2;
     [...word].forEach((ch, i) => glyph(g, ch, x0 + i * adv, c.height / 2, hgt, '#2a1a08'));
@@ -388,13 +407,25 @@ export function makeNest(scene, M, def, pos, rotY) {
     const r = l.clone(); r.position.x = w / 2 - T / 2;
     box.add(back, top, bot, l, r);
     // its plaque sits on the front edge of its lid
-    const word = def.chain[i];
-    const pw = Math.min(w * 0.92, 0.18 + 0.085 * Math.max(4, (word || 'XXXX').length)), ph = 0.14;
+    const word = def.chain[i] && def.chain[i].ref ? { crest: def.crestOf(def.chain[i].ref) } : def.chain[i];
+    const pw = Math.min(w * 0.92, 0.18 + 0.085 * Math.max(4, typeof word === 'string' ? word.length : 4)), ph = 0.14;
     const p = plaque(word, pw, ph);
     p.position.set(0, h / 2 + ph / 2 - 0.005, d + 0.004);
     box.add(p);
     g.add(box);
   });
+  if (def.crest) {
+    // this cabinet's own crest, on a brass tag at the outer box's top corner
+    const c = document.createElement('canvas'); c.width = c.height = 128;
+    const gg = c.getContext('2d');
+    gg.fillStyle = '#c9a24a'; gg.beginPath(); gg.arc(64, 64, 60, 0, Math.PI * 2); gg.fill();
+    gg.strokeStyle = '#5a3d14'; gg.lineWidth = 6; gg.stroke();
+    emblem(gg, def.crest, 64, 64, 40, '#2a1a08');
+    const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace;
+    const tag = new THREE.Mesh(new THREE.CircleGeometry(0.11, 24), new THREE.MeshLambertMaterial({ map: tx }));
+    tag.position.set(-0.62, 0.52, 0.405);
+    g.add(tag);
+  }
   g.position.copy(pos);
   g.position.y = 1.12;
   g.rotation.y = rotY;
@@ -445,6 +476,7 @@ export function makeTank(scene, M, def, cx, wallZ) {
     // position of this exact tile within its layer (repeated letters keep order)
     const layer = ls.slice(0, i).filter((c) => HOLED.has(c) === fl).length;
     m.userData = { from: new THREE.Vector3(x0 + i * step, rackY, 0.08), to: new THREE.Vector3(left + layer * step, fl ? surfY : floorY, 0.06), float: fl };
+    if (def.lost === i) m.userData = { from: m.userData.from, to: new THREE.Vector3(0.35, 0.03, TD / 2 + 0.75), float: false, lost: true };
     m.position.copy(m.userData.from);
     g.add(m);
     return m;
@@ -471,6 +503,13 @@ export function updateTank(t, dt, now) {
     const { from, to } = m.userData;
     // fall straight down into the water first, then drift along to its place in the layer
     const a = Math.min(1, t.p * 2), b = Math.max(0, t.p * 2 - 1);
+    if (m.userData.lost) {
+      // bounces off the rim and out: an arc to the floor in front, landing face-down
+      const k = t.p;
+      m.position.set(from.x + (to.x - from.x) * k, from.y + (to.y - from.y) * k + Math.sin(k * Math.PI) * 0.5, from.z + (to.z - from.z) * k);
+      m.rotation.set(-Math.PI / 2 * Math.min(1, k * 1.4), 0, k * 2.2);
+      continue;
+    }
     const midY = m.userData.float ? to.y - 0.25 : to.y;
     const y = a < 1 ? from.y + (midY - from.y) * (a * a) : midY + (to.y - midY) * (1 - (1 - b) ** 2);
     m.position.set(from.x + (to.x - from.x) * b, y, from.z + (to.z - from.z) * b);
@@ -524,4 +563,41 @@ export function updateSeesaw(s, dt, solvedNow) {
   const target = s.level ? 0 : 0.22;
   s.a += (target - s.a) * Math.min(1, dt * 3);
   s.arm.rotation.z = s.a; // left end down
+}
+
+export function makeCracked(scene, M, def, cx, cz, rotY = 0) {
+  const g = new THREE.Group();
+  const base = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.06, 0.45), M.wood);
+  base.position.y = 0.62;
+  g.add(base);
+  for (const [dx, dz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.62, 0.07), M.wood);
+    leg.position.set(dx * 0.68, 0.31, dz * 0.18);
+    g.add(leg);
+  }
+  const glass = new THREE.MeshPhongMaterial({ color: '#cfe6ea', transparent: true, opacity: 0.25, side: THREE.DoubleSide, depthWrite: false });
+  const r = rng(def.clue.length * 131 + 7);
+  // jagged stumps of the broken tank walls, and shards on the floor
+  for (let i = 0; i < 7; i++) {
+    const shard = new THREE.Mesh(new THREE.ConeGeometry(0.05 + r() * 0.08, 0.15 + r() * 0.35, 3), glass);
+    shard.position.set(-0.7 + i * 0.23, 0.72 + r() * 0.1, (r() < 0.5 ? -1 : 1) * 0.2);
+    g.add(shard);
+  }
+  for (let i = 0; i < 6; i++) {
+    const s = new THREE.Mesh(new THREE.PlaneGeometry(0.08 + r() * 0.1, 0.05 + r() * 0.08), glass);
+    s.rotation.set(-Math.PI / 2, 0, r() * 6);
+    s.position.set((r() - 0.5) * 1.6, 0.012, 0.35 + r() * 0.5);
+    g.add(s);
+  }
+  // the tiles in a jumbled heap on the floor, letters up
+  [...def.clue].forEach((ch, i) => {
+    const tile = tileMesh(ch);
+    tile.rotation.set(-Math.PI / 2, 0, (r() - 0.5) * 1.6);
+    tile.position.set((r() - 0.5) * 0.9, 0.035 + (i % 2) * 0.02, 0.45 + r() * 0.45);
+    g.add(tile);
+  });
+  g.position.set(cx, 0, cz);
+  g.rotation.y = rotY;
+  scene.add(g);
+  return g;
 }

@@ -25,9 +25,8 @@ export const turnRead = (w) => letters(w).reverse().filter((c) => TURN_SAFE.has(
 
 // Apply a panel's rules in order and return the word the panel wants.
 export function derive(panel) {
-  if (panel.kind === 'bridge' || panel.kind === 'plain') return panel.answer;
-  if (panel.kind === 'ribbon') return letters(panel.word).join('');
-  let w = letters(panel.kind === 'nest' || panel.kind === 'seesaw' ? panel.word : panel.clue).join('');
+  if (panel.kind === 'bridge' || panel.kind === 'plain' || panel.kind === 'split') return panel.answer;
+  let w = letters(panel.kind === 'nest' || panel.kind === 'seesaw' || panel.kind === 'ribbon' ? panel.word : panel.clue).join('');
   if (panel.kind === 'cistern') w = cisternRead(w);
   if (panel.frame === 'moon') w = glowLetters(panel.clue, panel.glow);
   if (panel.frame === 'sun') w = litLetters(panel.clue, panel.glow);
@@ -64,3 +63,16 @@ export const cisternRead = (w) => {
   const ls = letters(w);
   return ls.filter((c) => HOLED.has(c)).join('') + ls.filter((c) => !HOLED.has(c)).join('');
 };
+
+// Cracked tank: the tiles fall in a heap. The answer splits the clue's letters into two groups,
+// each keeping its order, with one group put first. (Checks that an answer is such a split.)
+export function isSplit(clue, ans) {
+  const c = letters(clue), a = letters(ans);
+  if (c.length !== a.length) return false;
+  for (let m = 1; m < (1 << c.length) - 1; m++) {
+    let x = '', y = '';
+    c.forEach((ch, i) => ((m >> i) & 1 ? (x += ch) : (y += ch)));
+    if (x + y === a.join('')) return true;
+  }
+  return false;
+}

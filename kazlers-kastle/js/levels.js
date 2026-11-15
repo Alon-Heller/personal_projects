@@ -57,17 +57,17 @@ export const DOORS = [
   // `capstones: n` = opens once any n wings are complete
   { id: 'banquet', at: [20, 19], requires: [], capstones: 1 },
   { id: 'solar', at: [28, 19], requires: [], capstones: 1 },
-  { id: 'tiltBolted', at: [7, 29], requires: ['b-views', 'b-super', 'b-vital'] },
-  { id: 'boltedWest', at: [1, 32], requires: ['b-spiral', 'b-ford'] },
+  { id: 'tiltBolted', at: [7, 29], requires: ['b-rust', 'b-views', 'b-super', 'b-vital'] },
+  { id: 'boltedWest', at: [1, 32], requires: [] },
   { id: 'westSteep', at: [7, 36], requires: ['b-dream', 'b-tardy'] },
   { id: 'steepCellar', at: [17, 36], requires: ['b-lantern', 'b-about', 'b-minute', 'l-scare', 'l-nit', 'l-ate'] },
   { id: 'glass', at: [47, 12], requires: [], capstones: 2 },
-  { id: 'cisternSeesaw', at: [53, 8], requires: ['g-bare', 'g-drive', 'g-plums'] },
-  { id: 'seesawGlass', at: [57, 4], requires: ['s-full', 's-awake', 's-modern', 's-wide'] },
-  { id: 'plankTailor', at: [26, 29], requires: ['r-chair', 'r-friends', 'r-parrot'] },
-  { id: 'plankAlcove', at: [40, 29], requires: ['t-ghost', 't-blow', 't-toast', 't-wick'] },
-  { id: 'alcoveNest', at: [43, 32], requires: ['r-schooled', 'r-lowered'] },
-  { id: 'nestWork', at: [39, 36], requires: ['n-tree', 'n-foot', 'n-galaxy', 'n-day', 'n-letter'] },
+  { id: 'cisternSeesaw', at: [53, 8], requires: ['g-post', 'g-drive', 'g-unclear', 'g-potion', 'g-whoever', 'g-outlook'] },
+  { id: 'seesawGlass', at: [57, 4], requires: ['s-down', 's-full', 's-awake', 's-modern', 's-wide'] },
+  { id: 'plankTailor', at: [26, 29], requires: ['r-count', 'r-chair', 'r-friends', 'r-parrot'] },
+  { id: 'plankAlcove', at: [40, 29], requires: ['t-tower', 't-ghost', 't-blow', 't-toast', 't-wick'] },
+  { id: 'alcoveNest', at: [43, 32], requires: ['m-motto', 'm-atom'] },
+  { id: 'nestWork', at: [39, 36], requires: ['n-book', 'n-tree', 'n-foot', 'n-galaxy', 'n-day', 'n-week', 'n-year', 'n-letter'] },
 ];
 
 // Wing capstones: solving all of these lights that wing's brazier in the courtyard.
@@ -131,11 +131,11 @@ export const PANELS = [
   { id: 'w-hike', at: [37, 15], wall: 'S', kind: 'mark', sigils: ['pool'], clue: 'HIKERS', answer: 'HIKE', show: 'pool' },
   { id: 'w-bide', at: [39, 15], wall: 'S', kind: 'mark', sigils: ['pool'], clue: 'BRIDGES', answer: 'BIDE', show: 'pool' },
   // the dry room (no water left)
-  { id: 'w-bike', at: [35, 1], wall: 'N', kind: 'mark', sigils: ['pool'], clue: 'BIKERS', answer: 'BIKE', ghost: true },
+  { id: 'w-bike', at: [35, 1], wall: 'N', kind: 'mark', sigils: ['pool'], clue: 'BIKERS', answer: 'BIKE', rev: 2 },
   { id: 'w-cooked', at: [37, 1], wall: 'N', kind: 'mark', sigils: ['pool'], clue: 'CROOKED', answer: 'COOKED' },
   { id: 'w-book', at: [39, 1], wall: 'N', kind: 'mark', sigils: ['pool'], clue: 'BROOKS', answer: 'BOOK' },
   // the mirror room
-  { id: 'w-may', at: [42, 1], wall: 'N', kind: 'mark', sigils: ['mirror'], clue: 'YAMS', answer: 'MAY', ghost: true, size: 1.2, height: 2.95 },
+  { id: 'w-may', at: [42, 1], wall: 'N', kind: 'mark', sigils: ['mirror'], clue: 'YAMS', answer: 'MAY', rev: 2, size: 1.2, height: 2.95 },
   { id: 'w-way', at: [46, 1], wall: 'N', kind: 'mark', sigils: ['mirror'], clue: 'YAWN', answer: 'WAY', size: 1.2, height: 2.95 },
   // capstone: nothing to look into
   { id: 'w-mat', at: [42, 15], wall: 'S', kind: 'mark', sigils: ['mirror'], clue: 'STAMPED', answer: 'MAT' },
@@ -146,12 +146,10 @@ export const PANELS = [
   { id: 'final', at: [24, 1], wall: 'N', kind: 'ink', frame: 'moon', sigils: ['pool'], clue: 'WHISKERS', glow: mask('.**.****'), answer: 'HIKE', final: true },
 
   // Banquet wing: keyboard tables. `tilt` = keys slid (+ east). `table`: lever | bolted | fixed
-  { id: 'b-rust', at: [9, 27], wall: 'N', kind: 'tilt', sigils: ['tilt'], clue: 'RUST', tilt: 1, table: 'lever', answer: 'TIDY', ghost: true, height: 2.15 },
+  { id: 'b-rust', at: [9, 27], wall: 'N', kind: 'tilt', sigils: ['tilt'], clue: 'RUST', tilt: 1, table: 'lever', answer: 'TIDY', rev: 2, height: 2.15 },
   { id: 'b-views', at: [12, 27], wall: 'N', kind: 'tilt', sigils: ['tilt'], clue: 'VIEWS', tilt: 1, table: 'lever', answer: 'BORED', height: 2.15 },
   { id: 'b-super', at: [15, 27], wall: 'N', kind: 'tilt', sigils: ['tilt'], clue: 'SUPER', tilt: 1, table: 'lever', answer: 'DIRT', height: 2.15 },
   { id: 'b-vital', at: [18, 27], wall: 'N', kind: 'tilt', sigils: ['tilt'], clue: 'VITAL', tilt: 1, table: 'lever', answer: 'BOYS', height: 2.15 },
-  { id: 'b-spiral', at: [2, 27], wall: 'N', kind: 'tilt', clue: 'SPIRAL', tilt: 1, table: 'bolted', sigils: ['tilt-e'], answer: 'DOTS', height: 2.15 },
-  { id: 'b-ford', at: [5, 27], wall: 'N', kind: 'tilt', clue: 'DIES', tilt: 1, table: 'bolted', sigils: ['tilt-e'], answer: 'FORD', height: 2.15 },
   { id: 'b-dream', at: [3, 33], wall: 'N', kind: 'tilt', sigils: ['tilt'], clue: 'DREAM', tilt: -1, table: 'fixed', answer: 'SEWN', height: 2.15 },
   { id: 'b-tardy', at: [5, 33], wall: 'N', kind: 'tilt', sigils: ['tilt'], clue: 'TARDY', tilt: -1, table: 'fixed', answer: 'REST', height: 2.15 },
   { id: 'b-lantern', at: [9, 33], wall: 'N', kind: 'tilt', sigils: ['tilt'], clue: 'LANTERN', tilt: 2, table: 'fixed', answer: 'DUTY', height: 2.15 },
@@ -162,26 +160,28 @@ export const PANELS = [
 
   // Solar wing: ribbon-wound planks (2 faces) and pillars (3 faces). `prop` = where it stands,
   // `nudge` = metres it stands towards the panel's wall side, `turn` = extra rotation (radians).
-  { id: 'r-count', at: [29, 27], wall: 'N', kind: 'ribbon', word: 'COUNT', faces: 2, prop: [29, 29], answer: 'COUNT', ghost: true, height: 2.6, size: 0.9 },
+  { id: 'r-count', at: [29, 27], wall: 'N', kind: 'ribbon', word: 'COUNT', faces: 2, prop: [29, 29], answer: 'COUNT', rev: 2, height: 2.6, size: 0.9 },
   { id: 'r-chair', at: [32, 27], wall: 'N', kind: 'ribbon', word: 'CHAIR', faces: 2, prop: [32, 29], answer: 'CHAIR', height: 2.6, size: 0.9 },
-  { id: 'r-friends', at: [35, 27], wall: 'N', kind: 'ribbon', word: 'FRIENDS', faces: 2, prop: [35, 29], answer: 'FRIENDS', height: 2.6, size: 0.9 },
+  { id: 'r-friends', at: [35, 27], wall: 'N', kind: 'ribbon', word: 'FRIENDS', faces: 2, fold: 3, prop: [35, 29], answer: 'FRIENDS', height: 2.6, size: 0.9, rev: 2 },
   { id: 'r-parrot', at: [38, 27], wall: 'N', kind: 'ribbon', word: 'PARROT', faces: 2, up: true, prop: [38, 29], answer: 'PARROT', height: 2.6, size: 0.9 },
   // the tailor's room: torn ribbons; every missing letter is a scrap in the basket. `torn` = letter positions torn away.
-  { id: 't-tower', at: [22, 26], wall: 'W', kind: 'ribbon', word: 'TOWER', faces: 2, torn: [2], footScrap: true, prop: [23, 26], answer: 'TOWER', ghost: true, height: 2.6, size: 0.9 },
+  { id: 't-tower', at: [22, 26], wall: 'W', kind: 'ribbon', word: 'TOWER', faces: 2, torn: [2], footScrap: true, prop: [23, 26], answer: 'TOWER', rev: 2, height: 2.6, size: 0.9 },
   { id: 't-ghost', at: [25, 26], wall: 'E', kind: 'ribbon', word: 'GHOST', faces: 3, torn: [0], prop: [24, 26], answer: 'GHOST', height: 2.6, size: 0.9 },
   { id: 't-blow', at: [22, 28], wall: 'W', kind: 'ribbon', word: 'BLOW', faces: 2, torn: [0], prop: [23, 28], answer: 'BLOW', height: 2.6, size: 0.9 },
   { id: 't-toast', at: [22, 30], wall: 'W', kind: 'ribbon', word: 'TOAST', faces: 3, up: true, torn: [0], prop: [23, 30], answer: 'TOAST', height: 2.6, size: 0.9 },
   { id: 't-wick', at: [25, 30], wall: 'E', kind: 'ribbon', word: 'WICK', faces: 2, torn: [0], prop: [24, 30], answer: 'WICK', height: 2.6, size: 0.9 },
   // the mirror alcove: each prop stands close to a wall mirror, one side only visible in the glass
-  { id: 'r-schooled', at: [42, 31], wall: 'S', kind: 'ribbon', word: 'SCHOOLED', faces: 2, up: true, prop: [42, 27], backTo: 'N', answer: 'SCHOOLED', height: 2.4, size: 0.9 },
-  { id: 'r-lowered', at: [45, 31], wall: 'S', kind: 'ribbon', word: 'LOWERED', faces: 3, prop: [45, 27], backTo: 'N', answer: 'LOWERED', height: 2.4, size: 0.9 },
+  { id: 'm-motto', at: [42, 31], wall: 'S', kind: 'ribbon', word: 'BOTTOM', faces: 2, prop: [42, 27], backTo: 'N', sigils: ['mirror'], answer: 'MOTTO', height: 2.4, size: 0.9 },
+  { id: 'm-atom', at: [45, 31], wall: 'S', kind: 'ribbon', word: 'MORTAL', faces: 3, prop: [45, 27], backTo: 'N', sigils: ['mirror'], answer: 'ATOM', height: 2.4, size: 0.9 },
 
   // Nest room: three nested boxes, smallest inside; one box's plaque is blank. `chain` runs inner -> outer.
-  { id: 'n-book', at: [41, 38], wall: 'S', kind: 'nest', chain: ['PAGE', null, 'LIBRARY'], word: 'BOOK', answer: 'BOOK', ghost: true, height: 2.75, size: 0.85 },
+  { id: 'n-book', at: [41, 38], wall: 'S', kind: 'nest', chain: ['PAGE', null, 'LIBRARY'], word: 'BOOK', answer: 'BOOK', rev: 2, height: 2.75, size: 0.85 },
   { id: 'n-tree', at: [43, 38], wall: 'S', kind: 'nest', chain: ['LEAF', null, 'FOREST'], word: 'TREE', answer: 'TREE', height: 2.75, size: 0.85 },
   { id: 'n-foot', at: [45, 38], wall: 'S', kind: 'nest', chain: ['TOE', null, 'LEG'], word: 'FOOT', answer: 'FOOT', height: 2.75, size: 0.85 },
   { id: 'n-galaxy', at: [46, 34], wall: 'E', kind: 'nest', chain: ['STAR', null, 'UNIVERSE'], word: 'GALAXY', answer: 'GALAXY', height: 2.75, size: 0.85 },
-  { id: 'n-day', at: [46, 36], wall: 'E', kind: 'nest', chain: ['MINUTE', 'HOUR', null], word: 'DAY', answer: 'DAY', height: 2.75, size: 0.85 },
+  { id: 'n-day', at: [46, 36], wall: 'E', kind: 'nest', chain: ['MINUTE', 'HOUR', null], word: 'DAY', answer: 'DAY', crest: 'sun', height: 2.75, size: 0.85 },
+  { id: 'n-week', at: [41, 33], wall: 'N', kind: 'nest', chain: [{ ref: 'n-day' }, null, 'MONTH'], word: 'WEEK', answer: 'WEEK', crest: 'moon', height: 2.75, size: 0.85 },
+  { id: 'n-year', at: [45, 33], wall: 'N', kind: 'nest', chain: [{ ref: 'n-week' }, 'MONTH', null], word: 'YEAR', answer: 'YEAR', height: 2.75, size: 0.85 },
   { id: 'n-letter', at: [40, 34], wall: 'W', kind: 'nest', chain: [null, 'WORD', 'SENTENCE'], word: 'LETTER', answer: 'LETTER', height: 2.75, size: 0.85 },
   // workroom (capstone): the nest, then a rule you already know
   { id: 'n-hoe', at: [32, 38], wall: 'S', kind: 'nest', chain: ['KITCHEN', null, 'VILLAGE'], word: 'HOUSE', sigils: ['pool'], answer: 'HOE', height: 2.75, size: 0.85 },
@@ -190,12 +190,17 @@ export const PANELS = [
   { id: 'n-bid', at: [36, 38], wall: 'S', kind: 'nest', chain: ['FEATHER', null, 'FLOCK'], word: 'BIRD', sigils: ['pool'], answer: 'BID', height: 2.75, size: 0.85 },
 
   // Glasshouse wing. Cistern Hall: glass tanks with a pull-chain that drops the clue's tiles into the water.
-  { id: 'g-post', at: [50, 9], wall: 'N', kind: 'cistern', clue: 'SPOT', answer: 'POST', ghost: true, tank: true, height: 2.45, size: 0.9 },
-  { id: 'g-bare', at: [52, 9], wall: 'N', kind: 'cistern', clue: 'BEAR', answer: 'BARE', tank: true, height: 2.45, size: 0.9 },
-  { id: 'g-drive', at: [54, 9], wall: 'N', kind: 'cistern', clue: 'DIVER', answer: 'DRIVE', tank: true, height: 2.45, size: 0.9 },
-  { id: 'g-plums', at: [56, 9], wall: 'N', kind: 'cistern', clue: 'LUMPS', answer: 'PLUMS', tank: true, height: 2.45, size: 0.9 },
+  { id: 'g-post', at: [50, 9], wall: 'N', kind: 'cistern', clue: 'SPOT', answer: 'POST', rev: 2, tank: true, height: 2.45, size: 0.9 },
+  // one tile bounces out of the tank and lands face-down; the clue shows a gap where it was
+  { id: 'g-drive', at: [52, 9], wall: 'N', kind: 'cistern', clue: 'DIVER', lost: 2, answer: 'DRIVE', tank: true, height: 2.45, size: 0.9, rev: 2 },
+  // cracked tanks: no water, the tiles just fall in a heap. Split the letters into two groups (each keeping its order),
+  // put one group first: only one such rearrangement is a word.
+  { id: 'g-unclear', at: [54, 9], wall: 'N', kind: 'split', clue: 'NUCLEAR', answer: 'UNCLEAR', height: 2.45, size: 0.9 },
+  { id: 'g-potion', at: [56, 9], wall: 'N', kind: 'split', clue: 'OPTION', answer: 'POTION', height: 2.45, size: 0.9 },
+  { id: 'g-whoever', at: [51, 15], wall: 'S', kind: 'split', clue: 'HOWEVER', answer: 'WHOEVER', height: 2.45, size: 0.9 },
+  { id: 'g-outlook', at: [55, 15], wall: 'S', kind: 'split', clue: 'LOOKOUT', answer: 'OUTLOOK', height: 2.45, size: 0.9 },
   // Seesaw Room: the word on the low end; the answer is what balances it on the high end.
-  { id: 's-down', at: [51, 1], wall: 'N', kind: 'seesaw', clue: 'UP', word: 'DOWN', answer: 'DOWN', ghost: true, height: 2.5, size: 0.9 },
+  { id: 's-down', at: [51, 1], wall: 'N', kind: 'seesaw', clue: 'UP', word: 'DOWN', answer: 'DOWN', rev: 2, height: 2.5, size: 0.9 },
   { id: 's-full', at: [53, 1], wall: 'N', kind: 'seesaw', clue: 'EMPTY', word: 'FULL', answer: 'FULL', height: 2.5, size: 0.9 },
   { id: 's-awake', at: [55, 1], wall: 'N', kind: 'seesaw', clue: 'ASLEEP', word: 'AWAKE', answer: 'AWAKE', height: 2.5, size: 0.9 },
   { id: 's-modern', at: [51, 7], wall: 'S', kind: 'seesaw', clue: 'ANCIENT', word: 'MODERN', answer: 'MODERN', height: 2.5, size: 0.9 },
