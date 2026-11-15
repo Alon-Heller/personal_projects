@@ -107,6 +107,7 @@ export function rippleRead(pads) {
 // (Only rules with exactly one outcome live here; open rules like synonyms are checked by hand.)
 export const WORD_RULES = {
   back: (w) => [...w].reverse().join(''), // the word read backwards
+  dup: (w) => w + w,                      // the word twice
 };
 // Open rules: meaning or sound. Each sign is an arbitrary rune that does not depict the rule.
 export const OPEN_RULES = ['syn', 'kind', 'echo', 'opp'];

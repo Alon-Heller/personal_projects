@@ -39,6 +39,7 @@ export const ROOMS = [
   { id: 'wordHall', x: [50, 62], y: [17, 23], light: 'bright' },
   { id: 'soundRoom', x: [50, 55], y: [25, 31], light: 'warm' },
   { id: 'mixedRoom', x: [57, 62], y: [25, 31], light: 'bright' },
+  { id: 'runeRoom', x: [50, 62], y: [33, 38], light: 'bright' },
   { id: 'mirrorAlcove', x: [41, 46], y: [27, 31], light: 'bright' },
   { id: 'nestRoom', x: [40, 46], y: [33, 38], light: 'bright' },
   { id: 'workroom', x: [30, 38], y: [33, 38], light: 'bright' },
@@ -70,7 +71,8 @@ export const DOORS = [
   { id: 'seesawGlass', at: [57, 4], requires: ['s-down', 's-full', 's-awake', 's-modern', 's-wide'] },
   { id: 'garden', at: [53, 16], requires: ['g-post', 'g-drive', 'g-hatred', 'g-canoe', 'g-whoever', 'g-outlook'], capstones: 3 },
   { id: 'gardenWell', at: [54, 24], requires: ['w-plug', 'w-warts', 'w-reward', 'w-glad', 'w-big', 'w-shut', 'w-tree', 'w-bird', 'w-tool', 'w-rect'] },
-  { id: 'wellMixed', at: [56, 28], requires: ['e-night', 'e-flower', 'e-week', 'e-right'] },
+  { id: 'wellMixed', at: [56, 28], requires: ['e-night', 'e-flower', 'e-week', 'e-right', 'o-short', 'o-light', 'o-lose'] },
+  { id: 'mixedRune', at: [60, 32], requires: ['m-old', 'm-go', 'm-pan', 'm-god', 'm-bottoms', 'm-read', 'm-flower'] },
   { id: 'plankTailor', at: [26, 29], requires: ['r-count', 'r-chair', 'r-friends', 'r-parrot'] },
   { id: 'plankAlcove', at: [40, 29], requires: ['t-tower', 't-ghost', 't-blow', 't-toast', 't-wick'] },
   { id: 'alcoveNest', at: [43, 32], requires: ['m-motto', 'm-atom'] },
@@ -84,7 +86,7 @@ export const CAPSTONES = {
   banquet: ['b-lantern', 'b-about', 'b-minute'],
   solar: ['n-hoe', 'n-bid', 'n-flower', 'n-chapter'],
   glass: ['x-cod', 'x-boo', 'x-future'],
-  garden: ['m-old', 'm-evil', 'm-pots', 'm-god', 'm-ebb', 'm-one', 'm-flower'],
+  garden: ['q-nono', 'q-byebye', 'q-evil', 'q-one', 'q-flour'],
 };
 
 // Cells with water (a pool under a panel) or a dry basin. Both block walking.
@@ -237,12 +239,25 @@ export const PANELS = [
   { id: 'e-flower', at: [54, 25], wall: 'N', kind: 'chain', clue: 'FLOUR', steps: [['echo', 'FLOWER']], answer: 'FLOWER', height: 1.9, size: 1 },
   { id: 'e-week', at: [51, 31], wall: 'S', kind: 'chain', clue: 'WEAK', steps: [['echo', 'WEEK']], answer: 'WEEK', height: 1.9, size: 1 },
   { id: 'e-right', at: [54, 31], wall: 'S', kind: 'chain', clue: 'WRITE', steps: [['echo', 'RIGHT']], answer: 'RIGHT', height: 1.9, size: 1 },
+  // sound room, west and east walls, rune 'bar': the opposite
+  { id: 'o-short', at: [50, 27], wall: 'W', kind: 'chain', clue: 'TALL', steps: [['opp', 'SHORT']], answer: 'SHORT', height: 1.9, size: 1 },
+  { id: 'o-light', at: [50, 29], wall: 'W', kind: 'chain', clue: 'DARK', steps: [['opp', 'LIGHT']], answer: 'LIGHT', height: 1.9, size: 1 },
+  { id: 'o-lose', at: [55, 28], wall: 'E', kind: 'chain', clue: 'WIN', steps: [['opp', 'LOSE']], answer: 'LOSE', height: 1.9, size: 1 },
   // Mixed room: two runes, applied left to right
   { id: 'm-old', at: [58, 25], wall: 'N', kind: 'chain', clue: 'KNEW', steps: [['echo', 'NEW'], ['opp', 'OLD']], answer: 'OLD', height: 2.0, size: 1 },
-  { id: 'm-evil', at: [60, 25], wall: 'N', kind: 'chain', clue: 'DIE', steps: [['opp', 'LIVE'], ['back', 'EVIL']], answer: 'EVIL', height: 2.0, size: 1 },
-  { id: 'm-pots', at: [62, 26], wall: 'E', kind: 'chain', clue: 'HALT', steps: [['syn', 'STOP'], ['back', 'POTS']], answer: 'POTS', height: 2.0, size: 1 },
+  { id: 'm-go', at: [60, 25], wall: 'N', kind: 'chain', clue: 'GO', steps: [['opp', 'STOP'], ['back', 'POTS']], answer: 'POTS', height: 2.0, size: 1 },
+  { id: 'm-pan', at: [62, 26], wall: 'E', kind: 'chain', clue: 'SNOOZE', steps: [['syn', 'NAP'], ['back', 'PAN']], answer: 'PAN', height: 2.0, size: 1 },
   { id: 'm-god', at: [62, 30], wall: 'E', kind: 'chain', clue: 'SPANIEL', steps: [['kind', 'DOG'], ['back', 'GOD']], answer: 'GOD', height: 2.0, size: 1 },
-  { id: 'm-ebb', at: [61, 31], wall: 'S', kind: 'chain', clue: 'WOLF', steps: [['back', 'FLOW'], ['opp', 'EBB']], answer: 'EBB', height: 2.0, size: 1 },
-  { id: 'm-one', at: [59, 31], wall: 'S', kind: 'chain', clue: 'NOW', steps: [['back', 'WON'], ['echo', 'ONE']], answer: 'ONE', height: 2.0, size: 1 },
+  { id: 'm-bottoms', at: [61, 31], wall: 'S', kind: 'chain', clue: 'SPOT', steps: [['back', 'TOPS'], ['opp', 'BOTTOMS']], answer: 'BOTTOMS', height: 2.0, size: 1 },
+  { id: 'm-read', at: [59, 31], wall: 'S', kind: 'chain', clue: 'DEER', steps: [['back', 'REED'], ['echo', 'READ']], answer: 'READ', height: 2.0, size: 1 },
   { id: 'm-flower', at: [57, 31], wall: 'S', kind: 'chain', clue: 'ROWS', steps: [['echo', 'ROSE'], ['kind', 'FLOWER']], answer: 'FLOWER', height: 2.0, size: 1 },
+  // Rune room: a new block (the word twice), then longer chains
+  { id: 'q-dodo', at: [51, 33], wall: 'N', kind: 'mark', sigils: ['dup'], clue: 'DO', answer: 'DODO', height: 1.9, size: 1 },
+  { id: 'q-yoyo', at: [53, 33], wall: 'N', kind: 'mark', sigils: ['dup'], clue: 'YO', answer: 'YOYO', height: 1.9, size: 1 },
+  { id: 'q-cancan', at: [55, 33], wall: 'N', kind: 'mark', sigils: ['dup'], clue: 'CAN', answer: 'CANCAN', height: 1.9, size: 1 },
+  { id: 'q-nono', at: [57, 33], wall: 'N', kind: 'chain', clue: 'KNOW', steps: [['echo', 'NO'], ['dup', 'NONO']], answer: 'NONO', height: 1.9, size: 1 },
+  { id: 'q-byebye', at: [51, 38], wall: 'S', kind: 'chain', clue: 'FAREWELL', steps: [['syn', 'BYE'], ['dup', 'BYEBYE']], answer: 'BYEBYE', height: 1.9, size: 1 },
+  { id: 'q-evil', at: [54, 38], wall: 'S', kind: 'chain', clue: 'DYE', steps: [['echo', 'DIE'], ['opp', 'LIVE'], ['back', 'EVIL']], answer: 'EVIL', height: 1.9, size: 1 },
+  { id: 'q-one', at: [57, 38], wall: 'S', kind: 'chain', clue: 'THEN', steps: [['opp', 'NOW'], ['back', 'WON'], ['echo', 'ONE']], answer: 'ONE', height: 1.9, size: 1 },
+  { id: 'q-flour', at: [60, 38], wall: 'S', kind: 'chain', clue: 'TULIP', steps: [['kind', 'FLOWER'], ['echo', 'FLOUR']], answer: 'FLOUR', height: 1.9, size: 1 },
 ];

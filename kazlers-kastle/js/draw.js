@@ -97,6 +97,9 @@ function sigil(ctx, kind, cx, cy, color, glow) {
     ctx.beginPath(); ctx.moveTo(cx - 26, cy - 32); ctx.lineTo(cx + 26, cy - 32); ctx.lineTo(cx, cy); ctx.lineTo(cx + 26, cy + 32); ctx.lineTo(cx - 26, cy + 32); ctx.lineTo(cx, cy); ctx.closePath(); ctx.fill();
   } else if (kind === 'arch') {
     ctx.lineWidth = 9; ctx.beginPath(); ctx.moveTo(cx - 28, cy + 30); ctx.lineTo(cx - 28, cy - 4); ctx.arc(cx, cy - 4, 28, Math.PI, 0); ctx.lineTo(cx + 28, cy + 30); ctx.stroke();
+  } else if (kind === 'eye') {
+    ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(cx - 40, cy); ctx.quadraticCurveTo(cx, cy - 36, cx + 40, cy); ctx.quadraticCurveTo(cx, cy + 36, cx - 40, cy); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, 10, 0, Math.PI * 2); ctx.fill();
   } else if (kind === 'bar') {
     ctx.fillRect(cx - 34, cy - 6, 68, 12); ctx.fillRect(cx - 34, cy - 30, 12, 60); ctx.fillRect(cx + 22, cy - 30, 12, 60);
   } else if (kind === 'seesaw') {
@@ -141,7 +144,7 @@ export function drawPanel(ctx, p, st) {
 
   // left to right is the order the rules apply: the panel's own kind first, then anything done to its result
   if (p.crest) crestMark(ctx, p.crest, 70, 70, dark);
-  const RUNE = { back: 'tri', syn: 'hour', kind: 'arch', echo: 'knot', opp: 'bar' };
+  const RUNE = { back: 'tri', syn: 'hour', kind: 'arch', echo: 'knot', opp: 'bar', dup: 'eye' };
   const chainRunes = p.kind === 'chain' ? p.steps.map(([r]) => RUNE[r]) : [];
   const kinds0 = [p.kind === 'ribbon' || p.twin ? 'ribbon' : null, p.kind === 'nest' ? 'nest' : null, p.pre || null, p.kind === 'cistern' || p.kind === 'split' ? 'cistern' : null,  p.kind === 'seesaw' ? 'seesaw' : null, p.frame, ...(p.sigils || [])].filter(Boolean);
   const kinds = [...kinds0.map((k) => RUNE[k] || k), ...chainRunes];
