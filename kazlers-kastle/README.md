@@ -9,7 +9,7 @@ This README is spoiler-free. **Don't open `js/levels.js` or `js/rules.js` if you
 The game uses JavaScript modules, so it needs to be served over http (opening `index.html` straight from disk won't work).
 
 - **GitHub Pages:** turn on Pages for this repo and open `…/kazlers-kastle/`.
-- **Locally:** from this folder run `python3 -m http.server 8000` and open http://localhost:8000.
+- **Locally:** from this folder run `python3 serve.py` and open http://localhost:8000. (It turns off browser caching, so a refresh always picks up a `git pull`.)
 
 Desktop only: keyboard and mouse.
 
