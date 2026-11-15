@@ -49,6 +49,11 @@ for (const p of PANELS) if (p.decoy) {
   for (const q of pads) if (Math.hypot(q.x, q.z) > 2.0) fail(`${p.id}: pad ${q.ch} outside the pond`);
   if (p.pre === 'ripple' && rippleRead(pads) !== normalize(p.order)) fail(`${p.id}: bad ripple`);
 }
+for (const p of PANELS) if (p.kind === 'initials') {
+  const got = p.refs.map((id) => normalize(PANELS.find((q) => q.id === id)?.answer || '?')[0]).join('');
+  if (got !== normalize(p.answer)) fail(`${p.id}: initials give ${got}`);
+  for (const id of p.refs) if (!PANELS.find((q) => q.id === id)?.crest) fail(`${p.id}: ${id} has no crest`);
+}
 for (const p of PANELS) if (p.prop && !inRoom(p.prop)) fail(`${p.id}: prop ${p.prop} outside rooms`);
 for (const r of ROOMS) if (r.x[1] >= W - 1 || r.y[1] >= H - 1 || r.x[0] < 1 || r.y[0] < 1) fail(`room ${r.id} touches the edge`);
 

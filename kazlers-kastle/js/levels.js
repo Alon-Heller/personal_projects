@@ -36,8 +36,8 @@ export const ROOMS = [
   { id: 'seesawRoom', x: [50, 56], y: [1, 7], light: 'bright' },
   { id: 'glasshouse', x: [58, 62], y: [1, 7], light: 'bright' },
   // Garden wing (south of the glasshouse): an open-air pond garden, the well room, and a room of mixed rules
-  { id: 'pondGarden', x: [50, 62], y: [17, 23], light: 'sky' },
-  { id: 'wellRoom', x: [50, 55], y: [25, 31], light: 'warm' },
+  { id: 'wordHall', x: [50, 62], y: [17, 23], light: 'bright' },
+  { id: 'soundRoom', x: [50, 55], y: [25, 31], light: 'warm' },
   { id: 'mixedRoom', x: [57, 62], y: [25, 31], light: 'bright' },
   { id: 'mirrorAlcove', x: [41, 46], y: [27, 31], light: 'bright' },
   { id: 'nestRoom', x: [40, 46], y: [33, 38], light: 'bright' },
@@ -69,8 +69,8 @@ export const DOORS = [
   { id: 'cisternSeesaw', at: [53, 8], requires: ['g-post', 'g-drive', 'g-hatred', 'g-canoe', 'g-whoever', 'g-outlook'] },
   { id: 'seesawGlass', at: [57, 4], requires: ['s-down', 's-full', 's-awake', 's-modern', 's-wide'] },
   { id: 'garden', at: [53, 16], requires: ['g-post', 'g-drive', 'g-hatred', 'g-canoe', 'g-whoever', 'g-outlook'], capstones: 3 },
-  { id: 'gardenWell', at: [54, 24], requires: ['p-earth', 'p-thing', 'p-silent'] },
-  { id: 'wellMixed', at: [56, 28], requires: ['e-night', 'e-flower', 'e-week', 'e-right', 'x-cod', 'x-boo', 'x-future'] },
+  { id: 'gardenWell', at: [54, 24], requires: ['w-hint', 'w-leaf', 'w-anger', 'w-eighth', 'w-heart', 'w-item', 'w-plug', 'w-warts', 'w-sleep', 'w-reward'] },
+  { id: 'wellMixed', at: [56, 28], requires: ['e-night', 'e-flower', 'e-week', 'e-right', 'c-cake', 'c-bran', 'c-clue', 'c-salt', 'x-cod', 'x-boo', 'x-future'] },
   { id: 'plankTailor', at: [26, 29], requires: ['r-count', 'r-chair', 'r-friends', 'r-parrot'] },
   { id: 'plankAlcove', at: [40, 29], requires: ['t-tower', 't-ghost', 't-blow', 't-toast', 't-wick'] },
   { id: 'alcoveNest', at: [43, 32], requires: ['m-motto', 'm-atom'] },
@@ -84,7 +84,7 @@ export const CAPSTONES = {
   banquet: ['b-lantern', 'b-about', 'b-minute'],
   solar: ['n-hoe', 'n-bid', 'n-flower', 'n-chapter'],
   glass: ['x-cod', 'x-boo', 'x-future'],
-  garden: ['m-old', 'm-love', 'm-hole'],
+  garden: ['m-old', 'm-love', 'm-evil', 'm-earth', 'm-moor', 'm-owl'],
 };
 
 // Cells with water (a pool under a panel) or a dry basin. Both block walking.
@@ -218,21 +218,35 @@ export const PANELS = [
   { id: 'x-boo', at: [61, 1], wall: 'N', kind: 'seesaw', clue: 'TOP', word: 'BOTTOM', sigils: ['pool'], answer: 'BOO', height: 2.5, size: 0.9 },
   { id: 'x-future', at: [60, 7], wall: 'S', kind: 'seesaw', pre: 'cistern', clue: 'SPAT', via: 'PAST', word: 'FUTURE', answer: 'FUTURE', noProp: true, height: 2.0, size: 1 },
 
-  // Pond garden: lily pads read left to right as `decoy`; drop a pebble from the pier and the ripple reaches them in `order`.
-  { id: 'p-earth', at: [52, 23], wall: 'S', kind: 'ripple', decoy: 'HEART', order: 'EARTH', pond: [52, 20], answer: 'EARTH', height: 2.3, size: 0.9 },
-  { id: 'p-thing', at: [56, 23], wall: 'S', kind: 'ripple', decoy: 'NIGHT', order: 'THING', pond: [56, 20], answer: 'THING', height: 2.3, size: 0.9 },
-  // frozen: no ripple, a pebble lies on the ice at the pier
-  { id: 'p-silent', at: [60, 23], wall: 'S', kind: 'ripple', decoy: 'LISTEN', order: 'SILENT', pond: [60, 20], frozen: true, answer: 'SILENT', height: 2.3, size: 0.9 },
-  // Well room: what comes back up the well sounds the same but is spelled differently
-  { id: 'e-night', at: [51, 25], wall: 'N', kind: 'echo', clue: 'KNIGHT', word: 'NIGHT', answer: 'NIGHT', well: true, height: 2.4, size: 0.9 },
-  { id: 'e-flower', at: [54, 25], wall: 'N', kind: 'echo', clue: 'FLOUR', word: 'FLOWER', answer: 'FLOWER', well: true, height: 2.4, size: 0.9 },
-  { id: 'e-week', at: [51, 31], wall: 'S', kind: 'echo', clue: 'WEAK', word: 'WEEK', answer: 'WEEK', well: true, height: 2.4, size: 0.9 },
-  { id: 'e-right', at: [54, 31], wall: 'S', kind: 'echo', clue: 'WRITE', word: 'RIGHT', answer: 'RIGHT', well: true, height: 2.4, size: 0.9 },
-  // Mixed room (capstone of the garden)
+  // Word hall: sign-only rules. A curved arrow: the first letter goes to the end (the other way: the last comes to the front).
+  { id: 'w-hint', at: [51, 17], wall: 'N', kind: 'mark', sigils: ['turn'], clue: 'THIN', answer: 'HINT', height: 1.9, size: 1 },
+  { id: 'w-leaf', at: [55, 17], wall: 'N', kind: 'mark', sigils: ['turn'], clue: 'FLEA', answer: 'LEAF', height: 1.9, size: 1 },
+  { id: 'w-anger', at: [57, 17], wall: 'N', kind: 'mark', sigils: ['turn'], clue: 'RANGE', answer: 'ANGER', height: 1.9, size: 1 },
+  { id: 'w-eighth', at: [59, 17], wall: 'N', kind: 'mark', sigils: ['turn'], clue: 'HEIGHT', answer: 'EIGHTH', height: 1.9, size: 1 },
+  { id: 'w-heart', at: [61, 17], wall: 'N', kind: 'mark', sigils: ['turn-l'], clue: 'EARTH', answer: 'HEART', height: 1.9, size: 1 },
+  { id: 'w-item', at: [62, 20], wall: 'E', kind: 'mark', sigils: ['turn', 'turn'], clue: 'EMIT', answer: 'ITEM', height: 1.9, size: 1 },
+  // backwards
+  { id: 'w-plug', at: [51, 23], wall: 'S', kind: 'mark', sigils: ['back'], clue: 'GULP', answer: 'PLUG', height: 1.9, size: 1 },
+  { id: 'w-warts', at: [52, 23], wall: 'S', kind: 'mark', sigils: ['back'], clue: 'STRAW', answer: 'WARTS', height: 1.9, size: 1 },
+  { id: 'w-sleep', at: [57, 23], wall: 'S', kind: 'mark', sigils: ['back'], clue: 'PEELS', answer: 'SLEEP', height: 1.9, size: 1 },
+  { id: 'w-reward', at: [59, 23], wall: 'S', kind: 'mark', sigils: ['back'], clue: 'DRAWER', answer: 'REWARD', height: 1.9, size: 1 },
+  // Sound room: words that sound the same, spelled differently; and the comb: every other letter
+  { id: 'e-night', at: [51, 25], wall: 'N', kind: 'echo', clue: 'KNIGHT', word: 'NIGHT', answer: 'NIGHT', height: 1.9, size: 1 },
+  { id: 'e-flower', at: [54, 25], wall: 'N', kind: 'echo', clue: 'FLOUR', word: 'FLOWER', answer: 'FLOWER', height: 1.9, size: 1 },
+  { id: 'e-week', at: [51, 31], wall: 'S', kind: 'echo', clue: 'WEAK', word: 'WEEK', answer: 'WEEK', height: 1.9, size: 1 },
+  { id: 'e-right', at: [54, 31], wall: 'S', kind: 'echo', clue: 'WRITE', word: 'RIGHT', answer: 'RIGHT', height: 1.9, size: 1 },
+  { id: 'c-cake', at: [50, 26], wall: 'W', kind: 'mark', sigils: ['comb'], clue: 'CRACKLE', answer: 'CAKE', height: 1.9, size: 1 },
+  { id: 'c-bran', at: [50, 29], wall: 'W', kind: 'mark', sigils: ['comb'], clue: 'BARGAIN', answer: 'BRAN', height: 1.9, size: 1 },
+  { id: 'c-clue', at: [55, 26], wall: 'E', kind: 'mark', sigils: ['comb'], clue: 'CULTURE', answer: 'CLUE', height: 1.9, size: 1 },
+  { id: 'c-salt', at: [55, 30], wall: 'E', kind: 'mark', sigils: ['comb'], clue: 'SCARLET', answer: 'SALT', height: 1.9, size: 1 },
+  // Mixed room (capstone of the wing)
   // the echo gives two candidates (NEW, GNU); only one has an opposite
-  { id: 'm-old', at: [58, 25], wall: 'N', kind: 'seesaw', pre: 'echo', clue: 'KNEW', via: 'NEW', word: 'OLD', answer: 'OLD', noProp: true, height: 2.0, size: 1 },
+  { id: 'm-old', at: [58, 25], wall: 'N', kind: 'seesaw', pre: 'echo', clue: 'KNEW', via: 'NEW', word: 'OLD', answer: 'OLD', noProp: true, crest: 'key', height: 2.0, size: 1 },
   // the seesaw's low plaque shows the crest of a panel in another wing: its answer is the word to balance
-  { id: 'm-love', at: [62, 28], wall: 'E', kind: 'seesaw', clue: '', ref: 'g-hatred', word: 'LOVE', answer: 'LOVE', height: 2.5, size: 0.9 },
-  // a frozen pond, then the well
-  { id: 'm-hole', at: [60, 31], wall: 'S', kind: 'echo', pre: 'ripple', decoy: 'HOWLE', order: 'WHOLE', pond: [60, 28], frozen: true, word: 'HOLE', answer: 'HOLE', height: 2.3, size: 0.9 },
+  { id: 'm-love', at: [62, 28], wall: 'E', kind: 'seesaw', clue: '', ref: 'g-hatred', word: 'LOVE', answer: 'LOVE', crest: 'leaf', height: 2.5, size: 0.9 },
+  { id: 'm-evil', at: [60, 25], wall: 'N', kind: 'seesaw', clue: 'DIE', word: 'LIVE', sigils: ['back'], answer: 'EVIL', noProp: true, height: 2.0, size: 1 },
+  { id: 'm-earth', at: [62, 25], wall: 'N', kind: 'nest', chain: ['VALVE', null, 'CHEST'], word: 'HEART', sigils: ['turn'], answer: 'EARTH', height: 2.75, size: 0.85 },
+  { id: 'm-moor', at: [58, 31], wall: 'S', kind: 'nest', chain: ['BED', null, 'HOUSE'], word: 'ROOM', sigils: ['back'], answer: 'MOOR', height: 2.75, size: 0.85 },
+  // the first letters of three answers, found by their crests
+  { id: 'm-owl', at: [60, 31], wall: 'S', kind: 'initials', refs: ['m-old', 'n-week', 'm-love'], answer: 'OWL', height: 2.0, size: 1 },
 ];

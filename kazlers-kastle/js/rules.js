@@ -25,7 +25,7 @@ export const turnRead = (w) => letters(w).reverse().filter((c) => TURN_SAFE.has(
 
 // Apply a panel's rules in order and return the word the panel wants.
 export function derive(panel) {
-  if (panel.kind === 'bridge' || panel.kind === 'plain' || panel.kind === 'split') return panel.answer;
+  if (panel.kind === 'bridge' || panel.kind === 'plain' || panel.kind === 'split' || panel.kind === 'initials') return panel.answer;
   if (panel.kind === 'ripple') return rippleRead(layoutPond(panel.decoy, panel.order));
   let w = letters(['nest', 'seesaw', 'ribbon', 'echo'].includes(panel.kind) ? panel.word : panel.clue).join('');
   if (panel.kind === 'cistern') w = cisternRead(w);
@@ -37,6 +37,8 @@ export function derive(panel) {
   if (hasPool && hasMirror) w = turnRead(w);
   else if (hasPool) w = poolRead(w);
   else if (hasMirror) w = mirrorRead(w);
+  // simple word rules, applied in the order their signs appear
+  for (const m of marks) w = (WORD_RULES[m] || ((x) => x))(w);
   if (panel.kind === 'tilt') w = tiltSlide(w, panel.tilt);
   return w;
 }
@@ -99,3 +101,11 @@ export function rippleRead(pads) {
   const pier = { x: 0, z: 2.25 };
   return pads.map((p) => ({ ...p, d: Math.hypot(p.x - pier.x, p.z - pier.z) })).sort((a, b) => a.d - b.d).map((p) => p.ch).join('');
 }
+
+// Sign-only word rules. Each takes a word and gives a word; they chain in sign order.
+export const WORD_RULES = {
+  turn: (w) => w.slice(1) + w[0],              // the first letter moves to the end
+  'turn-l': (w) => w.slice(-1) + w.slice(0, -1), // the last letter moves to the front
+  back: (w) => [...w].reverse().join(''),        // the word read backwards
+  comb: (w) => [...w].filter((_, i) => i % 2 === 0).join(''), // every other letter, from the first
+};

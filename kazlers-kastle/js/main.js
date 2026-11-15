@@ -341,7 +341,9 @@ for (const [x, y] of POOLS) addBasin(x, y, true);
 for (const [x, y] of BASINS) addBasin(x, y, false);
 
 // ---------------------------------------------------------------- panels
-const panels = PANELS.map((p) => {
+const crestOf = (id) => PANELS.find((q) => q.id === id).crest;
+const panels = PANELS.map((p0) => {
+  const p = p0.refs ? { ...p0, crestOf } : p0;
   const cvs = document.createElement('canvas');
   cvs.width = PW; cvs.height = PH;
   const t = new THREE.CanvasTexture(cvs);
