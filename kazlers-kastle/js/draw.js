@@ -83,6 +83,15 @@ function sigil(ctx, kind, cx, cy, color, glow) {
     ctx.lineWidth = 5; ctx.strokeRect(cx - 40, cy - 40, 80, 56);
     ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(cx + 6, cy - 40); ctx.lineTo(cx - 6, cy - 22); ctx.lineTo(cx + 8, cy - 8); ctx.lineTo(cx - 2, cy + 16); ctx.stroke();
     ctx.fillRect(cx - 34, cy + 26, 14, 14); ctx.save(); ctx.translate(cx + 22, cy + 32); ctx.rotate(0.5); ctx.fillRect(-7, -7, 14, 14); ctx.restore();
+  } else if (kind === 'ripple') {
+    ctx.lineWidth = 4;
+    for (const r of [12, 26, 40]) { ctx.beginPath(); ctx.ellipse(cx, cy, r, r * 0.55, 0, 0, Math.PI * 2); ctx.stroke(); }
+    ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.fill();
+  } else if (kind === 'echo') {
+    // a well mouth with sound rising out of it
+    ctx.lineWidth = 5; ctx.beginPath(); ctx.ellipse(cx, cy + 26, 30, 9, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.lineWidth = 4;
+    for (const r of [12, 24, 36]) { ctx.beginPath(); ctx.arc(cx, cy + 14, r, Math.PI * 1.2, Math.PI * 1.8); ctx.stroke(); }
   } else if (kind === 'seesaw') {
     ctx.beginPath(); ctx.moveTo(cx, cy + 4); ctx.lineTo(cx - 14, cy + 30); ctx.lineTo(cx + 14, cy + 30); ctx.closePath(); ctx.fill();
     ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(cx - 44, cy + 14); ctx.lineTo(cx + 44, cy - 6); ctx.stroke();
@@ -124,7 +133,8 @@ export function drawPanel(ctx, p, st) {
   if (st.wrong) { ctx.lineWidth = 18; ctx.strokeStyle = '#b3261e'; ctx.strokeRect(9, 9, PW - 18, PH - 18); }
 
   // left to right is the order the rules apply: the panel's own kind first, then anything done to its result
-  const kinds = [p.kind === 'ribbon' || p.twin ? 'ribbon' : null, p.kind === 'nest' ? 'nest' : null, p.pre || null, p.kind === 'cistern' || p.kind === 'split' ? 'cistern' : null, p.kind === 'seesaw' ? 'seesaw' : null, p.frame, ...(p.sigils || [])].filter(Boolean);
+  if (p.crest) crestMark(ctx, p.crest, 70, 70, dark);
+  const kinds = [p.kind === 'ribbon' || p.twin ? 'ribbon' : null, p.kind === 'nest' ? 'nest' : null, p.pre || null, p.kind === 'cistern' || p.kind === 'split' ? 'cistern' : null, p.kind === 'ripple' ? 'ripple' : null, p.kind === 'echo' ? 'echo' : null, p.kind === 'seesaw' ? 'seesaw' : null, p.frame, ...(p.sigils || [])].filter(Boolean);
   if (kinds.length) sigilRow(ctx, kinds, dark ? GLOW : INK, dark);
 
   const cy = kinds.length ? 330 : 290;
@@ -141,8 +151,8 @@ export function drawPanel(ctx, p, st) {
     ctx.strokeRect(x, cy - box / 2, box, box);
     x += box + gap;
     word(ctx, b, x + wb / 2, cy, h, INK);
-  } else if (p.kind !== 'ribbon' && p.kind !== 'nest') {
-    const ls = lettersOf(p.clue);
+  } else if (p.kind !== 'ribbon' && p.kind !== 'nest' && p.kind !== 'ripple' && p.pre !== 'ripple') {
+    const ls = lettersOf(p.clue || '');
     const { xs, size } = slots(ls.length);
     const glow = new Set(p.glow || []);
     ls.forEach((c, i) => {
@@ -288,4 +298,15 @@ export function doorTexture(w = 512, h = 800, seed = 17) {
   g.fillStyle = '#2b2522'; g.beginPath(); g.arc(w * 0.8, h * 0.52, 22, 0, Math.PI * 2); g.fill();
   g.strokeStyle = '#4a403a'; g.lineWidth = 7; g.beginPath(); g.arc(w * 0.8, h * 0.52 + 26, 20, 0, Math.PI * 2); g.stroke();
   return c;
+}
+
+function crestMark(ctx, kind, x, y, dark) {
+  ctx.save();
+  ctx.fillStyle = dark ? '#3a2a10' : '#c9a24a'; ctx.beginPath(); ctx.arc(x, y, 40, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#5a3d14'; ctx.lineWidth = 4; ctx.stroke();
+  ctx.fillStyle = '#2a1a08';
+  if (kind === 'star') { ctx.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + (i * Math.PI) / 5, r = i % 2 ? 11 : 26; ctx.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); } ctx.closePath(); ctx.fill(); }
+  if (kind === 'sun') { ctx.beginPath(); ctx.arc(x, y, 12, 0, Math.PI * 2); ctx.fill(); }
+  if (kind === 'moon') { ctx.beginPath(); ctx.arc(x, y, 22, Math.PI * 0.3, Math.PI * 1.7); ctx.arc(x + 10, y, 17, Math.PI * 1.62, Math.PI * 0.38, true); ctx.fill(); }
+  ctx.restore();
 }

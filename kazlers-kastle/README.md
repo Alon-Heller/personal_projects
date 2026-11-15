@@ -21,6 +21,7 @@ Desktop only: keyboard and mouse.
 | Enter / Tab | submit / step back |
 | F or right-click | lantern |
 | H | flash arrows toward the nearest puzzle you can reach |
+| T | jump to the nearest unsolved puzzle you can reach (for playtesting) |
 | Esc | pause |
 
 Progress saves in your browser. "Start over" on the pause screen wipes it.

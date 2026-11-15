@@ -35,6 +35,10 @@ export const ROOMS = [
   { id: 'cisternHall', x: [50, 56], y: [9, 15], light: 'bright' },
   { id: 'seesawRoom', x: [50, 56], y: [1, 7], light: 'bright' },
   { id: 'glasshouse', x: [58, 62], y: [1, 7], light: 'bright' },
+  // Garden wing (south of the glasshouse): an open-air pond garden, the well room, and a room of mixed rules
+  { id: 'pondGarden', x: [50, 62], y: [17, 23], light: 'sky' },
+  { id: 'wellRoom', x: [50, 55], y: [25, 31], light: 'warm' },
+  { id: 'mixedRoom', x: [57, 62], y: [25, 31], light: 'bright' },
   { id: 'mirrorAlcove', x: [41, 46], y: [27, 31], light: 'bright' },
   { id: 'nestRoom', x: [40, 46], y: [33, 38], light: 'bright' },
   { id: 'workroom', x: [30, 38], y: [33, 38], light: 'bright' },
@@ -64,6 +68,9 @@ export const DOORS = [
   { id: 'glass', at: [47, 12], requires: [], capstones: 2 },
   { id: 'cisternSeesaw', at: [53, 8], requires: ['g-post', 'g-drive', 'g-hatred', 'g-canoe', 'g-whoever', 'g-outlook'] },
   { id: 'seesawGlass', at: [57, 4], requires: ['s-down', 's-full', 's-awake', 's-modern', 's-wide'] },
+  { id: 'garden', at: [53, 16], requires: ['g-post', 'g-drive', 'g-hatred', 'g-canoe', 'g-whoever', 'g-outlook'], capstones: 3 },
+  { id: 'gardenWell', at: [54, 24], requires: ['p-earth', 'p-thing', 'p-silent'] },
+  { id: 'wellMixed', at: [56, 28], requires: ['e-night', 'e-flower', 'e-week', 'e-right', 'x-cod', 'x-boo', 'x-future'] },
   { id: 'plankTailor', at: [26, 29], requires: ['r-count', 'r-chair', 'r-friends', 'r-parrot'] },
   { id: 'plankAlcove', at: [40, 29], requires: ['t-tower', 't-ghost', 't-blow', 't-toast', 't-wick'] },
   { id: 'alcoveNest', at: [43, 32], requires: ['m-motto', 'm-atom'] },
@@ -77,6 +84,7 @@ export const CAPSTONES = {
   banquet: ['b-lantern', 'b-about', 'b-minute'],
   solar: ['n-hoe', 'n-bid', 'n-flower', 'n-chapter'],
   glass: ['x-cod', 'x-boo', 'x-future'],
+  garden: ['m-old', 'm-love', 'm-hole'],
 };
 
 // Cells with water (a pool under a panel) or a dry basin. Both block walking.
@@ -195,7 +203,7 @@ export const PANELS = [
   { id: 'g-drive', at: [52, 9], wall: 'N', kind: 'cistern', clue: 'DIVER', lost: 2, answer: 'DRIVE', tank: true, height: 2.45, size: 0.9, rev: 3 },
   // cracked tanks: the same rule, but no water to show which tiles float. Split the letters into two groups
   // (each keeping its order), floaters first: only one such rearrangement is a word.
-  { id: 'g-hatred', at: [54, 9], wall: 'N', kind: 'split', clue: 'THREAD', answer: 'HATRED', height: 2.45, size: 0.9 },
+  { id: 'g-hatred', at: [54, 9], wall: 'N', kind: 'split', clue: 'THREAD', answer: 'HATRED', crest: 'star', height: 2.45, size: 0.9 },
   { id: 'g-canoe', at: [56, 9], wall: 'N', kind: 'split', clue: 'OCEAN', answer: 'CANOE', height: 2.45, size: 0.9 },
   { id: 'g-whoever', at: [51, 15], wall: 'S', kind: 'split', clue: 'HOWEVER', answer: 'WHOEVER', height: 2.45, size: 0.9 },
   { id: 'g-outlook', at: [55, 15], wall: 'S', kind: 'split', clue: 'LOOKOUT', answer: 'OUTLOOK', height: 2.45, size: 0.9 },
@@ -209,4 +217,22 @@ export const PANELS = [
   { id: 'x-cod', at: [59, 1], wall: 'N', kind: 'seesaw', clue: 'HOT', word: 'COLD', sigils: ['pool'], answer: 'COD', height: 2.5, size: 0.9 },
   { id: 'x-boo', at: [61, 1], wall: 'N', kind: 'seesaw', clue: 'TOP', word: 'BOTTOM', sigils: ['pool'], answer: 'BOO', height: 2.5, size: 0.9 },
   { id: 'x-future', at: [60, 7], wall: 'S', kind: 'seesaw', pre: 'cistern', clue: 'SPAT', via: 'PAST', word: 'FUTURE', answer: 'FUTURE', noProp: true, height: 2.0, size: 1 },
+
+  // Pond garden: lily pads read left to right as `decoy`; drop a pebble from the pier and the ripple reaches them in `order`.
+  { id: 'p-earth', at: [52, 23], wall: 'S', kind: 'ripple', decoy: 'HEART', order: 'EARTH', pond: [52, 20], answer: 'EARTH', height: 2.3, size: 0.9 },
+  { id: 'p-thing', at: [56, 23], wall: 'S', kind: 'ripple', decoy: 'NIGHT', order: 'THING', pond: [56, 20], answer: 'THING', height: 2.3, size: 0.9 },
+  // frozen: no ripple, a pebble lies on the ice at the pier
+  { id: 'p-silent', at: [60, 23], wall: 'S', kind: 'ripple', decoy: 'LISTEN', order: 'SILENT', pond: [60, 20], frozen: true, answer: 'SILENT', height: 2.3, size: 0.9 },
+  // Well room: what comes back up the well sounds the same but is spelled differently
+  { id: 'e-night', at: [51, 25], wall: 'N', kind: 'echo', clue: 'KNIGHT', word: 'NIGHT', answer: 'NIGHT', well: true, height: 2.4, size: 0.9 },
+  { id: 'e-flower', at: [54, 25], wall: 'N', kind: 'echo', clue: 'FLOUR', word: 'FLOWER', answer: 'FLOWER', well: true, height: 2.4, size: 0.9 },
+  { id: 'e-week', at: [51, 31], wall: 'S', kind: 'echo', clue: 'WEAK', word: 'WEEK', answer: 'WEEK', well: true, height: 2.4, size: 0.9 },
+  { id: 'e-right', at: [54, 31], wall: 'S', kind: 'echo', clue: 'WRITE', word: 'RIGHT', answer: 'RIGHT', well: true, height: 2.4, size: 0.9 },
+  // Mixed room (capstone of the garden)
+  // the echo gives two candidates (NEW, GNU); only one has an opposite
+  { id: 'm-old', at: [58, 25], wall: 'N', kind: 'seesaw', pre: 'echo', clue: 'KNEW', via: 'NEW', word: 'OLD', answer: 'OLD', noProp: true, height: 2.0, size: 1 },
+  // the seesaw's low plaque shows the crest of a panel in another wing: its answer is the word to balance
+  { id: 'm-love', at: [62, 28], wall: 'E', kind: 'seesaw', clue: '', ref: 'g-hatred', word: 'LOVE', answer: 'LOVE', height: 2.5, size: 0.9 },
+  // a frozen pond, then the well
+  { id: 'm-hole', at: [60, 31], wall: 'S', kind: 'echo', pre: 'ripple', decoy: 'HOWLE', order: 'WHOLE', pond: [60, 28], frozen: true, word: 'HOLE', answer: 'HOLE', height: 2.3, size: 0.9 },
 ];

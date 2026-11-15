@@ -4,7 +4,7 @@ import { CELL, W, H, ROOMS, OPENINGS, DOORS, PANELS, POOLS, BASINS, MIRRORS, WAL
 import { normalize } from './rules.js';
 import { drawPanel, PW, PH, stoneTexture, floorTexture, woodTexture, grassTexture, doorTexture } from './draw.js';
 import * as sfx from './audio.js';
-import { makeTable, updateTable, makeRibbonProp, makeNest, makeBasket, makeScrap, makeTank, updateTank, makeSeesaw, updateSeesaw, makeCracked } from './props.js';
+import { makeTable, updateTable, makeRibbonProp, makeNest, makeBasket, makeScrap, makeTank, updateTank, makeSeesaw, updateSeesaw, makeCracked, makePond, updatePond, dropPebble, makeWell } from './props.js';
 
 // ---------------------------------------------------------------- save
 const SAVE_KEY = 'kazlers-kastle-v1';
@@ -266,6 +266,7 @@ const braziers = {};
   make('banquet', 21 * CELL + 1, 17 * CELL + 1);
   make('solar', 27 * CELL + 1, 17 * CELL + 1);
   make('glass', 24 * CELL + 1, 6 * CELL + 1);
+  make('garden', 24 * CELL + 1, 16 * CELL + 1);
 }
 
 // doors
@@ -449,14 +450,31 @@ for (const p of panels) {
   if (d.kind === 'seesaw' && !d.noProp) {
     const c = cellCenter(...d.at), n = wallDir[d.wall];
     const cx = c.x + n[0] * (CELL / 2 - 2.0), cz = c.z + n[1] * (CELL / 2 - 2.0);
-    const sw = makeSeesaw(scene, M, d, cx, cz);
+    const sw = makeSeesaw(scene, M, { ...d, crestOf: (id) => PANELS.find((q) => q.id === id).crest }, cx, cz);
     if (d.wall === 'S') sw.arm.parent.rotation.y = Math.PI;
     sw.panel = p;
     seesaws.push(sw);
     obstacles.push({ x0: cx - 1.35, x1: cx + 1.35, z0: cz - 0.35, z1: cz + 0.35 });
   }
 }
-const leverHits = [...tables.filter((t) => t.lever).flatMap((t) => t.lever.userData.hits), ...tanks.flatMap((t) => t.hits)];
+// ponds and wells
+const ponds = [], wellHits = [];
+for (const p of panels) {
+  const d = p.def;
+  if (d.pond) {
+    const c = cellCenter(...d.pond);
+    const rot = { S: 0, N: Math.PI, E: Math.PI / 2, W: -Math.PI / 2 }[d.wall];
+    ponds.push(makePond(scene, M, d, c.x, c.z, rot));
+    courtProps.push({ x: c.x, z: c.z, r: 2.25 });
+  }
+  if (d.well) {
+    const c = cellCenter(...d.at), n = wallDir[d.wall];
+    const cx = c.x + n[0] * (CELL / 2 - 1.75), cz = c.z + n[1] * (CELL / 2 - 1.75);
+    wellHits.push(...makeWell(scene, M, cx, cz).hits);
+    courtProps.push({ x: cx, z: cz, r: 0.85 });
+  }
+}
+const leverHits = [...ponds.flatMap((p) => p.hits), ...wellHits, ...tables.filter((t) => t.lever).flatMap((t) => t.lever.userData.hits), ...tanks.flatMap((t) => t.hits)];
 
 // ---------------------------------------------------------------- real reflections
 // Every pool and mirror renders the scene again from a mirrored camera.
@@ -678,6 +696,7 @@ document.addEventListener('keydown', (e) => {
   keys.add(e.code);
   if (e.code === 'KeyF') toggleLantern();
   if (e.code === 'KeyH') showWay();
+  if (e.code === 'KeyT') teleportToNearest();
   if (e.code === 'KeyE' && hoverLever) pullLever(hoverLever);
   else if (e.code === 'KeyE' && hover && canWrite(hover)) setFocus(hover);
 });
@@ -686,6 +705,8 @@ window.addEventListener('blur', () => keys.clear());
 
 let hoverLever = null;
 function pullLever(t) {
+  if (t.pads) { dropPebble(t); sfx.splash(); return; }
+  if (t.bucket) { sfx.echo(); return; }
   if (t.def.ghost) return;
   if (t.tiles) { t.dropped = !t.dropped; sfx.click(); if (t.dropped) sfx.splash(); return; }
   t.target = t.target ? 0 : t.def.tilt;
@@ -808,6 +829,86 @@ const walkable = (x, y) => {
   if (v === DOOR) return doors.find((d) => d.at[0] === x && d.at[1] === y).open;
   return false;
 };
+function nearestUnsolved() {
+  const sx = Math.floor(player.x / CELL), sy = Math.floor(player.z / CELL);
+  const goals = new Map();
+  for (const p of panels) {
+    if (p.def.ghost || solved.has(p.def.id)) continue;
+    const [x, y] = p.def.at;
+    for (const [dx, dy] of [[0, 0], [0, 1], [0, -1], [1, 0], [-1, 0]]) if (walkable(x + dx, y + dy)) goals.set(`${x + dx},${y + dy}`, p);
+  }
+  const seen = new Set([`${sx},${sy}`]);
+  const queue = [[sx, sy]];
+  while (queue.length) {
+    const [x, y] = queue.shift();
+    if (goals.has(`${x},${y}`)) return goals.get(`${x},${y}`);
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const k = `${x + dx},${y + dy}`;
+      if (seen.has(k) || !walkable(x + dx, y + dy)) continue;
+      seen.add(k); queue.push([x + dx, y + dy]);
+    }
+  }
+  return null;
+}
+let teleporting = null;
+// a soft round dot for sparkles
+const dotTex = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const g = c.getContext('2d'); const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.4, 'rgba(255,240,200,0.8)'); gr.addColorStop(1, 'rgba(255,220,150,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
+  return new THREE.CanvasTexture(c);
+})();
+function teleportToNearest() {
+  if (teleporting) return;
+  const p = nearestUnsolved();
+  if (!p) { sfx.fizzle(); return; }
+  // stand a few steps out from the panel, on a free spot, facing it
+  const n = wallDir[p.def.wall];
+  const wp = p.mesh.position;
+  let spot = null;
+  for (const back of [2.6, 2.2, 3.2, 1.8, 3.8, 1.4]) {
+    for (const side of [0, 0.8, -0.8, 1.6, -1.6]) {
+      const x = wp.x - n[0] * back + n[1] * side, z = wp.z - n[1] * back + n[0] * side;
+      if (!collides(x, z)) { spot = { x, z }; break; }
+    }
+    if (spot) break;
+  }
+  if (!spot) { sfx.fizzle(); return; }
+  const yaw = Math.atan2(-(wp.x - spot.x), -(wp.z - spot.z));
+  teleporting = { t: 0, from: { x: player.x, z: player.z }, to: spot, yaw, jumped: false };
+  swirl(player.x, player.z);
+  sfx.whoosh();
+}
+const fade = document.getElementById('fade');
+function updateTeleport(dt) {
+  if (!teleporting) return;
+  const tp = teleporting;
+  tp.t += dt;
+  // a quick warm glow in, jump at the brightest moment, glow out
+  const k = tp.t < 0.22 ? tp.t / 0.22 : Math.max(0, 1 - (tp.t - 0.22) / 0.38);
+  fade.style.opacity = (0.55 * k).toFixed(3);
+  if (!tp.jumped && tp.t >= 0.22) {
+    tp.jumped = true;
+    player.x = tp.to.x; player.z = tp.to.z; player.yaw = tp.yaw; player.pitch = 0.05;
+    swirl(player.x, player.z);
+  }
+  if (tp.t > 0.6) { teleporting = null; fade.style.opacity = '0'; }
+}
+// a ring of rising golden motes around a spot
+function swirl(x, z) {
+  const n = 70, arr = new Float32Array(n * 3), vel = [];
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, r = 0.4 + Math.random() * 0.4;
+    arr.set([x + Math.cos(a) * r, 0.1 + Math.random() * 1.6, z + Math.sin(a) * r], i * 3);
+    vel.push(new THREE.Vector3(-Math.sin(a) * 1.2, 0.8 + Math.random() * 0.8, Math.cos(a) * 1.2));
+  }
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(arr, 3));
+  const pts = new THREE.Points(geo, new THREE.PointsMaterial({ color: '#ffe2a0', size: 0.07, map: dotTex, transparent: true, toneMapped: false, depthWrite: false, blending: THREE.AdditiveBlending }));
+  scene.add(pts);
+  sparkles.push({ pts, vel, life: 1.2, float: true });
+}
+
 function showWay() {
   const sx = Math.floor(player.x / CELL), sy = Math.floor(player.z / CELL);
   // goal cells: where you stand to work on each unsolved panel
@@ -893,6 +994,7 @@ function frame() {
       player.bob += dt * 9;
     }
   }
+  updateTeleport(dt);
   camera.position.set(player.x, EYE + Math.sin(player.bob) * 0.035, player.z);
   camera.rotation.set(player.pitch, player.yaw, 0, 'YXZ');
   updateRegion();
@@ -951,13 +1053,15 @@ function frame() {
   if (locked) {
     ray.setFromCamera({ x: 0, y: 0 }, camera);
     const hit = ray.intersectObjects([...panelMeshes, ...leverHits], false)[0];
-    if (hit && hit.distance < 4.5 && (hit.object.userData.table || hit.object.userData.tank)) hoverLever = hit.object.userData.table || hit.object.userData.tank;
+    const u = hit && hit.object.userData;
+    if (hit && hit.distance < 4.5 && (u.table || u.tank || u.pond || u.well)) hoverLever = u.table || u.tank || u.pond || u.well;
     else if (hit && hit.object.userData.panel) hover = hit.object.userData.panel;
   }
   if (focus && hover !== focus) setFocus(null);
-  crosshair.classList.toggle('active', (!!hover && canWrite(hover)) || (!!hoverLever && !hoverLever.def.ghost));
+  crosshair.classList.toggle('active', (!!hover && canWrite(hover)) || (!!hoverLever && !(hoverLever.def && hoverLever.def.ghost)));
   for (const t of tables) updateTable(t, dt, t.room.light === 'dark' && !(lanternOn && !lanternBlocked()));
   for (const t of tanks) updateTank(t, dt, now);
+  for (const pd of ponds) updatePond(pd, dt);
   for (const sw of seesaws) updateSeesaw(sw, dt, solved.has(sw.def.id) || sw.def.ghost);
 
   // panels
@@ -991,7 +1095,7 @@ function frame() {
     s.life -= dt;
     const a = s.pts.geometry.attributes.position;
     s.vel.forEach((v, j) => {
-      v.y -= dt * 3;
+      if (!s.float) v.y -= dt * 3; else { v.multiplyScalar(1 - dt * 1.5); }
       a.setXYZ(j, a.getX(j) + v.x * dt, a.getY(j) + v.y * dt, a.getZ(j) + v.z * dt);
     });
     a.needsUpdate = true;
@@ -1005,5 +1109,5 @@ function frame() {
 requestAnimationFrame(frame);
 
 // for automated checks
-window.__kastle = { tanks, showWay, player, panels, doors, solved, tables, pullLever, get region() { return region?.id; }, get lanternOn() { return lanternOn; }, toggleLantern, submit, setFocus, camera };
+window.__kastle = { tanks, ponds, teleportToNearest, showWay, player, panels, doors, solved, tables, pullLever, get region() { return region?.id; }, get lanternOn() { return lanternOn; }, toggleLantern, submit, setFocus, camera };
 document.body.classList.add('ready');

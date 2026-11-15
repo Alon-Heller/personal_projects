@@ -78,3 +78,11 @@ export function splash() {
   const g = a.createGain(); g.gain.value = 0.25;
   src.connect(f).connect(g).connect(a.destination); src.start(a.currentTime + 0.35);
 }
+
+export function whoosh() {
+  tone(300, 0, 0.45, 'sine', 0.06, 900);
+  tone(1200, 0.05, 0.4, 'sine', 0.03, 2400);
+}
+export function echo() {
+  [523.25, 392, 329.63].forEach((f, i) => tone(f, i * 0.28, 0.6, 'sine', 0.1 / (i + 1)));
+}

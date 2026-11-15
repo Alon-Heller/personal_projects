@@ -1,6 +1,6 @@
 // Checks that every panel's stated answer follows from its rules,
 // and that the map and doors are consistent. Run: node tools/verify.mjs
-import { derive, normalize, cisternRead, isSplit } from '../js/rules.js';
+import { derive, normalize, cisternRead, isSplit, layoutPond, rippleRead } from '../js/rules.js';
 import { PANELS, DOORS, ROOMS, W, H, POOLS, BASINS, MIRRORS, CAPSTONES, WALL_MIRRORS, BASKETS } from '../js/levels.js';
 
 let bad = 0;
@@ -39,6 +39,16 @@ for (const p of PANELS) if (p.pre === 'cistern' && cisternRead(p.clue) !== p.via
 for (const p of PANELS) if (p.kind === 'split' && !isSplit(p.clue, p.answer)) fail(`${p.id}: ${p.answer} is not a two-group split of ${p.clue}`);
 for (const p of PANELS) for (const c of p.chain || []) if (c && c.ref && !ids.has(c.ref)) fail(`${p.id}: crest refers to unknown ${c.ref}`);
 for (const p of PANELS) if (p.chain) for (const c of p.chain) if (c && c.ref && !PANELS.find((q) => q.id === c.ref).crest) fail(`${p.id}: ${c.ref} has no crest to match`);
+// ponds: the ripple order must spell `order`, pads must be clearly apart in distance and in space, and the decoy must differ
+for (const p of PANELS) if (p.decoy) {
+  const pads = layoutPond(p.decoy, p.order);
+  if (rippleRead(pads) !== normalize(p.order)) fail(`${p.id}: ripple gives ${rippleRead(pads)}`);
+  const ds = pads.map((q) => Math.hypot(q.x, q.z - 2.25)).sort((a, b) => a - b);
+  for (let i = 1; i < ds.length; i++) if (ds[i] - ds[i - 1] < 0.3) fail(`${p.id}: two pads nearly the same distance`);
+  for (const a of pads) for (const b of pads) if (a !== b && Math.hypot(a.x - b.x, a.z - b.z) < 0.45) fail(`${p.id}: pads overlap`);
+  for (const q of pads) if (Math.hypot(q.x, q.z) > 2.0) fail(`${p.id}: pad ${q.ch} outside the pond`);
+  if (p.pre === 'ripple' && rippleRead(pads) !== normalize(p.order)) fail(`${p.id}: bad ripple`);
+}
 for (const p of PANELS) if (p.prop && !inRoom(p.prop)) fail(`${p.id}: prop ${p.prop} outside rooms`);
 for (const r of ROOMS) if (r.x[1] >= W - 1 || r.y[1] >= H - 1 || r.x[0] < 1 || r.y[0] < 1) fail(`room ${r.id} touches the edge`);
 

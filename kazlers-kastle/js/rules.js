@@ -26,7 +26,8 @@ export const turnRead = (w) => letters(w).reverse().filter((c) => TURN_SAFE.has(
 // Apply a panel's rules in order and return the word the panel wants.
 export function derive(panel) {
   if (panel.kind === 'bridge' || panel.kind === 'plain' || panel.kind === 'split') return panel.answer;
-  let w = letters(panel.kind === 'nest' || panel.kind === 'seesaw' || panel.kind === 'ribbon' ? panel.word : panel.clue).join('');
+  if (panel.kind === 'ripple') return rippleRead(layoutPond(panel.decoy, panel.order));
+  let w = letters(['nest', 'seesaw', 'ribbon', 'echo'].includes(panel.kind) ? panel.word : panel.clue).join('');
   if (panel.kind === 'cistern') w = cisternRead(w);
   if (panel.frame === 'moon') w = glowLetters(panel.clue, panel.glow);
   if (panel.frame === 'sun') w = litLetters(panel.clue, panel.glow);
@@ -75,4 +76,26 @@ export function isSplit(clue, ans) {
     if (x + y === a.join('')) return true;
   }
   return false;
+}
+
+// Ripple pond: letters float on lily pads. A pebble dropped at the pier sends out a ring;
+// pads are reached nearest first, and that order spells the answer.
+// Pads are laid out from a "decoy" (their left-to-right order) so the reading differs.
+export function layoutPond(decoy, answer) {
+  const d = letters(decoy), a = letters(answer);
+  const used = new Array(a.length).fill(false);
+  const rank = d.map((c) => { const r = a.findIndex((x, i) => x === c && !used[i]); used[r] = true; return r; });
+  const n = d.length, span = 2.6, step = 0.42;
+  const xs = d.map((_, i) => -span / 2 + (i * span) / (n - 1));
+  const base = Math.max(0.9, ...xs.map((x, i) => Math.abs(x) + 0.25 - rank[i] * step));
+  const R = 2.0; // pond radius; the pier is at (0, R + 0.25)
+  return d.map((c, i) => {
+    const dist = base + rank[i] * step;
+    const z = R + 0.25 - Math.sqrt(dist * dist - xs[i] * xs[i]);
+    return { ch: c, x: xs[i], z };
+  });
+}
+export function rippleRead(pads) {
+  const pier = { x: 0, z: 2.25 };
+  return pads.map((p) => ({ ...p, d: Math.hypot(p.x - pier.x, p.z - pier.z) })).sort((a, b) => a.d - b.d).map((p) => p.ch).join('');
 }

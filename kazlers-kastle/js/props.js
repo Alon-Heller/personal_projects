@@ -2,7 +2,7 @@
 // SPOILERS: this is how those rooms work.
 import * as THREE from 'three';
 import { glyph } from './glyphs.js';
-import { KEY_ROWS, keyOf, HOLED } from './rules.js';
+import { KEY_ROWS, keyOf, HOLED, layoutPond } from './rules.js';
 
 const INK = '#3a281b', GLOW = '#c9ffe0';
 const lettersOf = (s) => [...s.toUpperCase()].filter((c) => c >= 'A' && c <= 'Z');
@@ -365,11 +365,15 @@ export function makeRibbonProp(scene, M, def, cx, cz, turn = 0) {
 
 // ---------------------------------------------------------------- nests: boxes inside boxes, hung on a wall
 // `chain` runs inner -> outer; null marks the box whose plaque is blank.
-function emblem(g, kind, x, y, r, color) {
+export function emblem(g, kind, x, y, r, color) {
   g.save(); g.fillStyle = color; g.strokeStyle = color; g.lineWidth = r * 0.18;
   if (kind === 'sun') {
     g.beginPath(); g.arc(x, y, r * 0.45, 0, Math.PI * 2); g.fill();
     for (let i = 0; i < 8; i++) { const a = (i * Math.PI) / 4; g.beginPath(); g.moveTo(x + Math.cos(a) * r * 0.65, y + Math.sin(a) * r * 0.65); g.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); g.stroke(); }
+  } else if (kind === 'star') {
+    g.beginPath();
+    for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + (i * Math.PI) / 5, rr = i % 2 ? r * 0.42 : r; g.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); }
+    g.closePath(); g.fill();
   } else if (kind === 'moon') {
     g.beginPath(); g.arc(x, y, r * 0.9, Math.PI * 0.3, Math.PI * 1.7); g.arc(x + r * 0.42, y, r * 0.7, Math.PI * 1.62, Math.PI * 0.38, true); g.closePath(); g.fill();
   }
@@ -536,7 +540,8 @@ export function makeSeesaw(scene, M, def, cx, cz) {
       const grd = gg.createLinearGradient(0, 0, 0, 180); grd.addColorStop(0, '#e8c46a'); grd.addColorStop(1, '#a87a2c');
       gg.fillStyle = grd; gg.fillRect(0, 0, 512, 180);
       gg.strokeStyle = '#5a3d14'; gg.lineWidth = 8; gg.strokeRect(6, 6, 500, 168);
-      if (w) {
+      if (w && w.crest) emblem(gg, w.crest, 256, 90, 62, '#2a1a08');
+      else if (w) {
         const h = Math.min(110, 470 / (w.length * 0.82)), adv = h * 0.8, x0 = 256 - (adv * w.length) / 2 + adv / 2;
         [...w].forEach((ch, i) => glyph(gg, ch, x0 + i * adv, 90, h, '#2a1a08'));
       }
@@ -550,7 +555,7 @@ export function makeSeesaw(scene, M, def, cx, cz) {
     arm.add(post, m);
     return draw;
   };
-  mk(def.clue, -1.0);
+  mk(def.ref ? { crest: def.crestOf(def.ref) } : def.clue, -1.0);
   const setRight = mk(null, 1.0);
   g.add(pivot, arm);
   g.position.set(cx, 0, cz);
@@ -600,4 +605,104 @@ export function makeCracked(scene, M, def, cx, cz, rotY = 0) {
   g.rotation.y = rotY;
   scene.add(g);
   return g;
+}
+
+// ---------------------------------------------------------------- ripple pond: lily pads; drop a pebble at the pier
+export function makePond(scene, M, def, cx, cz, rotY) {
+  const g = new THREE.Group();
+  const R = 2.0;
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(R + 0.08, 0.12, 8, 48), M.rim);
+  rim.rotation.x = Math.PI / 2; rim.position.y = 0.06;
+  const surface = new THREE.Mesh(new THREE.CircleGeometry(R, 48).rotateX(-Math.PI / 2),
+    def.frozen ? new THREE.MeshPhongMaterial({ color: '#dceef4', emissive: '#4a6a78', shininess: 120 }) : M.water);
+  surface.position.y = 0.04;
+  g.add(rim, surface);
+  if (def.frozen) {
+    // a few cracks in the ice
+    const crack = new THREE.LineBasicMaterial({ color: '#8fb0bd' });
+    const r = rng(def.decoy.length * 97);
+    for (let i = 0; i < 6; i++) {
+      const pts = []; let x = (r() - 0.5) * 2.4, z = (r() - 0.5) * 2.4;
+      for (let k = 0; k < 5; k++) { pts.push(new THREE.Vector3(x, 0.05, z)); x += (r() - 0.5) * 0.5; z += (r() - 0.5) * 0.5; }
+      g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), crack));
+    }
+  }
+  const pads = layoutPond(def.decoy, def.order).map((p) => {
+    const c = document.createElement('canvas'); c.width = c.height = 128;
+    const gg = c.getContext('2d');
+    gg.fillStyle = '#5f7f34'; gg.beginPath(); gg.arc(64, 64, 60, 0.25, Math.PI * 2 - 0.05); gg.lineTo(64, 64); gg.closePath(); gg.fill();
+    gg.strokeStyle = '#3f5a22'; gg.lineWidth = 4; gg.stroke();
+    glyph(gg, p.ch, 64, 64, 66, '#f3ecd2');
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+    const mat = new THREE.MeshLambertMaterial({ map: t, transparent: true, alphaTest: 0.4, emissive: '#ffd27a', emissiveIntensity: 0 });
+    const m = new THREE.Mesh(new THREE.CircleGeometry(0.27, 24).rotateX(-Math.PI / 2), mat);
+    m.position.set(p.x, 0.06, p.z);
+    m.rotation.y = 0.3;
+    g.add(m);
+    return { m, dist: Math.hypot(p.x, p.z - (R + 0.25)) };
+  });
+  // the pier: a stone step at the near edge with a little heap of pebbles
+  const pier = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.22, 0.55), M.rim);
+  pier.position.set(0, 0.11, R + 0.38);
+  g.add(pier);
+  const pebMat = new THREE.MeshLambertMaterial({ color: '#8d8478' });
+  for (let i = 0; i < 4; i++) { const pb = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 6), pebMat); pb.position.set(-0.2 + i * 0.12, 0.25, R + 0.45 + (i % 2) * 0.06); g.add(pb); }
+  const ring = new THREE.Mesh(new THREE.RingGeometry(0.9, 1, 48).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#e8f4f6', transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false }));
+  ring.position.set(0, 0.07, R + 0.25);
+  g.add(ring);
+  const hit = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.6, 0.7), new THREE.MeshBasicMaterial({ visible: false }));
+  hit.position.copy(pier.position);
+  g.add(hit);
+  g.position.set(cx, 0, cz);
+  g.rotation.y = rotY;
+  scene.add(g);
+  const pond = { def, pads, ring, hits: def.frozen ? [] : [hit], t: -1 };
+  hit.userData.pond = pond;
+  return pond;
+}
+export function dropPebble(pond) { if (!pond.def.frozen) pond.t = 0; }
+export function updatePond(pond, dt) {
+  if (pond.t < 0) return;
+  pond.t += dt;
+  const radius = pond.t * 0.9; // metres per second: slow enough to watch the order
+  pond.ring.scale.setScalar(Math.max(0.01, radius));
+  pond.ring.material.opacity = Math.max(0, 0.75 - radius * 0.12);
+  for (const p of pond.pads) {
+    const since = radius - p.dist;
+    const k = since > 0 && since < 0.9 ? Math.sin((since / 0.9) * Math.PI) : 0;
+    p.m.position.y = 0.06 + k * 0.08;
+    p.m.material.emissiveIntensity = k * 0.9;
+  }
+  if (radius > 6) { pond.t = -1; pond.ring.material.opacity = 0; }
+}
+
+// ---------------------------------------------------------------- well: words come back up sounding the same
+export function makeWell(scene, M, cx, cz) {
+  const g = new THREE.Group();
+  const wall = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.75, 0.8, 24, 1, true), M.rim);
+  wall.position.y = 0.4;
+  const inner = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.8, 24, 1, true), new THREE.MeshLambertMaterial({ color: '#2a2018', side: THREE.BackSide }));
+  inner.position.y = 0.4;
+  const dark = new THREE.Mesh(new THREE.CircleGeometry(0.6, 24).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#050403' }));
+  dark.position.y = 0.2;
+  const lip = new THREE.Mesh(new THREE.TorusGeometry(0.66, 0.07, 6, 24), M.rim);
+  lip.rotation.x = Math.PI / 2; lip.position.y = 0.8;
+  g.add(wall, inner, dark, lip);
+  for (const s of [-1, 1]) { const post = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.3, 0.1), M.wood); post.position.set(s * 0.68, 1.4, 0); g.add(post); }
+  const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.5, 8).rotateZ(Math.PI / 2), M.wood);
+  beam.position.y = 1.9;
+  const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.8, 4), new THREE.MeshBasicMaterial({ color: '#b89a6a' }));
+  rope.position.y = 1.5;
+  const bucket = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.1, 0.2, 10), M.wood);
+  bucket.position.y = 1.05;
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(1.0, 0.5, 4), M.wood);
+  roof.position.y = 2.3; roof.rotation.y = Math.PI / 4;
+  g.add(beam, rope, bucket, roof);
+  const hit = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 1.2, 8), new THREE.MeshBasicMaterial({ visible: false }));
+  hit.position.y = 0.6;
+  g.add(hit);
+  g.position.set(cx, 0, cz);
+  scene.add(g);
+  hit.userData.well = { bucket };
+  return { hits: [hit] };
 }
