@@ -2,7 +2,7 @@
 // SPOILERS: this is how those rooms work.
 import * as THREE from 'three';
 import { glyph } from './glyphs.js';
-import { KEY_ROWS, keyOf } from './rules.js';
+import { KEY_ROWS, keyOf, HOLED } from './rules.js';
 
 const INK = '#3a281b', GLOW = '#c9ffe0';
 const lettersOf = (s) => [...s.toUpperCase()].filter((c) => c >= 'A' && c <= 'Z');
@@ -400,4 +400,128 @@ export function makeNest(scene, M, def, pos, rotY) {
   g.rotation.y = rotY;
   scene.add(g);
   return g;
+}
+
+// ---------------------------------------------------------------- cistern: a glass tank; pull the chain and the clue's tiles drop in
+function tileMesh(ch) {
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const g = c.getContext('2d');
+  g.fillStyle = '#d9b77a'; g.fillRect(0, 0, 128, 128);
+  g.strokeStyle = '#6b4a2b'; g.lineWidth = 8; g.strokeRect(4, 4, 120, 120);
+  glyph(g, ch, 64, 64, 82, '#2a1a08');
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const face = new THREE.MeshLambertMaterial({ map: t }), side = new THREE.MeshLambertMaterial({ color: '#b8935a' });
+  return new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.06), [side, side, side, side, face, side]);
+}
+export function makeTank(scene, M, def, cx, wallZ) {
+  const g = new THREE.Group();
+  const TW_ = 1.7, TH_ = 0.95, TD = 0.5, Y0 = 0.62;
+  const glass = new THREE.MeshPhongMaterial({ color: '#cfe6ea', transparent: true, opacity: 0.18, shininess: 120, depthWrite: false });
+  const water = new THREE.MeshPhongMaterial({ color: '#2f6f7a', transparent: true, opacity: 0.38, depthWrite: false });
+  const box = new THREE.Mesh(new THREE.BoxGeometry(TW_, TH_, TD), glass);
+  box.position.y = Y0 + TH_ / 2;
+  const wat = new THREE.Mesh(new THREE.BoxGeometry(TW_ - 0.04, TH_ * 0.82, TD - 0.04), water);
+  wat.position.y = Y0 + (TH_ * 0.82) / 2 + 0.01;
+  const base = new THREE.Mesh(new THREE.BoxGeometry(TW_ + 0.1, 0.06, TD + 0.1), M.wood);
+  base.position.y = Y0 - 0.03;
+  g.add(base, box, wat);
+  for (const [dx, dz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.07, Y0, 0.07), M.wood);
+    leg.position.set(dx * (TW_ / 2 - 0.05), Y0 / 2, dz * (TD / 2 - 0.05));
+    g.add(leg);
+  }
+  // a rack over the tank holds the tiles before they drop
+  const rack = new THREE.Mesh(new THREE.BoxGeometry(TW_, 0.04, 0.14), M.iron);
+  rack.position.set(0, Y0 + TH_ + 0.28, 0.08);
+  g.add(rack);
+  const ls = [...def.clue];
+  const n = ls.length, step = 0.27, x0 = -((n - 1) * step) / 2;
+  const floats = ls.filter((c) => HOLED.has(c)), sinks = ls.filter((c) => !HOLED.has(c));
+  const surfY = Y0 + TH_ * 0.82 - 0.06, floorY = Y0 + 0.13, rackY = Y0 + TH_ + 0.41;
+  const left = -TW_ / 2 + 0.2;
+  const tiles = ls.map((ch, i) => {
+    const m = tileMesh(ch);
+    const fl = HOLED.has(ch);
+    // position of this exact tile within its layer (repeated letters keep order)
+    const layer = ls.slice(0, i).filter((c) => HOLED.has(c) === fl).length;
+    m.userData = { from: new THREE.Vector3(x0 + i * step, rackY, 0.08), to: new THREE.Vector3(left + layer * step, fl ? surfY : floorY, 0.06), float: fl };
+    m.position.copy(m.userData.from);
+    g.add(m);
+    return m;
+  });
+  // pull chain with a ring at the right end
+  const chain = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.55, 5), M.iron);
+  chain.position.set(TW_ / 2 + 0.12, Y0 + TH_ + 0.1, 0.08);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.015, 6, 14), new THREE.MeshLambertMaterial({ color: '#c9a24a' }));
+  ring.position.set(TW_ / 2 + 0.12, Y0 + TH_ - 0.2, 0.08);
+  const hit = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.8, 0.3), new THREE.MeshBasicMaterial({ visible: false }));
+  hit.position.set(TW_ / 2 + 0.12, Y0 + TH_ - 0.05, 0.08);
+  g.add(chain, ring, hit);
+  const cz = wallZ + 0.1 + TD / 2;
+  g.position.set(cx, 0, cz);
+  scene.add(g);
+  const t = { def, group: g, tiles, ring, hits: [hit], dropped: !!def.ghost, p: def.ghost ? 1 : 0, box: { x0: cx - TW_ / 2 - 0.05, x1: cx + TW_ / 2 + 0.2, z0: wallZ, z1: cz + TD / 2 + 0.05 } };
+  hit.userData.tank = t;
+  return t;
+}
+export function updateTank(t, dt, now) {
+  const target = t.dropped ? 1 : 0;
+  t.p += Math.sign(target - t.p) * Math.min(Math.abs(target - t.p), dt * 0.9);
+  for (const m of t.tiles) {
+    const { from, to } = m.userData;
+    // fall straight down into the water first, then drift along to its place in the layer
+    const a = Math.min(1, t.p * 2), b = Math.max(0, t.p * 2 - 1);
+    const midY = m.userData.float ? to.y - 0.25 : to.y;
+    const y = a < 1 ? from.y + (midY - from.y) * (a * a) : midY + (to.y - midY) * (1 - (1 - b) ** 2);
+    m.position.set(from.x + (to.x - from.x) * b, y, from.z + (to.z - from.z) * b);
+    if (m.userData.float && t.p > 0.9) m.position.y += Math.sin(now * 0.003 + to.x * 7) * 0.012;
+    m.rotation.z = Math.sin(t.p * Math.PI) * 0.25 * (m.userData.float ? 1 : -1);
+  }
+  t.ring.position.y = 0.62 + 0.95 - 0.2 - (t.dropped ? 0.08 : 0);
+}
+
+// ---------------------------------------------------------------- seesaw: the clue sits on the low end; the answer balances it
+export function makeSeesaw(scene, M, def, cx, cz) {
+  const g = new THREE.Group();
+  const pivot = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.32, 0.55, 3), M.wood);
+  pivot.position.y = 0.27; pivot.rotation.y = Math.PI / 2;
+  const arm = new THREE.Group();
+  arm.position.y = 0.6;
+  const plank = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.07, 0.4), M.wood);
+  arm.add(plank);
+  const mk = (word, x) => {
+    const c = document.createElement('canvas'); c.width = 512; c.height = 180;
+    const gg = c.getContext('2d');
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+    const draw = (w) => {
+      const grd = gg.createLinearGradient(0, 0, 0, 180); grd.addColorStop(0, '#e8c46a'); grd.addColorStop(1, '#a87a2c');
+      gg.fillStyle = grd; gg.fillRect(0, 0, 512, 180);
+      gg.strokeStyle = '#5a3d14'; gg.lineWidth = 8; gg.strokeRect(6, 6, 500, 168);
+      if (w) {
+        const h = Math.min(110, 470 / (w.length * 0.82)), adv = h * 0.8, x0 = 256 - (adv * w.length) / 2 + adv / 2;
+        [...w].forEach((ch, i) => glyph(gg, ch, x0 + i * adv, 90, h, '#2a1a08'));
+      }
+      t.needsUpdate = true;
+    };
+    draw(word);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(0.85, 0.3), new THREE.MeshLambertMaterial({ map: t }));
+    const post = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.3, 0.05), M.iron);
+    post.position.set(x, 0.18, 0);
+    m.position.set(x, 0.45, 0.03);
+    arm.add(post, m);
+    return draw;
+  };
+  mk(def.clue, -1.0);
+  const setRight = mk(null, 1.0);
+  g.add(pivot, arm);
+  g.position.set(cx, 0, cz);
+  scene.add(g);
+  const s = { def, arm, setRight, level: false, a: 0.22 };
+  return s;
+}
+export function updateSeesaw(s, dt, solvedNow) {
+  if (solvedNow && !s.level) { s.level = true; s.setRight(s.def.word); }
+  const target = s.level ? 0 : 0.22;
+  s.a += (target - s.a) * Math.min(1, dt * 3);
+  s.arm.rotation.z = s.a; // left end down
 }

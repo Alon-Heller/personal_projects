@@ -2,7 +2,7 @@
 // The map is a grid of 2 m cells. x grows east, y grows south.
 
 export const CELL = 2;
-export const W = 48;
+export const W = 64;
 export const H = 41;
 
 // Interior rectangles (inclusive). `light`: sky | bright | warm | dark.
@@ -30,6 +30,11 @@ export const ROOMS = [
   { id: 'solarStair', x: [28, 28], y: [20, 25], light: 'warm' },
   { id: 'plankRoom', x: [27, 39], y: [27, 31], light: 'bright' },
   { id: 'tailor', x: [22, 25], y: [25, 31], light: 'bright' },
+  // Glasshouse wing (east of the water wing)
+  { id: 'glassHall', x: [48, 49], y: [12, 12], light: 'warm' },
+  { id: 'cisternHall', x: [50, 56], y: [9, 15], light: 'bright' },
+  { id: 'seesawRoom', x: [50, 56], y: [1, 7], light: 'bright' },
+  { id: 'glasshouse', x: [58, 62], y: [1, 7], light: 'bright' },
   { id: 'mirrorAlcove', x: [41, 46], y: [27, 31], light: 'bright' },
   { id: 'nestRoom', x: [40, 46], y: [33, 38], light: 'bright' },
   { id: 'workroom', x: [30, 38], y: [33, 38], light: 'bright' },
@@ -56,6 +61,9 @@ export const DOORS = [
   { id: 'boltedWest', at: [1, 32], requires: ['b-spiral', 'b-ford'] },
   { id: 'westSteep', at: [7, 36], requires: ['b-dream', 'b-tardy'] },
   { id: 'steepCellar', at: [17, 36], requires: ['b-lantern', 'b-about', 'b-minute', 'l-scare', 'l-nit', 'l-ate'] },
+  { id: 'glass', at: [47, 12], requires: [], capstones: 2 },
+  { id: 'cisternSeesaw', at: [53, 8], requires: ['g-bare', 'g-drive', 'g-plums'] },
+  { id: 'seesawGlass', at: [57, 4], requires: ['s-full', 's-awake', 's-modern', 's-wide'] },
   { id: 'plankTailor', at: [26, 29], requires: ['r-chair', 'r-friends', 'r-parrot'] },
   { id: 'plankAlcove', at: [40, 29], requires: ['t-ghost', 't-blow', 't-toast', 't-wick'] },
   { id: 'alcoveNest', at: [43, 32], requires: ['r-schooled', 'r-lowered'] },
@@ -68,6 +76,7 @@ export const CAPSTONES = {
   water: ['w-mat', 'w-soon', 'w-son'],
   banquet: ['b-lantern', 'b-about', 'b-minute'],
   solar: ['n-hoe', 'n-bid', 'n-flower', 'n-chapter'],
+  glass: ['x-cod', 'x-boo', 'x-future'],
 };
 
 // Cells with water (a pool under a panel) or a dry basin. Both block walking.
@@ -179,4 +188,20 @@ export const PANELS = [
   { id: 'n-flower', at: [32, 33], wall: 'N', kind: 'nest', twin: true, chain: ['PETAL', null, 'GARDEN'], prop: [32, 35], word: 'FLOWER', answer: 'FLOWER', height: 2.75, size: 0.85 },
   { id: 'n-chapter', at: [36, 33], wall: 'N', kind: 'nest', twin: true, chain: ['PAGE', null, 'BOOK'], prop: [36, 35], word: 'CHAPTER', answer: 'CHAPTER', height: 2.75, size: 0.85 },
   { id: 'n-bid', at: [36, 38], wall: 'S', kind: 'nest', chain: ['FEATHER', null, 'FLOCK'], word: 'BIRD', sigils: ['pool'], answer: 'BID', height: 2.75, size: 0.85 },
+
+  // Glasshouse wing. Cistern Hall: glass tanks with a pull-chain that drops the clue's tiles into the water.
+  { id: 'g-post', at: [50, 9], wall: 'N', kind: 'cistern', clue: 'SPOT', answer: 'POST', ghost: true, tank: true, height: 2.45, size: 0.9 },
+  { id: 'g-bare', at: [52, 9], wall: 'N', kind: 'cistern', clue: 'BEAR', answer: 'BARE', tank: true, height: 2.45, size: 0.9 },
+  { id: 'g-drive', at: [54, 9], wall: 'N', kind: 'cistern', clue: 'DIVER', answer: 'DRIVE', tank: true, height: 2.45, size: 0.9 },
+  { id: 'g-plums', at: [56, 9], wall: 'N', kind: 'cistern', clue: 'LUMPS', answer: 'PLUMS', tank: true, height: 2.45, size: 0.9 },
+  // Seesaw Room: the word on the low end; the answer is what balances it on the high end.
+  { id: 's-down', at: [51, 1], wall: 'N', kind: 'seesaw', clue: 'UP', word: 'DOWN', answer: 'DOWN', ghost: true, height: 2.5, size: 0.9 },
+  { id: 's-full', at: [53, 1], wall: 'N', kind: 'seesaw', clue: 'EMPTY', word: 'FULL', answer: 'FULL', height: 2.5, size: 0.9 },
+  { id: 's-awake', at: [55, 1], wall: 'N', kind: 'seesaw', clue: 'ASLEEP', word: 'AWAKE', answer: 'AWAKE', height: 2.5, size: 0.9 },
+  { id: 's-modern', at: [51, 7], wall: 'S', kind: 'seesaw', clue: 'ANCIENT', word: 'MODERN', answer: 'MODERN', height: 2.5, size: 0.9 },
+  { id: 's-wide', at: [55, 7], wall: 'S', kind: 'seesaw', clue: 'NARROW', word: 'WIDE', answer: 'WIDE', height: 2.5, size: 0.9 },
+  // the glasshouse (capstone): a seesaw, then the pool; and a cistern, then a seesaw
+  { id: 'x-cod', at: [59, 1], wall: 'N', kind: 'seesaw', clue: 'HOT', word: 'COLD', sigils: ['pool'], answer: 'COD', height: 2.5, size: 0.9 },
+  { id: 'x-boo', at: [61, 1], wall: 'N', kind: 'seesaw', clue: 'TOP', word: 'BOTTOM', sigils: ['pool'], answer: 'BOO', height: 2.5, size: 0.9 },
+  { id: 'x-future', at: [60, 7], wall: 'S', kind: 'seesaw', pre: 'cistern', clue: 'SPAT', via: 'PAST', word: 'FUTURE', answer: 'FUTURE', noProp: true, height: 2.0, size: 1 },
 ];

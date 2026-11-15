@@ -1,6 +1,6 @@
 // Checks that every panel's stated answer follows from its rules,
 // and that the map and doors are consistent. Run: node tools/verify.mjs
-import { derive, normalize } from '../js/rules.js';
+import { derive, normalize, cisternRead } from '../js/rules.js';
 import { PANELS, DOORS, ROOMS, W, H, POOLS, BASINS, MIRRORS, CAPSTONES, WALL_MIRRORS, BASKETS } from '../js/levels.js';
 
 let bad = 0;
@@ -35,6 +35,7 @@ for (const p of PANELS) if (p.kind === 'nest' && p.chain.filter((c) => c === nul
   for (const p of torn) for (const i of p.torn) if (!scraps.some(([ch, id]) => id === p.id && ch === normalize(p.word)[i])) fail(`${p.id}: torn letter ${normalize(p.word)[i]} has no scrap`);
   if (scraps.length !== torn.reduce((n, p) => n + p.torn.length, 0)) fail('scrap count differs from torn-letter count');
 }
+for (const p of PANELS) if (p.pre === 'cistern' && cisternRead(p.clue) !== p.via) fail(`${p.id}: cistern of ${p.clue} is ${cisternRead(p.clue)}, not ${p.via}`);
 for (const p of PANELS) if (p.prop && !inRoom(p.prop)) fail(`${p.id}: prop ${p.prop} outside rooms`);
 for (const r of ROOMS) if (r.x[1] >= W - 1 || r.y[1] >= H - 1 || r.x[0] < 1 || r.y[0] < 1) fail(`room ${r.id} touches the edge`);
 

@@ -66,3 +66,15 @@ export function creak() {
   tone(90, 0, 0.5, 'sawtooth', 0.05, 60);
   tone(180, 0.05, 0.35, 'triangle', 0.05, 120);
 }
+
+export function splash() {
+  const a = ctx();
+  const len = a.sampleRate * 0.6;
+  const buf = a.createBuffer(1, len, a.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (a.sampleRate * 0.12));
+  const src = a.createBufferSource(); src.buffer = buf;
+  const f = a.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 900; f.Q.value = 0.8;
+  const g = a.createGain(); g.gain.value = 0.25;
+  src.connect(f).connect(g).connect(a.destination); src.start(a.currentTime + 0.35);
+}

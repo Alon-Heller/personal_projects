@@ -4,7 +4,7 @@ import { CELL, W, H, ROOMS, OPENINGS, DOORS, PANELS, POOLS, BASINS, MIRRORS, WAL
 import { normalize } from './rules.js';
 import { drawPanel, PW, PH, stoneTexture, floorTexture, woodTexture, grassTexture, doorTexture } from './draw.js';
 import * as sfx from './audio.js';
-import { makeTable, updateTable, makeRibbonProp, makeNest, makeBasket, makeScrap } from './props.js';
+import { makeTable, updateTable, makeRibbonProp, makeNest, makeBasket, makeScrap, makeTank, updateTank, makeSeesaw, updateSeesaw } from './props.js';
 
 // ---------------------------------------------------------------- save
 const SAVE_KEY = 'kazlers-kastle-v1';
@@ -260,6 +260,7 @@ const braziers = {};
   make('water', 28.5 * CELL - 1 + 2, 10 * CELL + 1);
   make('banquet', 21 * CELL + 1, 17 * CELL + 1);
   make('solar', 27 * CELL + 1, 17 * CELL + 1);
+  make('glass', 24 * CELL + 1, 6 * CELL + 1);
 }
 
 // doors
@@ -426,7 +427,25 @@ for (const p of panels) {
   const rot = { N: 0, S: Math.PI, W: Math.PI / 2, E: -Math.PI / 2 }[d.wall];
   makeNest(scene, M, d, new THREE.Vector3(c.x + n[0] * (CELL / 2 - 0.01), 0, c.z + n[1] * (CELL / 2 - 0.01)), rot);
 }
-const leverHits = tables.filter((t) => t.lever).flatMap((t) => t.lever.userData.hits);
+// cistern tanks and seesaws
+const tanks = [], seesaws = [];
+for (const p of panels) {
+  const d = p.def;
+  if (d.kind === 'cistern' && d.tank) {
+    const t = makeTank(scene, M, d, d.at[0] * CELL + 1, d.at[1] * CELL);
+    tanks.push(t); obstacles.push(t.box);
+  }
+  if (d.kind === 'seesaw' && !d.noProp) {
+    const c = cellCenter(...d.at), n = wallDir[d.wall];
+    const cx = c.x + n[0] * (CELL / 2 - 2.0), cz = c.z + n[1] * (CELL / 2 - 2.0);
+    const sw = makeSeesaw(scene, M, d, cx, cz);
+    if (d.wall === 'S') sw.arm.parent.rotation.y = Math.PI;
+    sw.panel = p;
+    seesaws.push(sw);
+    obstacles.push({ x0: cx - 1.35, x1: cx + 1.35, z0: cz - 0.35, z1: cz + 0.35 });
+  }
+}
+const leverHits = [...tables.filter((t) => t.lever).flatMap((t) => t.lever.userData.hits), ...tanks.flatMap((t) => t.hits)];
 
 // ---------------------------------------------------------------- real reflections
 // Every pool and mirror renders the scene again from a mirrored camera.
@@ -657,6 +676,7 @@ window.addEventListener('blur', () => keys.clear());
 let hoverLever = null;
 function pullLever(t) {
   if (t.def.ghost) return;
+  if (t.tiles) { t.dropped = !t.dropped; sfx.click(); if (t.dropped) sfx.splash(); return; }
   t.target = t.target ? 0 : t.def.tilt;
   sfx.click(); sfx.creak();
 }
@@ -920,12 +940,14 @@ function frame() {
   if (locked) {
     ray.setFromCamera({ x: 0, y: 0 }, camera);
     const hit = ray.intersectObjects([...panelMeshes, ...leverHits], false)[0];
-    if (hit && hit.distance < 4.5 && hit.object.userData.table) hoverLever = hit.object.userData.table;
+    if (hit && hit.distance < 4.5 && (hit.object.userData.table || hit.object.userData.tank)) hoverLever = hit.object.userData.table || hit.object.userData.tank;
     else if (hit && hit.object.userData.panel) hover = hit.object.userData.panel;
   }
   if (focus && hover !== focus) setFocus(null);
   crosshair.classList.toggle('active', (!!hover && canWrite(hover)) || (!!hoverLever && !hoverLever.def.ghost));
   for (const t of tables) updateTable(t, dt, t.room.light === 'dark' && !(lanternOn && !lanternBlocked()));
+  for (const t of tanks) updateTank(t, dt, now);
+  for (const sw of seesaws) updateSeesaw(sw, dt, solved.has(sw.def.id) || sw.def.ghost);
 
   // panels
   const caret = Math.floor(now / 500) % 2 === 0;
@@ -972,5 +994,5 @@ function frame() {
 requestAnimationFrame(frame);
 
 // for automated checks
-window.__kastle = { showWay, player, panels, doors, solved, tables, pullLever, get region() { return region?.id; }, get lanternOn() { return lanternOn; }, toggleLantern, submit, setFocus, camera };
+window.__kastle = { tanks, showWay, player, panels, doors, solved, tables, pullLever, get region() { return region?.id; }, get lanternOn() { return lanternOn; }, toggleLantern, submit, setFocus, camera };
 document.body.classList.add('ready');

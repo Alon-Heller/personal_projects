@@ -27,7 +27,8 @@ export const turnRead = (w) => letters(w).reverse().filter((c) => TURN_SAFE.has(
 export function derive(panel) {
   if (panel.kind === 'bridge' || panel.kind === 'plain') return panel.answer;
   if (panel.kind === 'ribbon') return letters(panel.word).join('');
-  let w = letters(panel.kind === 'nest' ? panel.word : panel.clue).join('');
+  let w = letters(panel.kind === 'nest' || panel.kind === 'seesaw' ? panel.word : panel.clue).join('');
+  if (panel.kind === 'cistern') w = cisternRead(w);
   if (panel.frame === 'moon') w = glowLetters(panel.clue, panel.glow);
   if (panel.frame === 'sun') w = litLetters(panel.clue, panel.glow);
   const marks = panel.sigils || [];
@@ -55,3 +56,11 @@ export function tiltSlide(word, n) {
     return KEY_ROWS[r][i + n] || '';
   }).join('');
 }
+
+// Cistern: letter tiles dropped into water. Letters with a closed hole (in the castle's own lettering)
+// trap air and float; the rest sink. Each layer keeps its order; read the surface, then the floor.
+export const HOLED = new Set('ABDOPQR');
+export const cisternRead = (w) => {
+  const ls = letters(w);
+  return ls.filter((c) => HOLED.has(c)).join('') + ls.filter((c) => !HOLED.has(c)).join('');
+};
