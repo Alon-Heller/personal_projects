@@ -267,7 +267,7 @@ export const PANELS = [
   { id: 'a-pepper', at: [9, 18], wall: 'N', kind: 'chain', clue: 'SALT', steps: [['pair', 'PEPPER']], answer: 'PEPPER', height: 1.9, size: 1 },
   { id: 'a-fork', at: [11, 18], wall: 'N', kind: 'chain', clue: 'KNIFE', steps: [['pair', 'FORK']], answer: 'FORK', height: 1.9, size: 1 },
   { id: 'a-butter', at: [13, 18], wall: 'N', kind: 'chain', clue: 'BREAD', steps: [['pair', 'BUTTER']], answer: 'BUTTER', height: 1.9, size: 1 },
-  { id: 'a-saucer', at: [15, 18], wall: 'N', kind: 'chain', clue: 'CUP', steps: [['pair', 'SAUCER']], answer: 'SAUCER', height: 1.9, size: 1 },
+  { id: 'a-seek', at: [15, 18], wall: 'N', kind: 'chain', clue: 'HIDE', steps: [['pair', 'SEEK']], answer: 'SEEK', height: 1.9, size: 1 },
   { id: 'h-house', at: [9, 25], wall: 'S', kind: 'chain', clue: 'MOUSE', steps: [['rhyme', 'HOUSE']], given: [0, 'H'], answer: 'HOUSE', height: 1.9, size: 1 },
   { id: 'h-phone', at: [11, 25], wall: 'S', kind: 'chain', clue: 'STONE', steps: [['rhyme', 'PHONE']], given: [0, 'P'], answer: 'PHONE', height: 1.9, size: 1 },
   { id: 'h-snake', at: [16, 25], wall: 'S', kind: 'chain', clue: 'CAKE', steps: [['rhyme', 'SNAKE']], given: [1, 'N'], answer: 'SNAKE', height: 1.9, size: 1 },
