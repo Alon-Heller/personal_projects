@@ -87,21 +87,27 @@ function sigil(ctx, kind, cx, cy, color, glow) {
     ctx.lineWidth = 4;
     for (const r of [12, 26, 40]) { ctx.beginPath(); ctx.ellipse(cx, cy, r, r * 0.55, 0, 0, Math.PI * 2); ctx.stroke(); }
     ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.fill();
+  // ---- runes. Letter runes: straight lines and corners only. Meaning runes: curves only, in a second ink.
+  } else if (kind === 'tri') {
+    ctx.lineWidth = 6; ctx.lineJoin = 'miter';
+    ctx.beginPath(); ctx.moveTo(cx, cy - 32); ctx.lineTo(cx + 34, cy + 26); ctx.lineTo(cx - 34, cy + 26); ctx.closePath(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx - 12, cy + 8); ctx.lineTo(cx + 12, cy + 8); ctx.stroke();
+  } else if (kind === 'zig') {
+    ctx.lineWidth = 7; ctx.lineJoin = 'miter'; ctx.lineCap = 'butt';
+    ctx.beginPath(); ctx.moveTo(cx - 38, cy - 22); ctx.lineTo(cx - 14, cy + 22); ctx.lineTo(cx + 10, cy - 22); ctx.lineTo(cx + 34, cy + 22); ctx.stroke();
   } else if (kind === 'knot') {
     ctx.lineWidth = 6; ctx.beginPath(); ctx.ellipse(cx - 16, cy, 16, 24, 0, 0, Math.PI * 2); ctx.stroke();
     ctx.beginPath(); ctx.ellipse(cx + 16, cy, 16, 24, 0, 0, Math.PI * 2); ctx.stroke();
-  } else if (kind === 'tri') {
-    ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(cx, cy - 32); ctx.lineTo(cx + 34, cy + 26); ctx.lineTo(cx - 34, cy + 26); ctx.closePath(); ctx.stroke();
-    ctx.beginPath(); ctx.arc(cx, cy + 8, 7, 0, Math.PI * 2); ctx.fill();
-  } else if (kind === 'hour') {
-    ctx.beginPath(); ctx.moveTo(cx - 26, cy - 32); ctx.lineTo(cx + 26, cy - 32); ctx.lineTo(cx, cy); ctx.lineTo(cx + 26, cy + 32); ctx.lineTo(cx - 26, cy + 32); ctx.lineTo(cx, cy); ctx.closePath(); ctx.fill();
-  } else if (kind === 'arch') {
-    ctx.lineWidth = 9; ctx.beginPath(); ctx.moveTo(cx - 28, cy + 30); ctx.lineTo(cx - 28, cy - 4); ctx.arc(cx, cy - 4, 28, Math.PI, 0); ctx.lineTo(cx + 28, cy + 30); ctx.stroke();
-  } else if (kind === 'eye') {
-    ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(cx - 40, cy); ctx.quadraticCurveTo(cx, cy - 36, cx + 40, cy); ctx.quadraticCurveTo(cx, cy + 36, cx - 40, cy); ctx.stroke();
-    ctx.beginPath(); ctx.arc(cx, cy, 10, 0, Math.PI * 2); ctx.fill();
-  } else if (kind === 'bar') {
-    ctx.fillRect(cx - 34, cy - 6, 68, 12); ctx.fillRect(cx - 34, cy - 30, 12, 60); ctx.fillRect(cx + 22, cy - 30, 12, 60);
+  } else if (kind === 'spiral') {
+    ctx.lineWidth = 6; ctx.beginPath();
+    for (let i = 0; i <= 60; i++) { const a = i * 0.2, r = 4 + i * 0.5; const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+    ctx.stroke();
+  } else if (kind === 'horse') {
+    ctx.lineWidth = 9; ctx.beginPath(); ctx.arc(cx, cy + 2, 28, Math.PI * 0.85, Math.PI * 2.15); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx - 26, cy + 14, 6, 0, Math.PI * 2); ctx.arc(cx + 26, cy + 14, 6, 0, Math.PI * 2); ctx.fill();
+  } else if (kind === 'wave') {
+    ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(cx - 40, cy);
+    ctx.bezierCurveTo(cx - 24, cy - 40, cx - 6, cy - 40, cx, cy); ctx.bezierCurveTo(cx + 6, cy + 40, cx + 24, cy + 40, cx + 40, cy); ctx.stroke();
   } else if (kind === 'seesaw') {
     ctx.beginPath(); ctx.moveTo(cx, cy + 4); ctx.lineTo(cx - 14, cy + 30); ctx.lineTo(cx + 14, cy + 30); ctx.closePath(); ctx.fill();
     ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(cx - 44, cy + 14); ctx.lineTo(cx + 44, cy - 6); ctx.stroke();
@@ -125,7 +131,9 @@ function sigil(ctx, kind, cx, cy, color, glow) {
 function sigilRow(ctx, kinds, color, glow) {
   const gap = 120;
   const x0 = PW / 2 - ((kinds.length - 1) * gap) / 2;
-  kinds.forEach((k, i) => sigil(ctx, k, x0 + i * gap, 92, color, glow));
+  // meaning runes use a second, muted ink so they read as a family without shouting
+  const MEANING = new Set(['spiral', 'horse', 'knot', 'wave']);
+  kinds.forEach((k, i) => sigil(ctx, k, x0 + i * gap, 92, !glow && MEANING.has(k) ? '#2f5a55' : color, glow));
 }
 
 // ---- panels ---------------------------------------------------------------
@@ -144,7 +152,7 @@ export function drawPanel(ctx, p, st) {
 
   // left to right is the order the rules apply: the panel's own kind first, then anything done to its result
   if (p.crest) crestMark(ctx, p.crest, 70, 70, dark);
-  const RUNE = { back: 'tri', syn: 'hour', kind: 'arch', echo: 'knot', opp: 'bar', dup: 'eye' };
+  const RUNE = { back: 'tri', dup: 'zig', syn: 'spiral', kind: 'horse', echo: 'knot', opp: 'wave' };
   const chainRunes = p.kind === 'chain' ? p.steps.map(([r]) => RUNE[r]) : [];
   const kinds0 = [p.kind === 'ribbon' || p.twin ? 'ribbon' : null, p.kind === 'nest' ? 'nest' : null, p.pre || null, p.kind === 'cistern' || p.kind === 'split' ? 'cistern' : null,  p.kind === 'seesaw' ? 'seesaw' : null, p.frame, ...(p.sigils || [])].filter(Boolean);
   const kinds = [...kinds0.map((k) => RUNE[k] || k), ...chainRunes];
