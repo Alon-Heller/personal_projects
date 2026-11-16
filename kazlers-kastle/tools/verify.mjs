@@ -58,6 +58,7 @@ for (const p of PANELS) if (p.kind === 'chain') {
     w = out;
   }
 }
+for (const p of PANELS) if (p.given && normalize(p.answer)[p.given[0]] !== p.given[1]) fail(`${p.id}: given letter does not match the answer`);
 for (const p of PANELS) if (p.prop && !inRoom(p.prop)) fail(`${p.id}: prop ${p.prop} outside rooms`);
 for (const r of ROOMS) if (r.x[1] >= W - 1 || r.y[1] >= H - 1 || r.x[0] < 1 || r.y[0] < 1) fail(`room ${r.id} touches the edge`);
 

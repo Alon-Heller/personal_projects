@@ -22,6 +22,7 @@ export const ROOMS = [
   // Banquet wing (south-west)
   { id: 'banquetHall', x: [20, 20], y: [20, 25], light: 'warm' },
   { id: 'tiltHall', x: [8, 20], y: [27, 31], light: 'warm' },
+  { id: 'pairRoom', x: [8, 17], y: [18, 25], light: 'warm' },
   { id: 'boltedHall', x: [1, 6], y: [27, 31], light: 'warm' },
   { id: 'westGallery', x: [1, 6], y: [33, 38], light: 'warm' },
   { id: 'steepHall', x: [8, 16], y: [33, 38], light: 'warm' },
@@ -73,6 +74,7 @@ export const DOORS = [
   { id: 'gardenWell', at: [54, 24], requires: ['w-plug', 'w-warts', 'w-reward', 'w-glad', 'w-big', 'w-shut', 'w-tree', 'w-bird', 'w-tool', 'w-rect'] },
   { id: 'wellMixed', at: [56, 28], requires: ['e-night', 'e-flower', 'e-week', 'e-right', 'o-short', 'o-light', 'o-lose'] },
   { id: 'mixedRune', at: [60, 32], requires: ['m-old', 'm-go', 'm-pan', 'm-god', 'm-bottoms', 'm-read', 'm-flower'] },
+  { id: 'pairDoor', at: [14, 26], requires: [], capstones: 5 },
   { id: 'plankTailor', at: [26, 29], requires: ['r-count', 'r-chair', 'r-friends', 'r-parrot'] },
   { id: 'plankAlcove', at: [40, 29], requires: ['t-tower', 't-ghost', 't-blow', 't-toast', 't-wick'] },
   { id: 'alcoveNest', at: [43, 32], requires: ['m-motto', 'm-atom'] },
@@ -260,4 +262,17 @@ export const PANELS = [
   { id: 'q-evil', at: [54, 38], wall: 'S', kind: 'chain', clue: 'DYE', steps: [['echo', 'DIE'], ['opp', 'LIVE'], ['back', 'EVIL']], answer: 'EVIL', height: 1.9, size: 1 },
   { id: 'q-one', at: [57, 38], wall: 'S', kind: 'chain', clue: 'THEN', steps: [['opp', 'NOW'], ['back', 'WON'], ['echo', 'ONE']], answer: 'ONE', height: 1.9, size: 1 },
   { id: 'q-flour', at: [60, 38], wall: 'S', kind: 'chain', clue: 'TULIP', steps: [['kind', 'FLOWER'], ['echo', 'FLOUR']], answer: 'FLOUR', height: 1.9, size: 1 },
+
+  // Pair room (north of the Lever Hall). `given`: [slot, letter] shown faintly in the answer slots.
+  { id: 'a-pepper', at: [9, 18], wall: 'N', kind: 'chain', clue: 'SALT', steps: [['pair', 'PEPPER']], answer: 'PEPPER', height: 1.9, size: 1 },
+  { id: 'a-fork', at: [11, 18], wall: 'N', kind: 'chain', clue: 'KNIFE', steps: [['pair', 'FORK']], answer: 'FORK', height: 1.9, size: 1 },
+  { id: 'a-butter', at: [13, 18], wall: 'N', kind: 'chain', clue: 'BREAD', steps: [['pair', 'BUTTER']], answer: 'BUTTER', height: 1.9, size: 1 },
+  { id: 'a-saucer', at: [15, 18], wall: 'N', kind: 'chain', clue: 'CUP', steps: [['pair', 'SAUCER']], answer: 'SAUCER', height: 1.9, size: 1 },
+  { id: 'h-house', at: [9, 25], wall: 'S', kind: 'chain', clue: 'MOUSE', steps: [['rhyme', 'HOUSE']], given: [0, 'H'], answer: 'HOUSE', height: 1.9, size: 1 },
+  { id: 'h-phone', at: [11, 25], wall: 'S', kind: 'chain', clue: 'STONE', steps: [['rhyme', 'PHONE']], given: [0, 'P'], answer: 'PHONE', height: 1.9, size: 1 },
+  { id: 'h-snake', at: [16, 25], wall: 'S', kind: 'chain', clue: 'CAKE', steps: [['rhyme', 'SNAKE']], given: [1, 'N'], answer: 'SNAKE', height: 1.9, size: 1 },
+  { id: 'a-chips', at: [8, 20], wall: 'W', kind: 'chain', clue: 'DISH', steps: [['rhyme', 'FISH'], ['pair', 'CHIPS']], answer: 'CHIPS', height: 1.9, size: 1 },
+  { id: 'a-fruit', at: [8, 23], wall: 'W', kind: 'chain', clue: 'CHAIR', steps: [['rhyme', 'PEAR'], ['kind', 'FRUIT']], answer: 'FRUIT', height: 1.9, size: 1 },
+  { id: 'a-day', at: [17, 20], wall: 'E', kind: 'chain', clue: 'BRIGHT', steps: [['rhyme', 'NIGHT'], ['opp', 'DAY']], answer: 'DAY', height: 1.9, size: 1 },
+  { id: 'a-kite', at: [17, 23], wall: 'E', kind: 'chain', clue: 'BLACK', steps: [['pair', 'WHITE'], ['rhyme', 'KITE']], given: [0, 'K'], answer: 'KITE', height: 1.9, size: 1 },
 ];

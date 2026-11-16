@@ -101,6 +101,11 @@ function sigil(ctx, kind, cx, cy, color, glow) {
       const a = (i / 14) * Math.PI * 2;
       ctx.beginPath(); ctx.arc(cx + sx + Math.cos(a) * 16, cy + Math.sin(a) * 24, 3.6, 0, Math.PI * 2); ctx.fill();
     }
+  } else if (kind === 'drop') {
+    ctx.beginPath(); ctx.moveTo(cx, cy - 34); ctx.bezierCurveTo(cx + 30, cy - 2, cx + 30, cy + 30, cx, cy + 30); ctx.bezierCurveTo(cx - 30, cy + 30, cx - 30, cy - 2, cx, cy - 34); ctx.fill();
+  } else if (kind === 'beads') {
+    for (let i = 0; i <= 10; i++) { const a = Math.PI + (i / 10) * Math.PI; ctx.beginPath(); ctx.arc(cx + Math.cos(a) * 30, cy + 14 + Math.sin(a) * 30, 4, 0, Math.PI * 2); ctx.fill(); }
+    ctx.beginPath(); ctx.arc(cx, cy + 14, 7, 0, Math.PI * 2); ctx.fill();
   } else if (kind === 'spiral') {
     ctx.lineWidth = 6; ctx.beginPath();
     for (let i = 0; i <= 60; i++) { const a = i * 0.2, r = 4 + i * 0.5; const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
@@ -152,7 +157,7 @@ export function drawPanel(ctx, p, st) {
   // left to right is the order the rules apply: the panel's own kind first, then anything done to its result
   if (p.crest) crestMark(ctx, p.crest, 70, 70, dark);
   // one symbol per rule, everywhere: opposite always shows the seesaw
-  const RUNE = { back: 'tri', dup: 'zig', syn: 'spiral', kind: 'horse', echo: 'knot', opp: 'seesaw' };
+  const RUNE = { back: 'tri', dup: 'zig', syn: 'spiral', kind: 'horse', echo: 'knot', opp: 'seesaw', pair: 'drop', rhyme: 'beads' };
   const chainRunes = p.kind === 'chain' ? p.steps.map(([r]) => RUNE[r]) : [];
   const kinds0 = [p.kind === 'ribbon' || p.twin ? 'ribbon' : null, p.kind === 'nest' ? 'nest' : null, p.pre || null, p.kind === 'cistern' || p.kind === 'split' ? 'cistern' : null,  p.kind === 'seesaw' ? 'seesaw' : null, p.frame, ...(p.sigils || [])].filter(Boolean);
   const kinds = [...kinds0.map((k) => RUNE[k] || k), ...chainRunes];
@@ -204,6 +209,7 @@ export function drawPanel(ctx, p, st) {
     if (st.focused && i === shown.length && st.caret && !st.solved) ctx.strokeStyle = dark ? GLOW : '#a0522d';
     ctx.beginPath(); ctx.moveTo(x - sw * 0.36, ly + s2 * 0.5); ctx.lineTo(x + sw * 0.36, ly + s2 * 0.5); ctx.stroke();
     if (shown[i]) glyph(ctx, shown[i], x, ly, s2, color, { glow: dark && (st.solved || p.ghost) ? 18 : 0 });
+    else if (p.given && p.given[0] === i) { ctx.save(); ctx.globalAlpha = 0.28; glyph(ctx, p.given[1], x, ly, s2, color); ctx.restore(); }
   }
   if (done) {
     ctx.strokeStyle = dark ? 'rgba(201,138,26,0.8)' : (p.ghost ? GHOST : GOLD);
