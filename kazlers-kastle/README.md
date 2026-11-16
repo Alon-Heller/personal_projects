@@ -22,6 +22,7 @@ Desktop only: keyboard and mouse.
 | F or right-click | lantern |
 | H | flash arrows toward the nearest puzzle you can reach |
 | T | jump to the nearest unsolved puzzle you can reach (for playtesting) |
+| M | map of the castle; click a room you can reach to travel there |
 | Esc | pause |
 
 Progress saves in your browser. "Start over" on the pause screen wipes it.

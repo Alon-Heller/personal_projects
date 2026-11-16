@@ -33,7 +33,16 @@ function paper(ctx) {
 }
 
 // ---- sigils ---------------------------------------------------------------
-function sigil(ctx, kind, cx, cy, color, glow) {
+// The signs a panel shows, left to right (the order its rules apply).
+export function panelKinds(p) {
+  const RUNE = { back: 'tri', dup: 'zig', syn: 'spiral', kind: 'horse', echo: 'knot', opp: 'seesaw', pair: 'drop', rhyme: 'beads' };
+  const chainRunes = p.kind === 'chain' ? p.steps.map(([r]) => RUNE[r]) : [];
+  const kinds0 = [p.kind === 'ribbon' || p.twin ? 'ribbon' : null, p.kind === 'nest' ? 'nest' : null, p.pre || null, p.kind === 'cistern' || p.kind === 'split' ? 'cistern' : null,  p.kind === 'seesaw' ? 'seesaw' : null, p.frame, ...(p.sigils || [])].filter(Boolean);
+  const kinds = [...kinds0.map((k) => RUNE[k] || k), ...chainRunes];
+  return kinds;
+}
+
+export function sigil(ctx, kind, cx, cy, color, glow) {
   ctx.save();
   ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 7; ctx.lineCap = 'round';
   if (glow) { ctx.shadowColor = color; ctx.shadowBlur = 22; }
@@ -157,10 +166,7 @@ export function drawPanel(ctx, p, st) {
   // left to right is the order the rules apply: the panel's own kind first, then anything done to its result
   if (p.crest) crestMark(ctx, p.crest, 70, 70, dark);
   // one symbol per rule, everywhere: opposite always shows the seesaw
-  const RUNE = { back: 'tri', dup: 'zig', syn: 'spiral', kind: 'horse', echo: 'knot', opp: 'seesaw', pair: 'drop', rhyme: 'beads' };
-  const chainRunes = p.kind === 'chain' ? p.steps.map(([r]) => RUNE[r]) : [];
-  const kinds0 = [p.kind === 'ribbon' || p.twin ? 'ribbon' : null, p.kind === 'nest' ? 'nest' : null, p.pre || null, p.kind === 'cistern' || p.kind === 'split' ? 'cistern' : null,  p.kind === 'seesaw' ? 'seesaw' : null, p.frame, ...(p.sigils || [])].filter(Boolean);
-  const kinds = [...kinds0.map((k) => RUNE[k] || k), ...chainRunes];
+  const kinds = panelKinds(p);
   if (kinds.length) sigilRow(ctx, kinds, dark ? GLOW : INK, dark);
 
   const cy = kinds.length ? 330 : 290;

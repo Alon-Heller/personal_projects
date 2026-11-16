@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { Reflector } from 'three/addons/Reflector.js';
 import { CELL, W, H, ROOMS, OPENINGS, DOORS, PANELS, POOLS, BASINS, MIRRORS, WALL_MIRRORS, BASKETS, START, CAPSTONES } from './levels.js';
 import { normalize } from './rules.js';
-import { drawPanel, PW, PH, stoneTexture, floorTexture, woodTexture, grassTexture, doorTexture } from './draw.js';
+import { drawPanel, panelKinds, sigil, PW, PH, stoneTexture, floorTexture, woodTexture, grassTexture, doorTexture } from './draw.js';
 import * as sfx from './audio.js';
 import { makeTable, updateTable, makeRibbonProp, makeNest, makeBasket, makeScrap, makeTank, updateTank, makeSeesaw, updateSeesaw, makeCracked, makePond, updatePond, dropPebble, makeWell } from './props.js';
 
@@ -662,7 +662,7 @@ overlay.addEventListener('click', (e) => {
 });
 document.addEventListener('pointerlockchange', () => {
   locked = document.pointerLockElement === canvas;
-  overlay.classList.toggle('hidden', locked || ended);
+  overlay.classList.toggle('hidden', locked || ended || mapOpen);
   updateCount();
   if (!locked) setFocus(null);
 });
@@ -687,7 +687,9 @@ document.addEventListener('mousedown', (e) => {
 document.addEventListener('contextmenu', (e) => e.preventDefault());
 
 document.addEventListener('keydown', (e) => {
+  if (mapOpen && (e.code === 'KeyM' || e.code === 'Escape')) { closeMap(true); e.preventDefault(); return; }
   if (!locked) return;
+  if (!focus && e.code === 'KeyM') { openMap(); return; }
   if (focus) {
     if (e.key === 'Enter') { submit(focus); e.preventDefault(); return; }
     if (e.key === 'Backspace') { focus.input = focus.input.slice(0, -1); e.preventDefault(); return; }
@@ -958,6 +960,140 @@ function showWay() {
   sfx.click();
 }
 
+// ---------------------------------------------------------------- map (M)
+// A top-down plan of the castle: rooms, doors, you, puzzle counts, and an icon where each sign first appears.
+// Click any room you can reach to travel there.
+let mapOpen = false;
+const mapEl = document.getElementById('map');
+const mapCv = document.getElementById('map-canvas');
+const mapCtx = mapCv.getContext('2d');
+let mapGeom = null;
+const ROOM_NAMES = {
+  gatehouse: 'Gatehouse', courtyard: 'Courtyard', shrine: 'Shrine', lanternHall: '', cryptA: 'Crypt', cryptB: 'Inner Crypt',
+  darkRoom: 'Dark Room', waterHall: '', poolRoom: 'Pool Room', dryRoom: 'Dry Room', mirrorRoom: 'Mirror Room', capRoom: 'Still Room',
+  banquetHall: '', tiltHall: 'Lever Hall', boltedHall: 'Passage', westGallery: 'Gallery', steepHall: 'Steep Hall', cellar: 'Cellar',
+  pairRoom: 'Pair Room', solarStair: '', plankRoom: 'Plank Room', tailor: "Tailor's", mirrorAlcove: 'Mirror Alcove', nestRoom: 'Box Room',
+  workroom: 'Workroom', glassHall: '', cisternHall: 'Tank Hall', seesawRoom: 'Seesaw Room', glasshouse: 'Glasshouse',
+  wordHall: 'Word Hall', soundRoom: 'Sound Room', mixedRoom: 'Mixed Room', runeRoom: 'Rune Room',
+};
+// which room first shows each sign (in level order)
+const firstSign = {};
+for (const p of panels) for (const k of panelKinds(p.def)) if (!firstSign[k]) firstSign[k] = p.room;
+function reachableCells() {
+  const sx = Math.floor(player.x / CELL), sy = Math.floor(player.z / CELL);
+  const seen = new Set([`${sx},${sy}`]); const q = [[sx, sy]];
+  while (q.length) {
+    const [x, y] = q.shift();
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const k = `${x + dx},${y + dy}`;
+      if (!seen.has(k) && walkable(x + dx, y + dy)) { seen.add(k); q.push([x + dx, y + dy]); }
+    }
+  }
+  return seen;
+}
+function drawMap() {
+  const r = mapEl.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio, 2);
+  mapCv.width = r.width * dpr; mapCv.height = r.height * dpr;
+  const g = mapCtx; g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, r.width, r.height);
+  const pad = 28, cs = Math.min((r.width - pad * 2) / W, (r.height - pad * 2) / H);
+  const ox = (r.width - cs * W) / 2, oy = (r.height - cs * H) / 2;
+  mapGeom = { cs, ox, oy };
+  const reach = reachableCells();
+  const roomReach = (rm) => { for (let y = rm.y[0]; y <= rm.y[1]; y++) for (let x = rm.x[0]; x <= rm.x[1]; x++) if (reach.has(`${x},${y}`)) return true; return false; };
+  for (const rm of ROOMS) {
+    const ok = roomReach(rm);
+    rm._reach = ok;
+    g.fillStyle = rm.light === 'sky' ? (ok ? '#d9c79c' : '#6b6152') : ok ? '#e8d6ae' : '#5a4e40';
+    if (rm === mapHover && ok) g.fillStyle = '#ffe2a0';
+    g.fillRect(ox + rm.x[0] * cs, oy + rm.y[0] * cs, (rm.x[1] - rm.x[0] + 1) * cs, (rm.y[1] - rm.y[0] + 1) * cs);
+  }
+  for (const [x, y] of OPENINGS) { g.fillStyle = '#e8d6ae'; g.fillRect(ox + x * cs, oy + y * cs, cs, cs); }
+  for (const d of doors) {
+    g.fillStyle = d.open ? '#e8d6ae' : '#8a3b26';
+    const [x, y] = d.at;
+    g.fillRect(ox + x * cs + (d.open ? 0 : cs * 0.15), oy + y * cs + (d.open ? 0 : cs * 0.15), d.open ? cs : cs * 0.7, d.open ? cs : cs * 0.7);
+  }
+  // labels: name and solved count
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  for (const rm of ROOMS) {
+    const ps = panels.filter((p) => p.room === rm && !p.def.ghost);
+    const name = ROOM_NAMES[rm.id] ?? rm.id;
+    if (!name && !ps.length) continue;
+    const cx = ox + ((rm.x[0] + rm.x[1] + 1) / 2) * cs, cy = oy + ((rm.y[0] + rm.y[1] + 1) / 2) * cs;
+    const done = ps.filter((p) => solved.has(p.def.id)).length;
+    g.fillStyle = rm._reach ? '#2a1a0e' : '#c9b89a';
+    g.font = `bold ${Math.max(10, cs * 0.55)}px Georgia, serif`;
+    g.fillText(name, cx, cy - (ps.length ? cs * 0.35 : 0));
+    if (ps.length) {
+      g.font = `${Math.max(9, cs * 0.45)}px Georgia, serif`;
+      g.fillStyle = done === ps.length ? '#2f7a3a' : rm._reach ? '#6b4a2b' : '#c9b89a';
+      g.fillText(`${done}/${ps.length}`, cx, cy + cs * 0.45);
+    }
+  }
+  // sign icons: in the room where each sign first appears, along its top edge
+  const byRoom = new Map();
+  for (const [k, rm] of Object.entries(firstSign)) { if (!byRoom.has(rm)) byRoom.set(rm, []); byRoom.get(rm).push(k); }
+  for (const [rm, ks] of byRoom) {
+    ks.forEach((k, i) => {
+      const x = ox + (rm.x[0] + 0.15) * cs + i * cs * 0.95, y = oy + (rm.y[0] + 0.45) * cs;
+      g.save(); g.translate(x + cs * 0.4, y); g.scale(cs / 110, cs / 110);
+      sigil(g, k, 0, 0, rm._reach ? '#3a281b' : '#c9b89a', false);
+      g.restore();
+    });
+  }
+  // you
+  const px = ox + (player.x / CELL) * cs, pz = oy + (player.z / CELL) * cs;
+  g.save(); g.translate(px, pz); g.rotate(-player.yaw);
+  g.fillStyle = '#c0392b'; g.beginPath(); g.moveTo(0, -cs * 0.6); g.lineTo(cs * 0.4, cs * 0.4); g.lineTo(-cs * 0.4, cs * 0.4); g.closePath(); g.fill();
+  g.restore();
+}
+let mapHover = null;
+const roomAt = (e) => {
+  if (!mapGeom) return null;
+  const r = mapCv.getBoundingClientRect();
+  const x = (e.clientX - r.left - mapGeom.ox) / mapGeom.cs, y = (e.clientY - r.top - mapGeom.oy) / mapGeom.cs;
+  return ROOMS.find((rm) => x >= rm.x[0] && x < rm.x[1] + 1 && y >= rm.y[0] && y < rm.y[1] + 1) || null;
+};
+mapCv.addEventListener('mousemove', (e) => { const rm = roomAt(e); if (rm !== mapHover) { mapHover = rm; mapCv.style.cursor = rm && rm._reach ? 'pointer' : 'default'; drawMap(); } });
+mapCv.addEventListener('click', (e) => {
+  const rm = roomAt(e);
+  if (!rm || !rm._reach) return;
+  travelTo(rm);
+  closeMap(true);
+});
+function openMap() {
+  mapOpen = true;
+  setFocus(null);
+  mapEl.classList.remove('hidden');
+  document.exitPointerLock();
+  drawMap();
+}
+function closeMap(relock) {
+  mapOpen = false; mapHover = null;
+  mapEl.classList.add('hidden');
+  if (relock) canvas.requestPointerLock();
+}
+// travel: land on a free spot near the room's middle, facing its nearest unsolved panel (or any panel)
+function travelTo(rm) {
+  const cx = ((rm.x[0] + rm.x[1] + 1) / 2) * CELL, cz = ((rm.y[0] + rm.y[1] + 1) / 2) * CELL;
+  let spot = null;
+  for (let r = 0; r < 8 && !spot; r += 0.5) for (let a = 0; a < Math.PI * 2 && !spot; a += Math.PI / 6) {
+    const x = cx + Math.cos(a) * r, z = cz + Math.sin(a) * r;
+    if (roomOf[Math.floor(z / CELL)]?.[Math.floor(x / CELL)] === rm && !collides(x, z)) spot = { x, z };
+  }
+  if (!spot) { sfx.fizzle(); return; }
+  const inRoom = panels.filter((p) => p.room === rm);
+  const pick = inRoom.filter((p) => !p.def.ghost && !solved.has(p.def.id)).concat(inRoom)
+    .sort((a, b) => (solved.has(a.def.id) - solved.has(b.def.id)) || (Math.hypot(a.mesh.position.x - spot.x, a.mesh.position.z - spot.z) - Math.hypot(b.mesh.position.x - spot.x, b.mesh.position.z - spot.z)))[0];
+  const yaw = pick ? Math.atan2(-(pick.mesh.position.x - spot.x), -(pick.mesh.position.z - spot.z)) : player.yaw;
+  teleporting = { t: 0, from: { x: player.x, z: player.z }, to: spot, yaw, jumped: false };
+  swirl(player.x, player.z);
+  sfx.whoosh();
+}
+window.addEventListener('resize', () => { if (mapOpen) drawMap(); });
+
 // ---------------------------------------------------------------- loop
 const ray = new THREE.Raycaster();
 ray.far = 7;
@@ -1111,5 +1247,5 @@ function frame() {
 requestAnimationFrame(frame);
 
 // for automated checks
-window.__kastle = { tanks, ponds, teleportToNearest, showWay, player, panels, doors, solved, tables, pullLever, get region() { return region?.id; }, get lanternOn() { return lanternOn; }, toggleLantern, submit, setFocus, camera };
+window.__kastle = { openMap, travelTo, rooms: ROOMS, tanks, ponds, teleportToNearest, showWay, player, panels, doors, solved, tables, pullLever, get region() { return region?.id; }, get lanternOn() { return lanternOn; }, toggleLantern, submit, setFocus, camera };
 document.body.classList.add('ready');
