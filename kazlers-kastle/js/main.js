@@ -968,14 +968,6 @@ const mapEl = document.getElementById('map');
 const mapCv = document.getElementById('map-canvas');
 const mapCtx = mapCv.getContext('2d');
 let mapGeom = null;
-const ROOM_NAMES = {
-  gatehouse: 'Gatehouse', courtyard: 'Courtyard', shrine: 'Shrine', lanternHall: '', cryptA: 'Crypt', cryptB: 'Inner Crypt',
-  darkRoom: 'Dark Room', waterHall: '', poolRoom: 'Pool Room', dryRoom: 'Dry Room', mirrorRoom: 'Mirror Room', capRoom: 'Still Room',
-  banquetHall: '', tiltHall: 'Lever Hall', boltedHall: 'Passage', westGallery: 'Gallery', steepHall: 'Steep Hall', cellar: 'Cellar',
-  pairRoom: 'Pair Room', solarStair: '', plankRoom: 'Plank Room', tailor: "Tailor's", mirrorAlcove: 'Mirror Alcove', nestRoom: 'Box Room',
-  workroom: 'Workroom', glassHall: '', cisternHall: 'Tank Hall', seesawRoom: 'Seesaw Room', glasshouse: 'Glasshouse',
-  wordHall: 'Word Hall', soundRoom: 'Sound Room', mixedRoom: 'Mixed Room', runeRoom: 'Rune Room',
-};
 // which room first shows each sign (in level order)
 const firstSign = {};
 for (const p of panels) for (const k of panelKinds(p.def)) if (!firstSign[k]) firstSign[k] = p.room;
@@ -1015,33 +1007,30 @@ function drawMap() {
     const [x, y] = d.at;
     g.fillRect(ox + x * cs + (d.open ? 0 : cs * 0.15), oy + y * cs + (d.open ? 0 : cs * 0.15), d.open ? cs : cs * 0.7, d.open ? cs : cs * 0.7);
   }
-  // labels: name and solved count
-  g.textAlign = 'center'; g.textBaseline = 'middle';
-  for (const rm of ROOMS) {
-    const ps = panels.filter((p) => p.room === rm && !p.def.ghost);
-    const name = ROOM_NAMES[rm.id] ?? rm.id;
-    if (!name && !ps.length) continue;
-    const cx = ox + ((rm.x[0] + rm.x[1] + 1) / 2) * cs, cy = oy + ((rm.y[0] + rm.y[1] + 1) / 2) * cs;
-    const done = ps.filter((p) => solved.has(p.def.id)).length;
-    g.fillStyle = rm._reach ? '#2a1a0e' : '#c9b89a';
-    g.font = `bold ${Math.max(10, cs * 0.55)}px Georgia, serif`;
-    g.fillText(name, cx, cy - (ps.length ? cs * 0.35 : 0));
-    if (ps.length) {
-      g.font = `${Math.max(9, cs * 0.45)}px Georgia, serif`;
-      g.fillStyle = done === ps.length ? '#2f7a3a' : rm._reach ? '#6b4a2b' : '#c9b89a';
-      g.fillText(`${done}/${ps.length}`, cx, cy + cs * 0.45);
-    }
-  }
-  // sign icons: in the room where each sign first appears, along its top edge
+  // per room: its first-introduced signs, large and centred; the solved count in the bottom-right corner
   const byRoom = new Map();
   for (const [k, rm] of Object.entries(firstSign)) { if (!byRoom.has(rm)) byRoom.set(rm, []); byRoom.get(rm).push(k); }
-  for (const [rm, ks] of byRoom) {
-    ks.forEach((k, i) => {
-      const x = ox + (rm.x[0] + 0.15) * cs + i * cs * 0.95, y = oy + (rm.y[0] + 0.45) * cs;
-      g.save(); g.translate(x + cs * 0.4, y); g.scale(cs / 110, cs / 110);
-      sigil(g, k, 0, 0, rm._reach ? '#3a281b' : '#c9b89a', false);
-      g.restore();
-    });
+  for (const rm of ROOMS) {
+    const w = (rm.x[1] - rm.x[0] + 1) * cs, h = (rm.y[1] - rm.y[0] + 1) * cs;
+    const x0 = ox + rm.x[0] * cs, y0 = oy + rm.y[0] * cs;
+    const ks = byRoom.get(rm) || [];
+    if (ks.length) {
+      const size = Math.min(h * 0.6, (w * 0.85) / ks.length, cs * 3);
+      ks.forEach((k, i) => {
+        const cx = x0 + w / 2 + (i - (ks.length - 1) / 2) * size, cy = y0 + h / 2;
+        g.save(); g.translate(cx, cy); g.scale(size / 110, size / 110);
+        sigil(g, k, 0, 0, rm._reach ? '#3a281b' : '#c9b89a', false);
+        g.restore();
+      });
+    }
+    const ps = panels.filter((p) => p.room === rm && !p.def.ghost);
+    if (ps.length) {
+      const done = ps.filter((p) => solved.has(p.def.id)).length;
+      g.textAlign = 'right'; g.textBaseline = 'bottom';
+      g.font = `${Math.max(9, cs * 0.45)}px Georgia, serif`;
+      g.fillStyle = done === ps.length ? '#2f7a3a' : rm._reach ? '#6b4a2b' : '#c9b89a';
+      g.fillText(`${done}/${ps.length}`, x0 + w - cs * 0.2, y0 + h - cs * 0.1);
+    }
   }
   // you
   const px = ox + (player.x / CELL) * cs, pz = oy + (player.z / CELL) * cs;
