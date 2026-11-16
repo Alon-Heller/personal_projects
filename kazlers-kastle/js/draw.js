@@ -96,8 +96,11 @@ function sigil(ctx, kind, cx, cy, color, glow) {
     ctx.lineWidth = 7; ctx.lineJoin = 'miter'; ctx.lineCap = 'butt';
     ctx.beginPath(); ctx.moveTo(cx - 38, cy - 22); ctx.lineTo(cx - 14, cy + 22); ctx.lineTo(cx + 10, cy - 22); ctx.lineTo(cx + 34, cy + 22); ctx.stroke();
   } else if (kind === 'knot') {
-    ctx.lineWidth = 6; ctx.beginPath(); ctx.ellipse(cx - 16, cy, 16, 24, 0, 0, Math.PI * 2); ctx.stroke();
-    ctx.beginPath(); ctx.ellipse(cx + 16, cy, 16, 24, 0, 0, Math.PI * 2); ctx.stroke();
+    // sound family: the same double loop, but beaded (made of dots)
+    for (const sx of [-16, 16]) for (let i = 0; i < 14; i++) {
+      const a = (i / 14) * Math.PI * 2;
+      ctx.beginPath(); ctx.arc(cx + sx + Math.cos(a) * 16, cy + Math.sin(a) * 24, 3.6, 0, Math.PI * 2); ctx.fill();
+    }
   } else if (kind === 'spiral') {
     ctx.lineWidth = 6; ctx.beginPath();
     for (let i = 0; i <= 60; i++) { const a = i * 0.2, r = 4 + i * 0.5; const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
@@ -132,8 +135,11 @@ function sigilRow(ctx, kinds, color, glow) {
   const gap = 120;
   const x0 = PW / 2 - ((kinds.length - 1) * gap) / 2;
   // meaning runes use a second, muted ink so they read as a family without shouting
-  const MEANING = new Set(['spiral', 'horse', 'knot', 'wave']);
-  kinds.forEach((k, i) => sigil(ctx, k, x0 + i * gap, 92, !glow && MEANING.has(k) ? '#2f5a55' : color, glow));
+  // families: letter runes in the normal ink; meaning runes teal; sound runes rust
+  const MEANING = new Set(['spiral', 'horse', 'wave']);
+  const SOUND = new Set(['knot']);
+  const inkOf = (k) => (glow ? color : MEANING.has(k) ? '#2f5a55' : SOUND.has(k) ? '#8a4a2a' : color);
+  kinds.forEach((k, i) => sigil(ctx, k, x0 + i * gap, 92, inkOf(k), glow));
 }
 
 // ---- panels ---------------------------------------------------------------
