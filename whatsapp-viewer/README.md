@@ -8,7 +8,7 @@ It's a single `index.html`. You don't install anything, there's no server, and n
 
 - **Everything runs locally in your browser tab.** The export is read straight from your disk. Media is decompressed on demand and shown from local `blob:` URLs.
 - **Network access is blocked by the page itself.** A Content-Security-Policy (`connect-src 'none'`, no remote images, media, scripts, styles or fonts) means the page *cannot* send or load anything over the network, even by mistake. You can check this in the `<meta http-equiv="Content-Security-Policy">` line at the top of the file. You can also go offline before opening a chat, and it works exactly the same.
-- **Nothing from the chat is stored.** The browser remembers only your theme, which participant is "you", and your last scroll position (a message number) so you can pick up where you left off. Messages and media are never saved anywhere.
+- **Nothing from the chat is stored.** The browser remembers only your theme, which participant is "you", your last scroll position, and your starred messages. Scroll position and stars are saved as message numbers plus a short checksum, never the text. Messages and media are never saved anywhere.
 
 ## How to use
 
@@ -29,6 +29,7 @@ It's a single `index.html`. You don't install anything, there's no server, and n
 - **Search** (Ctrl/⌘+F or `/`) across all messages, with highlighted matches and a results list. Enter / Shift+Enter step through results. You can filter by sender or by type (with photo/video, file/audio, link).
 - **Media panel** with photos and videos (grouped by month, newest first), voice notes and audio, files, and every link shared in the chat. Each item has *show in chat*.
 - **Photo viewer** with ←/→ keys or swipe, the caption, *Show in chat*, and *Save a copy*.
+- **Stars**: point at a message (on a phone, tap it) and click ☆ to star it. These are the viewer's own stars, separate from anything starred in WhatsApp. The ★ panel lists all starred messages, oldest or newest first, with photo thumbnails. Click one to jump to it. Search has a *Starred only* filter. Stars are remembered per chat in this browser. Use *Save stars to file* / *Load stars from file* to back them up or move them to another browser.
 - **Jump to date**: a date picker plus a month-by-month heat-map calendar. Click any day to jump to it. It also shows stats: messages per person, active days, and the busiest day.
 - Inline images, videos, voice notes (`.opus`), stickers and documents. *bold*, _italic_ and ~strike~ formatting and links are shown as in WhatsApp. Right-to-left text (Hebrew, Arabic) is supported. Light and dark themes are included, and the layout works on phones.
 - Handles iPhone and Android export formats in many locales: `[31/12/2024, 22:15:03]`, `12/31/24, 10:15 PM -`, `31.12.2024, 22:15 -`, `2024-12-31 22:15 -`, and others. Day/month order is detected automatically. You can override it in Settings if dates look wrong.

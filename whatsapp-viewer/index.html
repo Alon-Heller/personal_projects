@@ -19,7 +19,7 @@
   --accent: #0c7d63; --accent-ink: #ffffff; --border: #dcd6cc; --hover: rgb(0 0 0 / .06);
   --day: rgb(255 255 255 / .92); --sys: #fdf3cf; --mark: #ffd54a; --mark-ink: #1c2226;
   --shadow: 0 1px 1px rgb(0 0 0 / .13); --flash: rgb(12 125 99 / .28);
-  --heat0: #ebe7e0; --heat: 12 125 99;
+  --heat0: #ebe7e0; --heat: 12 125 99; --gold: #d99a00;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
@@ -29,7 +29,7 @@
     --accent: #3cc49d; --accent-ink: #062018; --border: #26343b; --hover: rgb(255 255 255 / .07);
     --day: rgb(30 43 50 / .94); --sys: #2b2c1d; --mark: #c99a12; --mark-ink: #0d1317;
     --shadow: 0 1px 1px rgb(0 0 0 / .4); --flash: rgb(60 196 157 / .3);
-    --heat0: #1b262c; --heat: 60 196 157;
+    --heat0: #1b262c; --heat: 60 196 157; --gold: #f2b81e;
     color-scheme: dark;
   }
 }
@@ -39,7 +39,7 @@
   --accent: #3cc49d; --accent-ink: #062018; --border: #26343b; --hover: rgb(255 255 255 / .07);
   --day: rgb(30 43 50 / .94); --sys: #2b2c1d; --mark: #c99a12; --mark-ink: #0d1317;
   --shadow: 0 1px 1px rgb(0 0 0 / .4); --flash: rgb(60 196 157 / .3);
-  --heat0: #1b262c; --heat: 60 196 157;
+  --heat0: #1b262c; --heat: 60 196 157; --gold: #f2b81e;
   color-scheme: dark;
 }
 
@@ -239,6 +239,35 @@ audio.aud { display: block; width: 270px; max-width: 100%; height: 40px; margin:
 .res .rt { font-size: 14px; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .more { display: block; margin: 12px auto; }
 .empty { padding: 24px 16px; text-align: center; color: var(--muted); font-size: 14px; }
+/* stars */
+.star {
+  position: absolute; top: 1px; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 50%;
+  background: none; color: var(--muted); display: grid; place-items: center; opacity: 0; transition: opacity .12s;
+}
+.star .icon { width: 18px; height: 18px; }
+.msg.them .star { left: calc(100% + 3px); }
+.msg.me .star { right: calc(100% + 3px); }
+.msg:hover .star, .msg.sel .star, .star:focus-visible { opacity: .7; }
+.star:hover { opacity: 1; background: var(--hover); }
+.msg.starred .star { opacity: 1; color: var(--gold); }
+.msg.starred .star .icon, .unstar .icon { fill: currentColor; }
+@media (hover: none) {
+  .msg:hover .star { opacity: 0; }
+  .msg.sel .star { opacity: .85; }
+  .msg.starred .star { opacity: 1; }
+}
+.hbtn { position: relative; }
+.badge {
+  position: absolute; top: 1px; right: 0; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px;
+  background: var(--gold); color: #1c1600; font-size: 10.5px; font-weight: 700; line-height: 17px; text-align: center;
+}
+.grow { flex: 1; font-size: 13px; color: var(--muted); }
+.res.st { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
+.res.st .stm { flex: 1; min-width: 0; }
+.sthumb { width: 46px; height: 46px; object-fit: cover; border-radius: 5px; background: var(--hover); flex: none; }
+.unstar { color: var(--gold); padding: 6px; margin: -4px -6px 0 0; }
+.stfoot { display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+.stfoot .btn { font-size: 13.5px; padding: 6px 10px; }
 .tabs { display: flex; gap: 4px; padding: 8px 10px; border-bottom: 1px solid var(--border); overflow-x: auto; }
 .tabs button { border: 0; background: none; padding: 6px 11px; border-radius: 16px; color: var(--muted); white-space: nowrap; }
 .tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
@@ -327,6 +356,7 @@ audio.aud { display: block; width: 270px; max-width: 100%; height: 40px; margin:
   <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
   <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></symbol>
   <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 2.8 2.85 5.8 6.4.93-4.63 4.5 1.1 6.37L12 17.4l-5.72 3 1.1-6.37-4.63-4.5 6.4-.93z"/></symbol>
   <symbol id="i-dl" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></symbol>
 </svg>
 
@@ -369,6 +399,7 @@ audio.aud { display: block; width: 270px; max-width: 100%; height: 40px; margin:
     <button class="ibtn" data-panel="search" title="Search (Ctrl+F)" aria-pressed="false"><svg class="icon"><use href="#i-search"/></svg></button>
     <button class="ibtn" data-panel="gallery" title="Photos, videos, files and links" aria-pressed="false"><svg class="icon"><use href="#i-image"/></svg></button>
     <button class="ibtn" data-panel="calendar" title="Jump to date and stats" aria-pressed="false"><svg class="icon"><use href="#i-cal"/></svg></button>
+    <button class="ibtn hbtn" data-panel="starred" title="Starred messages" aria-pressed="false"><svg class="icon"><use href="#i-star"/></svg><span class="badge" id="starBadge" hidden></span></button>
     <button class="ibtn" data-panel="settings" title="Settings" aria-pressed="false"><svg class="icon"><use href="#i-gear"/></svg></button>
   </header>
   <div id="main">
@@ -390,6 +421,7 @@ audio.aud { display: block; width: 270px; max-width: 100%; height: 40px; margin:
             <option value="media">With photo/video</option>
             <option value="file">With file/audio</option>
             <option value="link">With link</option>
+            <option value="starred">Starred only</option>
           </select>
           <span id="qCount"></span>
           <button class="ibtn" id="qPrev" title="Earlier result (Shift+Enter)"><svg class="icon"><use href="#i-up"/></svg></button>
@@ -414,6 +446,18 @@ audio.aud { display: block; width: 270px; max-width: 100%; height: 40px; margin:
         <div class="pbody" id="cBody"></div>
       </section>
       <!-- settings -->
+      <!-- starred -->
+      <section class="sect" data-sect="starred" hidden>
+        <div class="ph"><h2>Starred</h2><button class="ibtn" data-close title="Close (Esc)"><svg class="icon"><use href="#i-x"/></svg></button></div>
+        <div class="qopts" style="padding-top:10px"><span class="grow" id="stCount"></span>
+          <select id="stSort" title="Order"><option value="old">Oldest first</option><option value="new">Newest first</option></select></div>
+        <div class="pbody" id="stList"></div>
+        <div class="stfoot">
+          <button class="btn" id="stExport" title="Save your stars to a small file, to back them up or move them to another browser"><svg class="icon"><use href="#i-dl"/></svg>Save stars to file</button>
+          <button class="btn" id="stImport">Load stars from file</button>
+          <input type="file" id="stFile" accept=".json,application/json" hidden>
+        </div>
+      </section>
       <section class="sect" data-sect="settings" hidden>
         <div class="ph"><h2>Settings</h2><button class="ibtn" data-close title="Close (Esc)"><svg class="icon"><use href="#i-x"/></svg></button></div>
         <div class="pbody">
@@ -424,7 +468,7 @@ audio.aud { display: block; width: 270px; max-width: 100%; height: 40px; margin:
           <div class="setting"><label for="sTheme">Theme</label>
             <select id="sTheme"><option value="auto">Match system</option><option value="light">Light</option><option value="dark">Dark</option></select></div>
           <div class="setting"><label>Keyboard</label><p>Ctrl/⌘+F or / search · Enter / Shift+Enter next / previous result · Home / End first / last message · Esc close · ← → in the photo viewer</p></div>
-          <div class="setting"><label>Privacy</label><p>Nothing was uploaded. The page's security policy blocks network access. The only things saved in this browser are your "which one is you" choice, your theme, and your last scroll position, never message content.</p>
+          <div class="setting"><label>Privacy</label><p>Nothing was uploaded. The page's security policy blocks network access. The only things saved in this browser are your "which one is you" choice, your theme, your last scroll position, and which messages you starred (stored as message numbers, not their text). Message content is never saved.</p>
             <div><button class="btn" id="closeChat">Close this chat</button></div></div>
         </div>
       </section>
@@ -674,7 +718,7 @@ const S = {
   title: '', fp: '', recs: null, order: 'dmy', orderAuto: 'dmy',
   media: new Map(), mediaLC: new Map(),
   msgs: [], people: [], me: -1, group: false,
-  days: [], visual: [], audio: [], docs: [], links: [],
+  days: [], visual: [], audio: [], docs: [], links: [], stars: new Set(),
 };
 const findMedia = n => S.media.get(n) || S.mediaLC.get(n.toLowerCase()) || null;
 
@@ -764,6 +808,7 @@ async function loadChat(sourceName, media, txts) {
   S.recs = recs;
   S.orderAuto = detectOrder(recs);
   S.fp = hash(raw.slice(0, 3000) + '|' + raw.length);
+  loadStars();
   const pref = store.get('order:' + S.fp, 'auto');
   S.order = pref === 'auto' ? S.orderAuto : pref;
   $('#sOrder').value = pref;
@@ -850,7 +895,9 @@ function rowHTML(i) {
   const onlyMedia = m.media && !m.text && !m.note && m.media.length === 1;
   const sticker = onlyMedia && m.media[0].kind === 'sticker' && m.media[0].ok;
   const solo = onlyMedia && !sticker && m.media[0].ok && (m.media[0].kind === 'image' || m.media[0].kind === 'video');
-  h += `<div class="msg ${mine ? 'me' : 'them'}${cont ? ' cont' : ''}${solo ? ' solo' : ''}${sticker ? ' sticker' : ''}">`;
+  const st = S.stars.has(i);
+  h += `<div class="msg ${mine ? 'me' : 'them'}${cont ? ' cont' : ''}${solo ? ' solo' : ''}${sticker ? ' sticker' : ''}${st ? ' starred' : ''}">`;
+  h += `<button class="star" data-star="${i}" aria-pressed="${st}" title="${st ? 'Remove star' : 'Star this message'}"><svg class="icon"><use href="#i-star"/></svg></button>`;
   if (!mine && !cont && (S.group || S.me < 0)) h += `<div class="who" style="color:${PALETTE[m.s % PALETTE.length]}" dir="auto">${esc(S.people[m.s])}</div>`;
   if (m.media) for (const md of m.media) h += mediaHTML(md);
   const time = `<span class="time">${fTime.format(m.t)}${m.note && m.text ? ' · ' + esc(m.note) : ''}</span>`;
@@ -1058,6 +1105,15 @@ new ResizeObserver(() => { if (S.msgs.length) { buildTicks(); placeThumb(topInde
 
 /* ======================= chat interactions ======================= */
 list.addEventListener('click', e => {
+  const sb = e.target.closest('[data-star]');
+  if (sb) { toggleStar(+sb.dataset.star); return; }
+  // On touch screens there's no hover: tapping a message reveals its star button.
+  if (matchMedia('(hover: none)').matches && !e.target.closest('a, button, video, audio')) {
+    const m = e.target.closest('.msg');
+    const prev = list.querySelector('.msg.sel');
+    if (prev && prev !== m) prev.classList.remove('sel');
+    if (m) m.classList.toggle('sel');
+  }
   const lb = e.target.closest('[data-lb]');
   if (lb) { e.preventDefault(); lbOpen(+lb.dataset.lb); return; }
   const dl = e.target.closest('[data-dl]');
@@ -1083,6 +1139,7 @@ function showPanel(name) {
   if (name === 'search') { const q = $('#q'); q.focus(); q.select(); }
   if (name === 'gallery') renderGallery();
   if (name === 'calendar') renderCalendar();
+  if (name === 'starred') renderStarred();
   if (S.msgs.length) requestAnimationFrame(() => { buildTicks(); placeThumb(topIndex()); });
 }
 for (const b of $$('header [data-panel]')) b.addEventListener('click', () => showPanel(b.dataset.panel));
@@ -1114,6 +1171,7 @@ function runSearch() {
       if (type === 'media' && !(m.media && m.media.some(x => x.kind === 'image' || x.kind === 'video'))) continue;
       if (type === 'file' && !(m.media && m.media.some(x => x.kind === 'doc' || x.kind === 'audio'))) continue;
       if (type === 'link' && !(m.text && /https?:\/\//.test(m.text))) continue;
+      if (type === 'starred' && !S.stars.has(i)) continue;
       if (q) {
         if (m.lc === null) m.lc = (m.text + '\n' + m.note).toLowerCase();
         if (!m.lc.includes(q)) continue;
@@ -1344,6 +1402,109 @@ $('#cBody').addEventListener('click', e => {
   renderCalendar();
 });
 
+
+/* ---------- stars ---------- */
+// Saved per chat as [messageNumber, hashOfThatLine]; the hash lets us drop stars that no longer match.
+const recHash = i => hash(S.recs[i].rest);
+function loadStars() {
+  S.stars = new Set();
+  for (const [i, h] of store.get('stars:' + S.fp, [])) if (S.recs[i] && recHash(i) === h) S.stars.add(i);
+}
+const starList = () => [...S.stars].sort((a, b) => a - b);
+function saveStars() { store.set('stars:' + S.fp, starList().map(i => [i, recHash(i)])); }
+function updateStarBadge() {
+  const b = $('#starBadge'), n = S.stars.size;
+  b.hidden = !n;
+  b.textContent = n > 999 ? '999+' : String(n);
+}
+function toggleStar(i) {
+  if (S.stars.has(i)) S.stars.delete(i); else S.stars.add(i);
+  const on = S.stars.has(i);
+  saveStars();
+  const m = rowEl(i)?.querySelector('.msg');
+  if (m) {
+    m.classList.toggle('starred', on);
+    const b = m.querySelector('.star');
+    b.setAttribute('aria-pressed', String(on));
+    b.title = on ? 'Remove star' : 'Star this message';
+  }
+  updateStarBadge();
+  if (curPanel === 'starred') renderStarred();
+  if ($('#qType').value === 'starred') runSearch();
+}
+const sio = new IntersectionObserver(entries => {
+  for (const e of entries) if (e.isIntersecting) { sio.unobserve(e.target); loadLazy(e.target); }
+}, { root: $('#stList'), rootMargin: '400px 0px' });
+function renderStarred() {
+  const box = $('#stList');
+  const ids = starList();
+  if ($('#stSort').value === 'new') ids.reverse();
+  $('#stCount').textContent = ids.length ? `${nf.format(ids.length)} starred message${ids.length === 1 ? '' : 's'}` : '';
+  sio.disconnect();
+  if (!ids.length) {
+    box.innerHTML = '<div class="empty">No starred messages yet.<br><br>Point at a message (on a phone, tap it) and click the ☆ next to it. Starred messages collect here so you can come back to them.</div>';
+    return;
+  }
+  let h = '';
+  for (const i of ids) {
+    const m = S.msgs[i];
+    const who = m.s >= 0 ? S.people[m.s] : '';
+    const img = m.media && m.media.find(x => x.ok && (x.kind === 'image' || x.kind === 'sticker'));
+    h += `<div class="res st" data-i="${i}" tabindex="0" role="button">` +
+      (img ? `<img class="sthumb lazy" data-src="${esc(img.name)}" alt="">` : '') +
+      `<div class="stm"><div class="rh"><b dir="auto">${esc(who)}</b><span>${esc(fShort.format(m.t))} ${esc(fTime.format(m.t))}</span></div>` +
+      `<div class="rt" dir="auto">${esc(snippet(m, ''))}</div></div>` +
+      `<button class="ibtn unstar" data-unstar="${i}" title="Remove star"><svg class="icon"><use href="#i-star"/></svg></button></div>`;
+  }
+  const top = box.scrollTop;
+  box.innerHTML = h;
+  box.scrollTop = top;
+  for (const n of box.querySelectorAll('.lazy')) sio.observe(n);
+}
+$('#stSort').addEventListener('change', renderStarred);
+$('#stList').addEventListener('click', e => {
+  const u = e.target.closest('[data-unstar]');
+  if (u) { toggleStar(+u.dataset.unstar); return; }
+  const r = e.target.closest('.res');
+  if (r) { jumpTo(+r.dataset.i, 'center', true); afterPick(); }
+});
+$('#stList').addEventListener('keydown', e => {
+  const r = e.target.closest('.res');
+  if (r && (e.key === 'Enter' || e.key === ' ') && e.target === r) { e.preventDefault(); jumpTo(+r.dataset.i, 'center', true); afterPick(); }
+});
+$('#stExport').addEventListener('click', () => {
+  const data = { app: 'chat-viewer-stars', version: 1, chat: S.title, stars: starList().map(i => [i, recHash(i)]) };
+  const url = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' }));
+  const a = document.createElement('a');
+  a.href = url; a.download = `stars - ${S.title.replace(/[\\/:*?"<>|]/g, '_')}.json`;
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
+$('#stImport').addEventListener('click', () => $('#stFile').click());
+$('#stFile').addEventListener('change', async e => {
+  const f = e.target.files[0];
+  e.target.value = '';
+  if (!f) return;
+  try {
+    const data = JSON.parse(await f.text());
+    if (data.app !== 'chat-viewer-stars' || !Array.isArray(data.stars)) throw new Error('not a stars file');
+    let byHash = null, added = 0, missing = 0;
+    for (const [i, h] of data.stars) {
+      let at = S.recs[i] && recHash(i) === h ? i : -1;
+      if (at < 0) {
+        if (!byHash) { byHash = new Map(); for (let k = S.recs.length - 1; k >= 0; k--) byHash.set(recHash(k), k); }
+        at = byHash.get(h) ?? -1;
+      }
+      if (at < 0) missing++;
+      else if (!S.stars.has(at)) { S.stars.add(at); added++; }
+    }
+    saveStars(); updateStarBadge(); refreshWindow(); renderStarred();
+    $('#stCount').textContent = `Added ${nf.format(added)} star${added === 1 ? '' : 's'}` + (missing ? ` · ${nf.format(missing)} not found in this chat` : '');
+  } catch (err) {
+    $('#stCount').textContent = 'That file is not a stars file from this viewer.';
+  }
+});
+
 /* ---------- settings ---------- */
 function fillPeople() {
   const opts = S.people.map((p, i) => `<option value="${i}">${esc(p)}</option>`).join('');
@@ -1443,6 +1604,8 @@ function start(atIndex) {
   $('#subtitle').textContent = `${S.people.join(', ')} · ${nf.format(n)} messages · ${fShort.format(first.t)} – ${fShort.format(last.t)}`;
   $('#sOrderInfo').textContent = `Detected: ${({ dmy: 'Day / Month / Year', mdy: 'Month / Day / Year', ymd: 'Year / Month / Day' })[S.orderAuto]}. Change this only if dates look wrong.`;
   fillPeople();
+  updateStarBadge();
+  if (curPanel === 'starred') renderStarred();
   gBuiltFor = ''; cBuiltFor = '';
   if (curPanel === 'gallery') renderGallery();
   if (curPanel === 'calendar') renderCalendar();
