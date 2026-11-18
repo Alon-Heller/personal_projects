@@ -1,0 +1,1509 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!--
+  Privacy: this policy forbids the page from making ANY network request.
+  No fetch/XHR/WebSocket (connect-src 'none'), no remote images, media, fonts,
+  scripts or styles. Media is shown only from local blob: URLs created from the
+  files you open. Your chat never leaves this browser tab.
+-->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src blob: data:; media-src blob:; connect-src 'none'; font-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Chat Viewer</title>
+<style>
+:root {
+  --bg: #f0ede8; --chat: #e8e2d9; --panel: #ffffff; --header: #f7f6f3;
+  --them: #ffffff; --me: #d6f3c6; --text: #1c2226; --muted: #66737b;
+  --accent: #0c7d63; --accent-ink: #ffffff; --border: #dcd6cc; --hover: rgb(0 0 0 / .06);
+  --day: rgb(255 255 255 / .92); --sys: #fdf3cf; --mark: #ffd54a; --mark-ink: #1c2226;
+  --shadow: 0 1px 1px rgb(0 0 0 / .13); --flash: rgb(12 125 99 / .28);
+  --heat0: #ebe7e0; --heat: 12 125 99;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1317; --chat: #0b1216; --panel: #121b20; --header: #172127;
+    --them: #1e2b32; --me: #145240; --text: #e6ecee; --muted: #8c9ba3;
+    --accent: #3cc49d; --accent-ink: #062018; --border: #26343b; --hover: rgb(255 255 255 / .07);
+    --day: rgb(30 43 50 / .94); --sys: #2b2c1d; --mark: #c99a12; --mark-ink: #0d1317;
+    --shadow: 0 1px 1px rgb(0 0 0 / .4); --flash: rgb(60 196 157 / .3);
+    --heat0: #1b262c; --heat: 60 196 157;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1317; --chat: #0b1216; --panel: #121b20; --header: #172127;
+  --them: #1e2b32; --me: #145240; --text: #e6ecee; --muted: #8c9ba3;
+  --accent: #3cc49d; --accent-ink: #062018; --border: #26343b; --hover: rgb(255 255 255 / .07);
+  --day: rgb(30 43 50 / .94); --sys: #2b2c1d; --mark: #c99a12; --mark-ink: #0d1317;
+  --shadow: 0 1px 1px rgb(0 0 0 / .4); --flash: rgb(60 196 157 / .3);
+  --heat0: #1b262c; --heat: 60 196 157;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg); color: var(--text);
+  font: 15px/1.42 system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Noto Sans Hebrew", Arial, sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+[hidden] { display: none !important; }
+.icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.btn {
+  display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border);
+  background: var(--panel); border-radius: 8px; padding: 7px 12px;
+}
+.btn:hover { background: var(--hover); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 600; }
+.btn.primary:hover { filter: brightness(1.07); }
+.ibtn { border: 0; background: none; padding: 8px; border-radius: 50%; display: inline-grid; place-items: center; color: var(--muted); }
+.ibtn:hover, .ibtn[aria-pressed="true"] { background: var(--hover); color: var(--text); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- landing ---------- */
+#landing { min-height: 100%; display: grid; place-items: center; padding: 24px 16px; }
+.land { max-width: 640px; width: 100%; }
+.land h1 { font-size: 26px; margin: 0 0 6px; }
+.land p { color: var(--muted); margin: 0 0 16px; }
+.drop {
+  border: 2px dashed var(--border); border-radius: 14px; background: var(--panel);
+  padding: 28px 18px; text-align: center; transition: border-color .15s, background .15s;
+}
+.drop.over { border-color: var(--accent); background: var(--hover); }
+.drop .big { font-size: 17px; font-weight: 600; margin-bottom: 14px; }
+.drop .row-btns { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.privacy {
+  display: flex; gap: 10px; align-items: flex-start; margin-top: 16px; padding: 12px 14px;
+  border-radius: 10px; background: var(--panel); border: 1px solid var(--border); font-size: 14px;
+}
+.privacy .icon { color: var(--accent); margin-top: 1px; }
+details.how { margin-top: 12px; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; font-size: 14px; }
+details.how summary { cursor: pointer; font-weight: 600; }
+details.how ol { margin: 8px 0 4px; padding-left: 20px; }
+#loadMsg { margin-top: 14px; min-height: 1.4em; font-size: 14px; color: var(--muted); }
+#loadMsg.err { color: #c2412d; }
+
+/* ---------- app shell ---------- */
+#app { display: grid; grid-template-rows: auto 1fr; height: 100vh; height: 100dvh; }
+header.top {
+  display: flex; align-items: center; gap: 6px; padding: 6px 8px 6px 14px;
+  background: var(--header); border-bottom: 1px solid var(--border); min-width: 0;
+  padding-top: max(6px, env(safe-area-inset-top));
+}
+.avatar {
+  width: 38px; height: 38px; border-radius: 50%; background: var(--accent); color: var(--accent-ink);
+  display: grid; place-items: center; font-weight: 700; flex: none;
+}
+.ttl { flex: 1; min-width: 0; }
+.ttl b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ttl small { display: block; color: var(--muted); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#main { display: flex; min-height: 0; }
+#chatWrap { position: relative; flex: 1; min-width: 0; background: var(--chat); }
+#scroller {
+  position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; overflow-anchor: none;
+  scrollbar-width: none; overscroll-behavior: contain;
+}
+#scroller::-webkit-scrollbar { display: none; }
+#list { max-width: 920px; margin: 0 auto; padding: 10px 40px 28px 16px; }
+
+/* ---------- messages ---------- */
+.row { padding: 0; }
+.day { text-align: center; margin: 16px 0 8px; }
+.day span {
+  display: inline-block; background: var(--day); color: var(--muted); padding: 4px 11px;
+  border-radius: 8px; font-size: 12.5px; box-shadow: var(--shadow);
+}
+.sys {
+  margin: 8px auto; max-width: 520px; width: fit-content; text-align: center; font-size: 13px;
+  background: var(--sys); padding: 5px 11px; border-radius: 8px; box-shadow: var(--shadow); color: var(--muted);
+  white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.msg {
+  position: relative; width: fit-content; max-width: min(78%, 580px); min-width: 64px;
+  margin-top: 7px; padding: 5px 8px 6px 9px; border-radius: 10px; box-shadow: var(--shadow);
+  overflow-wrap: anywhere;
+}
+.msg.cont { margin-top: 2px; }
+.msg.them { background: var(--them); }
+.msg.me { background: var(--me); margin-left: auto; }
+.msg.them:not(.cont) { border-top-left-radius: 2px; }
+.msg.me:not(.cont) { border-top-right-radius: 2px; }
+.who { font-size: 13px; font-weight: 600; margin-bottom: 1px; }
+.text { white-space: pre-wrap; }
+.text a { color: var(--accent); }
+.text code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13.5px; }
+.note { font-style: italic; color: var(--muted); font-size: 13.5px; }
+.time {
+  float: right; float: inline-end; position: relative; top: 7px; margin-inline-start: 10px;
+  font-size: 11px; line-height: 1; color: var(--muted); user-select: none; white-space: nowrap;
+  direction: ltr; unicode-bidi: isolate; font-style: normal;
+}
+.text:dir(rtl) > .time { margin-left: 0; margin-right: 10px; }
+.msg::after { content: ""; display: block; clear: both; }
+mark { background: var(--mark); color: var(--mark-ink); border-radius: 2px; padding: 0 1px; }
+.msg.flash, .sys.flash { animation: flash 1.8s ease-out; }
+@keyframes flash { 0%, 35% { box-shadow: 0 0 0 4px var(--flash), var(--shadow); } 100% { box-shadow: 0 0 0 0 transparent, var(--shadow); } }
+
+.media {
+  position: relative; display: block; width: 280px; height: 280px; max-width: 100%;
+  margin: 0 0 4px; padding: 0; border: 0; border-radius: 7px; overflow: hidden; background: var(--hover);
+}
+.media img, .media video { width: 100%; height: 100%; object-fit: cover; display: block; border: 0; }
+.media.vid video { object-fit: contain; background: #000; }
+.media .lbl {
+  position: absolute; inset: 0; display: grid; place-items: center; padding: 12px; text-align: center;
+  font-size: 12px; color: var(--muted); overflow-wrap: anywhere; z-index: -1;
+}
+.media.broken img { visibility: hidden; }
+.media.broken .lbl { z-index: 0; }
+.expand {
+  position: absolute; top: 6px; right: 6px; border: 0; border-radius: 6px; padding: 3px 6px;
+  background: rgb(0 0 0 / .55); color: #fff; font-size: 14px; line-height: 1;
+}
+.msg.solo { padding: 3px; }
+.msg.solo .media { margin: 0; }
+.msg.solo .time {
+  position: absolute; top: auto; bottom: 8px; right: 9px; float: none; color: #fff;
+  background: rgb(0 0 0 / .45); padding: 3px 5px; border-radius: 6px;
+}
+.msg.solo:has(video) .time { bottom: auto; top: 8px; right: auto; left: 9px; }
+.msg.sticker { background: none; box-shadow: none; padding: 0; }
+.msg.sticker .time { position: static; float: none; display: block; text-align: end; margin-top: 2px; }
+.sticker-img { width: 150px; height: 150px; object-fit: contain; display: block; }
+audio.aud { display: block; width: 270px; max-width: 100%; height: 40px; margin: 2px 0 4px; }
+.doc {
+  display: flex; align-items: center; gap: 10px; width: 270px; max-width: 100%; text-align: start;
+  background: var(--hover); border: 0; border-radius: 7px; padding: 10px; margin: 0 0 4px;
+}
+.doc .ic { font-size: 22px; }
+.doc .dn { min-width: 0; overflow-wrap: anywhere; font-size: 13.5px; }
+.doc small { display: block; color: var(--muted); font-size: 12px; }
+.missing { font-size: 13px; color: var(--muted); background: var(--hover); border-radius: 7px; padding: 8px 10px; margin-bottom: 4px; overflow-wrap: anywhere; }
+
+/* ---------- floating bits ---------- */
+#dateChip {
+  position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 4; pointer-events: none;
+  background: var(--day); color: var(--muted); font-size: 12.5px; padding: 4px 11px; border-radius: 8px;
+  box-shadow: var(--shadow); opacity: 0; transition: opacity .25s; white-space: nowrap;
+}
+#dateChip.on { opacity: 1; }
+#toEnd {
+  position: absolute; right: 44px; bottom: 18px; z-index: 4; width: 42px; height: 42px; border-radius: 50%;
+  border: 0; background: var(--panel); color: var(--muted); box-shadow: 0 2px 6px rgb(0 0 0 / .25);
+  display: grid; place-items: center;
+}
+#scrub { position: absolute; top: 10px; bottom: 10px; right: 0; width: 34px; z-index: 5; touch-action: none; cursor: grab; }
+#scrub::before { content: ""; position: absolute; top: 0; bottom: 0; right: 14px; width: 3px; border-radius: 2px; background: var(--border); }
+#scrubThumb {
+  position: absolute; right: 8px; width: 15px; height: 26px; border-radius: 8px; background: var(--accent);
+  box-shadow: 0 1px 3px rgb(0 0 0 / .3); pointer-events: none;
+}
+.tick { position: absolute; right: 13px; width: 5px; height: 1px; background: var(--muted); opacity: .55; pointer-events: none; }
+.tick span {
+  position: absolute; right: 12px; top: -8px; font-size: 11px; color: var(--muted); white-space: nowrap;
+  background: var(--day); padding: 0 5px; border-radius: 4px; opacity: 0; transition: opacity .15s;
+}
+#scrub:hover .tick span, #scrub.drag .tick span { opacity: 1; }
+#scrubTip {
+  position: absolute; right: 38px; transform: translateY(-50%); background: var(--accent); color: var(--accent-ink);
+  padding: 4px 9px; border-radius: 7px; font-size: 13px; font-weight: 600; white-space: nowrap; pointer-events: none;
+}
+
+/* ---------- side panel ---------- */
+#panel {
+  width: 400px; flex: none; display: flex; flex-direction: column; min-height: 0;
+  background: var(--panel); border-left: 1px solid var(--border);
+}
+.ph { display: flex; align-items: center; gap: 6px; padding: 8px 8px 8px 14px; border-bottom: 1px solid var(--border); }
+.ph h2 { font-size: 16px; margin: 0; flex: 1; }
+.pbody { flex: 1; overflow-y: auto; min-height: 0; }
+.sect { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+.searchbar { display: flex; gap: 6px; padding: 10px 12px 6px; }
+.searchbar input {
+  flex: 1; min-width: 0; padding: 8px 11px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg);
+}
+.qopts { display: flex; align-items: center; gap: 6px; padding: 0 12px 8px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.qopts select, .field select, .field input {
+  padding: 6px 8px; border-radius: 7px; border: 1px solid var(--border); background: var(--bg); max-width: 100%;
+}
+#qCount { flex: 1; font-size: 13px; color: var(--muted); min-width: 80px; }
+.res { display: block; width: 100%; text-align: start; border: 0; background: none; padding: 9px 14px; border-bottom: 1px solid var(--border); }
+.res:hover, .res.cur { background: var(--hover); }
+.res .rh { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--muted); margin-bottom: 2px; }
+.res .rh b { color: var(--text); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.res .rt { font-size: 14px; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.more { display: block; margin: 12px auto; }
+.empty { padding: 24px 16px; text-align: center; color: var(--muted); font-size: 14px; }
+.tabs { display: flex; gap: 4px; padding: 8px 10px; border-bottom: 1px solid var(--border); overflow-x: auto; }
+.tabs button { border: 0; background: none; padding: 6px 11px; border-radius: 16px; color: var(--muted); white-space: nowrap; }
+.tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.ghead { padding: 12px 12px 6px; font-size: 13px; font-weight: 600; color: var(--muted); position: sticky; top: 0; background: var(--panel); z-index: 1; }
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; padding: 0 10px; }
+.tile { position: relative; aspect-ratio: 1; border: 0; padding: 0; background: var(--hover); overflow: hidden; border-radius: 3px; }
+.tile img, .tile video { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+.tile .play { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font-size: 26px; text-shadow: 0 1px 4px rgb(0 0 0 / .7); pointer-events: none; }
+.tile.broken::after { content: attr(data-label); position: absolute; inset: 0; display: grid; place-items: center; font-size: 10px; color: var(--muted); padding: 4px; overflow-wrap: anywhere; }
+.li { display: flex; gap: 10px; align-items: center; width: 100%; text-align: start; border: 0; background: none; padding: 9px 14px; border-bottom: 1px solid var(--border); }
+.li:hover { background: var(--hover); }
+.li .lt { flex: 1; min-width: 0; overflow-wrap: anywhere; font-size: 14px; }
+.li small { display: block; color: var(--muted); font-size: 12px; }
+.cal-top { padding: 12px 14px; border-bottom: 1px solid var(--border); display: grid; gap: 10px; }
+.field { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.field label { font-size: 14px; color: var(--muted); }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stat { background: var(--bg); border-radius: 8px; padding: 8px 10px; }
+.stat b { display: block; font-size: 18px; }
+.stat small { color: var(--muted); font-size: 12px; }
+.stat a { color: var(--accent); }
+.pbar { margin-top: 4px; }
+.pbar div { display: flex; justify-content: space-between; font-size: 13px; gap: 8px; }
+.pbar i { display: block; height: 6px; border-radius: 3px; background: var(--accent); margin: 3px 0 7px; }
+.month { padding: 10px 14px 4px; }
+.month h3 { font-size: 14px; margin: 0 0 6px; display: flex; justify-content: space-between; }
+.month h3 small { color: var(--muted); font-weight: 400; }
+.dgrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.dgrid .wd { font-size: 10.5px; color: var(--muted); text-align: center; }
+.dgrid button, .dgrid span.pad {
+  aspect-ratio: 1; border: 0; border-radius: 4px; font-size: 11.5px; padding: 0; background: var(--heat0); color: var(--muted);
+}
+.dgrid span.pad { background: none; }
+.dgrid button:disabled { cursor: default; opacity: .5; }
+.dgrid button.hot { color: var(--text); }
+.dgrid button.cur { outline: 2px solid var(--accent); outline-offset: -2px; }
+.setting { padding: 12px 14px; border-bottom: 1px solid var(--border); display: grid; gap: 6px; }
+.setting > label { font-weight: 600; font-size: 14px; }
+.setting p { margin: 0; color: var(--muted); font-size: 13px; }
+
+/* ---------- lightbox & modal ---------- */
+#lb { position: fixed; inset: 0; z-index: 40; background: rgb(0 0 0 / .93); display: flex; flex-direction: column; color: #fff; }
+#lbStage { flex: 1; min-height: 0; display: grid; place-items: center; padding: 8px 56px; position: relative; }
+#lbStage img, #lbStage video { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+#lbStage .lbl { color: #bbb; font-size: 14px; text-align: center; }
+.lbnav { position: absolute; top: 50%; transform: translateY(-50%); background: rgb(255 255 255 / .12); color: #fff; border: 0; border-radius: 50%; width: 44px; height: 44px; display: grid; place-items: center; z-index: 2; }
+.lbnav:hover { background: rgb(255 255 255 / .24); }
+#lbPrev { left: 8px; } #lbNext { right: 8px; }
+.lbtop { display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 16px; padding-top: max(8px, env(safe-area-inset-top)); }
+.lbtop .lbi { flex: 1; min-width: 0; font-size: 14px; }
+.lbtop .lbi small { display: block; color: #aaa; }
+.lbtop .ibtn { color: #ddd; }
+.lbtop .btn { background: rgb(255 255 255 / .1); border-color: rgb(255 255 255 / .2); color: #fff; }
+#lbCap { padding: 8px 16px 14px; text-align: center; font-size: 14px; white-space: pre-wrap; max-height: 25vh; overflow: auto; padding-bottom: max(14px, env(safe-area-inset-bottom)); }
+#lbCap:empty { display: none; }
+.modal { position: fixed; inset: 0; z-index: 50; background: rgb(0 0 0 / .45); display: grid; place-items: center; padding: 16px; }
+.modal .box { background: var(--panel); border-radius: 14px; padding: 20px; width: 100%; max-width: 400px; box-shadow: 0 10px 40px rgb(0 0 0 / .3); }
+.modal h2 { margin: 0 0 6px; font-size: 18px; }
+.modal p { margin: 0 0 14px; color: var(--muted); font-size: 14px; }
+.modal .choices { display: grid; gap: 8px; }
+.modal .choices .btn { justify-content: flex-start; padding: 10px 12px; }
+
+@media (max-width: 860px) {
+  #panel { position: fixed; inset: 0; width: auto; z-index: 30; border: 0; }
+  #list { padding: 8px 38px 24px 10px; }
+  .msg { max-width: 86%; }
+  .media { width: 240px; height: 240px; }
+  #lbStage { padding: 8px; }
+  .lbnav { width: 38px; height: 38px; background: rgb(0 0 0 / .4); }
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="m18 15-6-6-6 6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></symbol>
+  <symbol id="i-dl" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></symbol>
+</svg>
+
+<!-- ============ Landing ============ -->
+<div id="landing">
+  <div class="land">
+    <h1>Chat Viewer</h1>
+    <p>Open a WhatsApp chat export, then scroll it, search it, browse its photos and jump to any date.</p>
+    <div class="drop" id="drop">
+      <div class="big">Drop the exported .zip or folder here</div>
+      <div class="row-btns">
+        <button class="btn primary" id="pickZip"><svg class="icon"><use href="#i-file"/></svg>Open .zip / .txt</button>
+        <button class="btn" id="pickDir"><svg class="icon"><use href="#i-folder"/></svg>Open unzipped folder</button>
+      </div>
+      <input type="file" id="fileZip" accept=".zip,.txt,application/zip,text/plain" multiple hidden>
+      <input type="file" id="fileDir" webkitdirectory directory multiple hidden>
+      <div id="loadMsg" role="status"></div>
+    </div>
+    <div class="privacy">
+      <svg class="icon"><use href="#i-lock"/></svg>
+      <div><b>Your chat stays on this device.</b> Everything happens inside this browser tab. The page's security policy blocks all network requests, so nothing can be uploaded, even by accident. You can also disconnect from the internet before you open a chat.</div>
+    </div>
+    <details class="how">
+      <summary>How do I export a chat from WhatsApp?</summary>
+      <ol>
+        <li>Open the chat on your phone.</li>
+        <li><b>iPhone:</b> tap the contact's name → <i>Export Chat</i> → <i>Attach Media</i>.<br><b>Android:</b> ⋮ → <i>More</i> → <i>Export chat</i> → <i>Include media</i>.</li>
+        <li>Save the file to your computer, for example with AirDrop, a USB cable or Files. Avoid sending it to yourself through a cloud service if you want it to stay fully offline.</li>
+        <li>Open the <code>.zip</code> here. You don't need to unzip it. An unzipped folder works too, and so does a <code>.txt</code> file together with its media files.</li>
+      </ol>
+    </details>
+  </div>
+</div>
+
+<!-- ============ Viewer ============ -->
+<div id="app" hidden>
+  <header class="top">
+    <div class="avatar" id="avatar"></div>
+    <div class="ttl"><b id="title"></b><small id="subtitle"></small></div>
+    <button class="ibtn" data-panel="search" title="Search (Ctrl+F)" aria-pressed="false"><svg class="icon"><use href="#i-search"/></svg></button>
+    <button class="ibtn" data-panel="gallery" title="Photos, videos, files and links" aria-pressed="false"><svg class="icon"><use href="#i-image"/></svg></button>
+    <button class="ibtn" data-panel="calendar" title="Jump to date and stats" aria-pressed="false"><svg class="icon"><use href="#i-cal"/></svg></button>
+    <button class="ibtn" data-panel="settings" title="Settings" aria-pressed="false"><svg class="icon"><use href="#i-gear"/></svg></button>
+  </header>
+  <div id="main">
+    <div id="chatWrap">
+      <div id="scroller" tabindex="-1"><div id="list"></div></div>
+      <div id="dateChip"></div>
+      <button id="toEnd" title="Latest messages (End)" hidden><svg class="icon"><use href="#i-down"/></svg></button>
+      <div id="scrub" title="Drag to move through time"><div id="scrubTicks"></div><div id="scrubThumb"></div><div id="scrubTip" hidden></div></div>
+    </div>
+    <aside id="panel" hidden>
+      <!-- search -->
+      <section class="sect" data-sect="search" hidden>
+        <div class="ph"><h2>Search</h2><button class="ibtn" data-close title="Close (Esc)"><svg class="icon"><use href="#i-x"/></svg></button></div>
+        <div class="searchbar"><input id="q" type="search" placeholder="Search messages…" autocomplete="off" spellcheck="false"></div>
+        <div class="qopts">
+          <select id="qSender" title="From"></select>
+          <select id="qType" title="Type">
+            <option value="">All messages</option>
+            <option value="media">With photo/video</option>
+            <option value="file">With file/audio</option>
+            <option value="link">With link</option>
+          </select>
+          <span id="qCount"></span>
+          <button class="ibtn" id="qPrev" title="Earlier result (Shift+Enter)"><svg class="icon"><use href="#i-up"/></svg></button>
+          <button class="ibtn" id="qNext" title="Later result (Enter)"><svg class="icon"><use href="#i-down"/></svg></button>
+        </div>
+        <div class="pbody" id="qResults"></div>
+      </section>
+      <!-- gallery -->
+      <section class="sect" data-sect="gallery" hidden>
+        <div class="ph"><h2>Media</h2><button class="ibtn" data-close title="Close (Esc)"><svg class="icon"><use href="#i-x"/></svg></button></div>
+        <div class="tabs" role="tablist" id="gTabs">
+          <button role="tab" data-tab="visual" aria-selected="true">Photos &amp; videos</button>
+          <button role="tab" data-tab="audio" aria-selected="false">Audio</button>
+          <button role="tab" data-tab="docs" aria-selected="false">Files</button>
+          <button role="tab" data-tab="links" aria-selected="false">Links</button>
+        </div>
+        <div class="pbody" id="gBody"></div>
+      </section>
+      <!-- calendar -->
+      <section class="sect" data-sect="calendar" hidden>
+        <div class="ph"><h2>Jump to date</h2><button class="ibtn" data-close title="Close (Esc)"><svg class="icon"><use href="#i-x"/></svg></button></div>
+        <div class="pbody" id="cBody"></div>
+      </section>
+      <!-- settings -->
+      <section class="sect" data-sect="settings" hidden>
+        <div class="ph"><h2>Settings</h2><button class="ibtn" data-close title="Close (Esc)"><svg class="icon"><use href="#i-x"/></svg></button></div>
+        <div class="pbody">
+          <div class="setting"><label for="sMe">Which one is you?</label><select id="sMe"></select><p>Your messages show on the right.</p></div>
+          <div class="setting"><label for="sOrder">Date format in the export</label>
+            <select id="sOrder"><option value="auto">Detect automatically</option><option value="dmy">Day / Month / Year</option><option value="mdy">Month / Day / Year</option><option value="ymd">Year / Month / Day</option></select>
+            <p id="sOrderInfo"></p></div>
+          <div class="setting"><label for="sTheme">Theme</label>
+            <select id="sTheme"><option value="auto">Match system</option><option value="light">Light</option><option value="dark">Dark</option></select></div>
+          <div class="setting"><label>Keyboard</label><p>Ctrl/⌘+F or / search · Enter / Shift+Enter next / previous result · Home / End first / last message · Esc close · ← → in the photo viewer</p></div>
+          <div class="setting"><label>Privacy</label><p>Nothing was uploaded. The page's security policy blocks network access. The only things saved in this browser are your "which one is you" choice, your theme, and your last scroll position, never message content.</p>
+            <div><button class="btn" id="closeChat">Close this chat</button></div></div>
+        </div>
+      </section>
+    </aside>
+  </div>
+</div>
+
+<!-- lightbox -->
+<div id="lb" hidden>
+  <div class="lbtop">
+    <div class="lbi"><span id="lbWho"></span><small id="lbWhen"></small></div>
+    <button class="btn" id="lbGo" title="Show this in the chat"><svg class="icon"><use href="#i-chat"/></svg>Show in chat</button>
+    <button class="ibtn" id="lbDl" title="Save a copy"><svg class="icon"><use href="#i-dl"/></svg></button>
+    <button class="ibtn" id="lbClose" title="Close (Esc)"><svg class="icon"><use href="#i-x"/></svg></button>
+  </div>
+  <div id="lbStage"><button class="lbnav" id="lbPrev" title="Previous (←)"><svg class="icon"><use href="#i-left"/></svg></button><div id="lbMedia"></div><button class="lbnav" id="lbNext" title="Next (→)"><svg class="icon"><use href="#i-right"/></svg></button></div>
+  <div id="lbCap" dir="auto"></div>
+</div>
+
+<!-- who-am-I modal -->
+<div class="modal" id="meModal" hidden>
+  <div class="box">
+    <h2>Which one is you?</h2>
+    <p>Your messages will show on the right. You can change this later in Settings.</p>
+    <div class="choices" id="meChoices"></div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+/* ======================= helpers ======================= */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+const esc = s => String(s).replace(/[&<>"']/g, c => ESC[c]);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const fmtBytes = n => n < 1024 ? n + ' B' : n < 1048576 ? Math.round(n / 1024) + ' KB' : n < 1073741824 ? (n / 1048576).toFixed(1) + ' MB' : (n / 1073741824).toFixed(2) + ' GB';
+const nf = new Intl.NumberFormat();
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('chatviewer:' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('chatviewer:' + k, JSON.stringify(v)); } catch { /* storage unavailable */ } },
+};
+function hash(str) { let h = 5381; for (let i = 0; i < str.length; i++) h = (h * 33 + str.charCodeAt(i)) | 0; return (h >>> 0).toString(36); }
+const fTime = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
+const fDay = new Intl.DateTimeFormat(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+const fShort = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+const fMonth = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' });
+const fMonTick = new Intl.DateTimeFormat(undefined, { month: 'short', year: '2-digit' });
+const dayDate = d => new Date(Math.floor(d / 10000), Math.floor(d / 100) % 100 - 1, d % 100);
+const dayLabelCache = new Map();
+function dayLabel(d) {
+  let s = dayLabelCache.get(d);
+  if (!s) { s = fDay.format(dayDate(d)); dayLabelCache.set(d, s); }
+  return s;
+}
+const PALETTE = ['#d0573f', '#2f7fc1', '#9b4fb8', '#c2861a', '#1f9a8a', '#c2417a', '#5b8a2b', '#6d63d6', '#b25d22', '#2e8fb0'];
+
+/* ======================= ZIP reader (local, lazy) ======================= */
+// Reads only the zip's directory up front; each file is sliced/inflated on demand.
+const u64 = (dv, o) => dv.getUint32(o, true) + dv.getUint32(o + 4, true) * 4294967296;
+async function readDV(file, start, len) { return new DataView(await file.slice(start, start + len).arrayBuffer()); }
+async function zipEntries(file) {
+  const tailLen = Math.min(file.size, 22 + 65535 + 20);
+  const dv = await readDV(file, file.size - tailLen, tailLen);
+  let p = -1;
+  for (let i = tailLen - 22; i >= 0; i--) if (dv.getUint32(i, true) === 0x06054b50) { p = i; break; }
+  if (p < 0) throw new Error('This file is not a zip archive, or it is damaged.');
+  let cdSize = dv.getUint32(p + 12, true), cdOff = dv.getUint32(p + 16, true);
+  if (dv.getUint16(p + 10, true) === 0xffff || cdSize === 0xffffffff || cdOff === 0xffffffff) {
+    const lp = p - 20;
+    if (lp >= 0 && dv.getUint32(lp, true) === 0x07064b50) {
+      const z = await readDV(file, u64(dv, lp + 8), 56);
+      if (z.getUint32(0, true) !== 0x06064b50) throw new Error('Damaged zip (ZIP64 record).');
+      cdSize = u64(z, 40); cdOff = u64(z, 48);
+    }
+  }
+  const cd = await readDV(file, cdOff, cdSize);
+  const dec = new TextDecoder();
+  const out = [];
+  let o = 0;
+  while (o + 46 <= cd.byteLength && cd.getUint32(o, true) === 0x02014b50) {
+    const flags = cd.getUint16(o + 8, true), method = cd.getUint16(o + 10, true);
+    let csize = cd.getUint32(o + 20, true), usize = cd.getUint32(o + 24, true);
+    const nl = cd.getUint16(o + 28, true), xl = cd.getUint16(o + 30, true), cl = cd.getUint16(o + 32, true);
+    let loff = cd.getUint32(o + 42, true);
+    const name = dec.decode(new Uint8Array(cd.buffer, cd.byteOffset + o + 46, nl));
+    let x = o + 46 + nl; const xe = x + xl;
+    while (x + 4 <= xe) {
+      const id = cd.getUint16(x, true), sz = cd.getUint16(x + 2, true);
+      if (id === 1) {
+        let q = x + 4;
+        if (usize === 0xffffffff) { usize = u64(cd, q); q += 8; }
+        if (csize === 0xffffffff) { csize = u64(cd, q); q += 8; }
+        if (loff === 0xffffffff) { loff = u64(cd, q); }
+      }
+      x += 4 + sz;
+    }
+    if (!name.endsWith('/') && !(flags & 1)) out.push({ name, method, csize, usize, loff });
+    o = xe + cl;
+  }
+  if (!out.length) throw new Error('The zip archive is empty or could not be read.');
+  return out;
+}
+async function zipBlob(file, e, type) {
+  const h = await readDV(file, e.loff, 30);
+  if (h.getUint32(0, true) !== 0x04034b50) throw new Error('Damaged zip entry: ' + e.name);
+  const start = e.loff + 30 + h.getUint16(26, true) + h.getUint16(28, true);
+  if (e.method === 0) return file.slice(start, start + e.csize, type || '');
+  if (e.method !== 8) throw new Error('Unsupported compression for ' + e.name);
+  if (typeof DecompressionStream === 'undefined') throw new Error('This browser cannot unzip files. Unzip the export and open the folder instead.');
+  const stream = file.slice(start, start + e.csize).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+  const b = await new Response(stream).blob();
+  return type ? new Blob([b], { type }) : b;
+}
+
+/* ======================= media types ======================= */
+const EXT_KIND = {
+  jpg: 'image', jpeg: 'image', png: 'image', gif: 'image', webp: 'image', bmp: 'image', heic: 'image', heif: 'image', avif: 'image',
+  mp4: 'video', mov: 'video', m4v: 'video', '3gp': 'video', webm: 'video', mkv: 'video',
+  opus: 'audio', ogg: 'audio', m4a: 'audio', mp3: 'audio', aac: 'audio', wav: 'audio', amr: 'audio', flac: 'audio',
+};
+const EXT_MIME = {
+  jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp', bmp: 'image/bmp',
+  heic: 'image/heic', heif: 'image/heif', avif: 'image/avif',
+  mp4: 'video/mp4', mov: 'video/mp4', m4v: 'video/mp4', '3gp': 'video/3gpp', webm: 'video/webm', mkv: 'video/webm',
+  opus: 'audio/ogg', ogg: 'audio/ogg', m4a: 'audio/mp4', mp3: 'audio/mpeg', aac: 'audio/aac', wav: 'audio/wav', amr: 'audio/amr', flac: 'audio/flac',
+  pdf: 'application/pdf', txt: 'text/plain', vcf: 'text/vcard',
+};
+const ext = n => (n.match(/\.([A-Za-z0-9]+)$/) || [, ''])[1].toLowerCase();
+function kindOf(name) {
+  const e = ext(name), k = EXT_KIND[e] || 'doc';
+  if (k === 'image' && e === 'webp' && /sticker|^stk-/i.test(name)) return 'sticker';
+  return k;
+}
+
+/* ======================= chat parser ======================= */
+const BIDI = /[‎‏‪-‮⁦-⁩﻿]/g;
+const LEAD = /^[‎‏‪-‮⁦-⁩﻿\s]+/;
+// [31/12/2023, 22:15:32] Name: text     (iPhone)
+// 31/12/2023, 22:15 - Name: text        (Android)
+// 12/31/23, 10:15 PM - Name: text, 2023-12-31 22:15 - …, 31.12.23, 22:15 - …
+const HDR = /^\[?(\d{1,4})[\/.\-](\d{1,2})[\/.\-](\d{1,4})\.?,?\s+(\d{1,2})[:.](\d{2})(?:[:.](\d{2}))?(?:\s*([AaPp])\.?\s?[Mm]\.?)?(?:\]\s*|\s*[-–]\s+|:\s+)(.*)$/;
+const ATT_IOS = /[‎‏]*<[^<>:\n]{1,40}:\s*([^<>\n]+?\.[A-Za-z0-9]{1,6})>/g;
+const ATT_AND = /^(.+?\.[A-Za-z0-9]{1,6})\s+\(([^()\n]{2,40})\)$/;
+const ATTACHED_WORD = /attach|מצורף|adjunto|anexad|joint|allegat|angeh|bijgevoegd|прикреп|ekli|terlampir/i;
+const FNAME = /^[^\s\/\\<>:"|?*][^\/\\<>:"|?*\n]*\.[A-Za-z0-9]{1,6}$/;
+const URL_RE = /(https?:\/\/[^\s<>"]+[^\s<>"'.,:;!?)\]}*_~])/;
+
+function parseLines(raw) {
+  const lines = raw.replace(/\r\n?/g, '\n').split('\n');
+  const recs = [];
+  for (const line of lines) {
+    const m = HDR.exec(line.replace(LEAD, ''));
+    if (m) recs.push({ a: +m[1], b: +m[2], c: +m[3], ya: m[1].length >= 3, h: +m[4], mi: +m[5], s: m[6] ? +m[6] : 0, ap: m[7] ? m[7].toLowerCase() : '', rest: m[8] });
+    else if (recs.length) recs[recs.length - 1].rest += '\n' + line;
+  }
+  return recs;
+}
+function toTime(r, order) {
+  let y, mo, d;
+  if (order === 'ymd') { y = r.a; mo = r.b; d = r.c; }
+  else if (order === 'mdy') { mo = r.a; d = r.b; y = r.c; }
+  else { d = r.a; mo = r.b; y = r.c; }
+  if (y < 100) y += 2000;
+  let h = r.h;
+  if (r.ap) { if (h === 12) h = r.ap === 'p' ? 12 : 0; else if (r.ap === 'p') h += 12; }
+  return new Date(y, mo - 1, d, h, r.mi, r.s).getTime();
+}
+function detectOrder(recs) {
+  if (recs.some(r => r.ya)) return 'ymd';
+  let maxA = 0, maxB = 0;
+  for (const r of recs) { if (r.a > maxA) maxA = r.a; if (r.b > maxB) maxB = r.b; }
+  if (maxA > 12 && maxB <= 12) return 'dmy';
+  if (maxB > 12 && maxA <= 12) return 'mdy';
+  const inv = o => { let n = 0, prev = -Infinity; for (const r of recs) { const t = toTime(r, o); if (t < prev) n++; prev = t; } return n; };
+  const di = inv('dmy'), mi = inv('mdy');
+  if (di !== mi) return di < mi ? 'dmy' : 'mdy';
+  return /^en-US/i.test(navigator.language) ? 'mdy' : 'dmy';
+}
+
+function analyzeText(msg, raw, findMedia) {
+  let text = raw.replace(/\s+$/, '');
+  const lrm = /^[‎‏]/.test(text);
+  const names = [];
+  text = text.replace(ATT_IOS, (all, fname) => { names.push(fname.trim()); return ''; });
+  if (!names.length) {
+    const keep = [];
+    for (const ln of text.split('\n')) {
+      const l = ln.replace(BIDI, '').trim();
+      const mm = ATT_AND.exec(l);
+      if (mm && (findMedia(mm[1]) || ATTACHED_WORD.test(mm[2]))) { names.push(mm[1]); continue; }
+      if (l && FNAME.test(l) && findMedia(l)) { names.push(l); continue; }
+      keep.push(ln);
+    }
+    if (names.length) text = keep.join('\n');
+  }
+  text = text.replace(/^[‎‏\s]+/, '').replace(/\s+$/, '');
+  let note = '';
+  const nm = /^([\s\S]*?)\s*[‎‏]*<([^<>\n]{4,60})>$/.exec(text);
+  if (nm) { text = nm[1]; note = nm[2]; }
+  else if (lrm && !names.length) { note = text.replace(BIDI, ''); text = ''; }
+  msg.text = text;
+  msg.note = note;
+  msg.media = names.length ? names.map(n => ({ name: n, kind: kindOf(n), ok: !!findMedia(n), k: -1 })) : null;
+}
+
+function buildModel(recs, order, findMedia) {
+  const idx = new Map(), names = [], total = [], noteOnly = [];
+  const msgs = new Array(recs.length);
+  for (let k = 0; k < recs.length; k++) {
+    const r = recs[k];
+    const t = toTime(r, order);
+    const d = new Date(t);
+    const rest = r.rest;
+    let sender = null, text = rest;
+    const c = rest.indexOf(': ');
+    if (c > 0 && c <= 80) {
+      const nm = rest.slice(0, c);
+      if (!nm.includes('\n')) { sender = nm.replace(BIDI, '').replace(/^~\s*/, '').trim(); text = rest.slice(c + 2); }
+    }
+    let s = -1;
+    if (sender) {
+      s = idx.get(sender);
+      if (s === undefined) { s = names.length; idx.set(sender, s); names.push(sender); total.push(0); noteOnly.push(0); }
+    }
+    const msg = { t, day: d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(), s, text: '', note: '', media: null, lc: null };
+    analyzeText(msg, text, findMedia);
+    if (s >= 0) { total[s]++; if (!msg.text && !msg.media) noteOnly[s]++; }
+    msgs[k] = msg;
+  }
+  // A "sender" who only ever posts system notes (e.g. the chat or group name on iPhone) is not a person.
+  const remap = [], people = [];
+  names.forEach((n, i) => { if (noteOnly[i] === total[i]) remap.push(-1); else { remap.push(people.length); people.push(n); } });
+  for (const m of msgs) {
+    if (m.s < 0) continue;
+    const ns = remap[m.s];
+    if (ns < 0) { m.text = m.note || m.text; m.note = ''; }
+    m.s = ns;
+  }
+  return { msgs, people };
+}
+
+/* ======================= state ======================= */
+const S = {
+  title: '', fp: '', recs: null, order: 'dmy', orderAuto: 'dmy',
+  media: new Map(), mediaLC: new Map(),
+  msgs: [], people: [], me: -1, group: false,
+  days: [], visual: [], audio: [], docs: [], links: [],
+};
+const findMedia = n => S.media.get(n) || S.mediaLC.get(n.toLowerCase()) || null;
+
+// LRU of object URLs, so memory stays bounded while you scroll through a big export.
+const urlCache = new Map();
+let cacheBytes = 0;
+const CACHE_MAX = 600 * 1024 * 1024;
+function mediaURL(name) {
+  const hit = urlCache.get(name);
+  if (hit) { urlCache.delete(name); urlCache.set(name, hit); return hit.p; }
+  const src = findMedia(name);
+  if (!src) return Promise.reject(new Error('missing'));
+  const entry = { url: null, bytes: 0, p: null };
+  entry.p = src.get(EXT_MIME[ext(name)] || '').then(b => {
+    entry.url = URL.createObjectURL(b);
+    entry.bytes = src.mem ? b.size : 0;
+    cacheBytes += entry.bytes;
+    for (const [k, v] of urlCache) {
+      if (cacheBytes <= CACHE_MAX) break;
+      if (k === name || !v.url) continue;
+      URL.revokeObjectURL(v.url); cacheBytes -= v.bytes; urlCache.delete(k);
+    }
+    return entry.url;
+  });
+  entry.p.catch(() => urlCache.delete(name));
+  urlCache.set(name, entry);
+  return entry.p;
+}
+async function saveMedia(name) {
+  const url = await mediaURL(name);
+  const a = document.createElement('a');
+  a.href = url; a.download = name; document.body.append(a); a.click(); a.remove();
+}
+
+/* ======================= loading ======================= */
+const loadMsg = $('#loadMsg');
+function status(t, err) { loadMsg.textContent = t; loadMsg.classList.toggle('err', !!err); }
+
+async function openFiles(files) {
+  files = [...files].filter(f => !/^\._|^\.DS_Store$/.test(f.name));
+  if (!files.length) return;
+  try {
+    const zips = files.filter(f => /\.zip$/i.test(f.name));
+    const hasTxt = files.some(f => /\.txt$/i.test(f.name));
+    if (zips.length && !hasTxt) return await openZip(zips[0]);
+    status('Reading files…');
+    const media = new Map(), txts = [];
+    for (const f of files) {
+      media.set(f.name, { size: f.size, mem: false, get: type => Promise.resolve(f.slice(0, f.size, type || f.type)) });
+      if (/\.txt$/i.test(f.name)) txts.push(f.name);
+    }
+    const dirName = (files[0].webkitRelativePath || '').split('/')[0];
+    await loadChat(dirName || '', media, txts);
+  } catch (e) { console.error(e); status(e.message || String(e), true); }
+}
+async function openZip(file) {
+  status('Reading ' + file.name + '…');
+  const entries = await zipEntries(file);
+  const media = new Map(), txts = [];
+  for (const e of entries) {
+    if (e.name.startsWith('__MACOSX/')) continue;
+    const base = e.name.split('/').pop();
+    if (!base || base.startsWith('._')) continue;
+    media.set(base, { size: e.usize, mem: e.method !== 0, get: type => zipBlob(file, e, type) });
+    if (/\.txt$/i.test(base)) txts.push(base);
+  }
+  await loadChat(file.name, media, txts);
+}
+async function loadChat(sourceName, media, txts) {
+  if (!txts.length) throw new Error('No chat text file (.txt) found. Open the .zip that WhatsApp exported, or a folder that contains the chat .txt file.');
+  let best = null, bestScore = -1;
+  for (const n of txts) {
+    const blob = await media.get(n).get('text/plain');
+    const head = await blob.slice(0, 16384).text();
+    let score = head.split('\n').filter(l => HDR.test(l.replace(LEAD, ''))).length;
+    if (/^_chat\.txt$|whatsapp/i.test(n)) score += 3;
+    if (score > bestScore) { best = { n, blob }; bestScore = score; }
+  }
+  status('Parsing ' + best.n + '…');
+  await new Promise(r => setTimeout(r, 20));
+  const raw = await best.blob.text();
+  const recs = parseLines(raw);
+  if (!recs.length) throw new Error('Could not find any messages in ' + best.n + '. Is this a WhatsApp chat export?');
+  media.delete(best.n);
+  S.media = media;
+  S.mediaLC = new Map([...media].map(([k, v]) => [k.toLowerCase(), v]));
+  S.recs = recs;
+  S.orderAuto = detectOrder(recs);
+  S.fp = hash(raw.slice(0, 3000) + '|' + raw.length);
+  const pref = store.get('order:' + S.fp, 'auto');
+  S.order = pref === 'auto' ? S.orderAuto : pref;
+  $('#sOrder').value = pref;
+  let title = (/^_chat\.txt$/i.test(best.n) ? sourceName : best.n).replace(/\.(zip|txt)$/i, '')
+    .replace(/^WhatsApp\s+Chat\s*(with|-|–)?\s*/i, '').replace(/^צ['׳]?אט WhatsApp עם\s*/, '').trim();
+  if (!title || /^_?chat$/i.test(title)) title = '';
+  S.title = title;
+  build();
+  $('#landing').hidden = true;
+  $('#app').hidden = false;
+  start();
+}
+
+/* ======================= model → view data ======================= */
+function build() {
+  const { msgs, people } = buildModel(S.recs, S.order, findMedia);
+  S.msgs = msgs; S.people = people; S.group = people.length > 2;
+  S.days = []; S.visual = []; S.audio = []; S.docs = []; S.links = [];
+  let cur = null;
+  for (let i = 0; i < msgs.length; i++) {
+    const m = msgs[i];
+    if (!cur || cur.day !== m.day) { cur = { day: m.day, first: i, count: 0 }; S.days.push(cur); }
+    cur.count++;
+    if (m.media) for (const md of m.media) {
+      if (!md.ok) continue;
+      if (md.kind === 'image' || md.kind === 'video') { md.k = S.visual.length; S.visual.push({ i, name: md.name, kind: md.kind }); }
+      else if (md.kind === 'audio') S.audio.push({ i, name: md.name });
+      else if (md.kind === 'doc') S.docs.push({ i, name: md.name });
+    }
+    if (m.text && m.text.includes('http')) {
+      const parts = m.text.split(URL_RE);
+      for (let p = 1; p < parts.length; p += 2) S.links.push({ i, url: parts[p] });
+    }
+  }
+  if (!S.title) S.title = people.join(', ') || 'Chat';
+  const savedMe = store.get('me:' + S.fp, null);
+  S.me = savedMe != null && savedMe < people.length ? savedMe : -1;
+  dayLabelCache.clear();
+}
+
+/* ======================= message rendering ======================= */
+function fmtInline(h) {
+  return h
+    .replace(/```([\s\S]+?)```/g, '<code>$1</code>')
+    .replace(/(^|[\s(>])\*(?=\S)([^*\n]*?\S)\*(?=$|[\s.,!?:;)<])/g, '$1<b>$2</b>')
+    .replace(/(^|[\s(>])_(?=\S)([^_\n]*?\S)_(?=$|[\s.,!?:;)<])/g, '$1<i>$2</i>')
+    .replace(/(^|[\s(>])~(?=\S)([^~\n]*?\S)~(?=$|[\s.,!?:;)<])/g, '$1<s>$2</s>');
+}
+function fmtText(s) {
+  const parts = s.split(URL_RE);
+  let h = '';
+  for (let i = 0; i < parts.length; i++) {
+    if (i % 2) h += `<a href="${esc(parts[i])}" target="_blank" rel="noopener noreferrer">${esc(parts[i])}</a>`;
+    else h += fmtInline(esc(parts[i]));
+  }
+  return h;
+}
+function mediaHTML(md) {
+  const n = esc(md.name);
+  if (!md.ok) return `<div class="missing">📎 ${n}<br><small>Not included in the export</small></div>`;
+  switch (md.kind) {
+    case 'image':
+      return `<button class="media" data-lb="${md.k}" title="Open"><span class="lbl">${n}<br>(no preview in this browser)</span><img class="lazy" data-src="${n}" alt="" decoding="async"></button>`;
+    case 'sticker':
+      return `<img class="sticker-img lazy" data-src="${n}" alt="Sticker">`;
+    case 'video':
+      return `<div class="media vid"><span class="lbl">${n}</span><video class="lazy" data-src="${n}" controls preload="metadata" playsinline></video><button class="expand" data-lb="${md.k}" title="Open large">⤢</button></div>`;
+    case 'audio':
+      return `<audio class="aud lazy" data-src="${n}" controls preload="none"></audio>`;
+    default: {
+      const src = findMedia(md.name);
+      return `<button class="doc" data-dl="${n}" title="Save a copy"><span class="ic">${ext(md.name) === 'vcf' ? '👤' : '📄'}</span><span class="dn">${n}<small>${src ? fmtBytes(src.size) : ''} · click to save</small></span></button>`;
+    }
+  }
+}
+function rowHTML(i) {
+  const m = S.msgs[i], p = S.msgs[i - 1];
+  let h = `<div class="row" data-i="${i}">`;
+  const newDay = !p || p.day !== m.day;
+  if (newDay) h += `<div class="day"><span>${esc(dayLabel(m.day))}</span></div>`;
+  if (m.s < 0) return h + `<div class="sys" dir="auto">${fmtText(m.text)}</div></div>`;
+  const mine = m.s === S.me;
+  const cont = !newDay && p.s === m.s && m.t - p.t < 15 * 60e3;
+  const onlyMedia = m.media && !m.text && !m.note && m.media.length === 1;
+  const sticker = onlyMedia && m.media[0].kind === 'sticker' && m.media[0].ok;
+  const solo = onlyMedia && !sticker && m.media[0].ok && (m.media[0].kind === 'image' || m.media[0].kind === 'video');
+  h += `<div class="msg ${mine ? 'me' : 'them'}${cont ? ' cont' : ''}${solo ? ' solo' : ''}${sticker ? ' sticker' : ''}">`;
+  if (!mine && !cont && (S.group || S.me < 0)) h += `<div class="who" style="color:${PALETTE[m.s % PALETTE.length]}" dir="auto">${esc(S.people[m.s])}</div>`;
+  if (m.media) for (const md of m.media) h += mediaHTML(md);
+  const time = `<span class="time">${fTime.format(m.t)}${m.note && m.text ? ' · ' + esc(m.note) : ''}</span>`;
+  if (m.text) h += `<div class="text" dir="auto">${fmtText(m.text)}${time}</div>`;
+  else if (m.note) h += `<div class="text note" dir="auto">${esc(m.note)}${time}</div>`;
+  else h += time;
+  return h + '</div></div>';
+}
+
+/* ======================= virtual window ======================= */
+const scroller = $('#scroller'), list = $('#list');
+const CHUNK = 100, MAXWIN = 500, EDGE = 1600;
+let ws = 0, we = 0;
+const tpl = document.createElement('template');
+let hlQuery = '';
+
+const io = new IntersectionObserver(entries => {
+  for (const e of entries) if (e.isIntersecting) { io.unobserve(e.target); loadLazy(e.target); }
+}, { root: scroller, rootMargin: '1500px 0px' });
+function loadLazy(node) {
+  mediaURL(node.dataset.src).then(u => { node.src = u; }).catch(() => markBroken(node));
+}
+function markBroken(node) { (node.closest('.media, .tile') || node).classList.add('broken'); }
+function rowsFragment(a, b) {
+  let h = '';
+  for (let i = a; i < b; i++) h += rowHTML(i);
+  tpl.innerHTML = h;
+  const f = tpl.content;
+  if (hlQuery) for (const n of f.querySelectorAll('.text, .sys')) highlight(n, hlQuery);
+  return f;
+}
+function observeIn(nodes) { for (const r of nodes) for (const n of r.querySelectorAll('.lazy')) io.observe(n); }
+function unobserveRow(r) { for (const n of r.querySelectorAll('.lazy')) io.unobserve(n); }
+
+function renderRange(a, b) {
+  for (const r of list.children) unobserveRow(r);
+  const f = rowsFragment(a, b);
+  const nodes = [...f.children];
+  list.replaceChildren(f);
+  observeIn(nodes);
+  ws = a; we = b;
+}
+function loadUp() {
+  const a = Math.max(0, ws - CHUNK);
+  const f = rowsFragment(a, ws), nodes = [...f.children];
+  const h0 = scroller.scrollHeight;
+  list.prepend(f);
+  scroller.scrollTop += scroller.scrollHeight - h0;
+  observeIn(nodes);
+  ws = a;
+  while (we - ws > MAXWIN) { const r = list.lastElementChild; unobserveRow(r); r.remove(); we--; }
+}
+function loadDown() {
+  const b = Math.min(S.msgs.length, we + CHUNK);
+  const f = rowsFragment(we, b), nodes = [...f.children];
+  list.append(f);
+  observeIn(nodes);
+  we = b;
+  if (we - ws > MAXWIN) {
+    const h0 = scroller.scrollHeight;
+    while (we - ws > MAXWIN) { const r = list.firstElementChild; unobserveRow(r); r.remove(); ws++; }
+    scroller.scrollTop -= h0 - scroller.scrollHeight;
+  }
+}
+const rowEl = i => list.querySelector(`.row[data-i="${i}"]`);
+function relTop(node) { return node.getBoundingClientRect().top - scroller.getBoundingClientRect().top; }
+function topIndex() {
+  const rows = list.children;
+  if (!rows.length) return 0;
+  const top = scroller.getBoundingClientRect().top + 2;
+  let lo = 0, hi = rows.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (rows[mid].getBoundingClientRect().bottom <= top) lo = mid + 1; else hi = mid;
+  }
+  return +rows[lo].dataset.i;
+}
+function jumpTo(i, align = 'center', flash = false) {
+  const n = S.msgs.length;
+  if (!n) return;
+  i = clamp(i, 0, n - 1);
+  renderRange(Math.max(0, i - CHUNK), Math.min(n, i + CHUNK));
+  const row = rowEl(i);
+  if (align === 'end') scroller.scrollTop = scroller.scrollHeight;
+  else if (align === 'start') scroller.scrollTop += relTop(row) - 4;
+  else {
+    const target = row.querySelector('.msg, .sys') || row;
+    scroller.scrollTop += relTop(target) - (scroller.clientHeight - target.offsetHeight) / 2;
+  }
+  if (flash) {
+    const b = row.querySelector('.msg, .sys');
+    if (b) { b.classList.remove('flash'); void b.offsetWidth; b.classList.add('flash'); }
+  }
+  afterScroll();
+}
+function refreshWindow() {
+  if (!list.children.length) return;
+  const i = topIndex(), r = rowEl(i), off = relTop(r);
+  renderRange(ws, we);
+  const r2 = rowEl(i);
+  if (r2) scroller.scrollTop += relTop(r2) - off;
+}
+
+let scrollQueued = false, chipTimer = 0, posTimer = 0;
+scroller.addEventListener('scroll', () => {
+  if (scrollQueued) return;
+  scrollQueued = true;
+  requestAnimationFrame(() => { scrollQueued = false; afterScroll(true); });
+}, { passive: true });
+function afterScroll(fromUser) {
+  const st = scroller.scrollTop, ch = scroller.clientHeight, sh = scroller.scrollHeight;
+  if (st < EDGE && ws > 0) loadUp();
+  else if (sh - st - ch < EDGE && we < S.msgs.length) loadDown();
+  const ti = topIndex();
+  const m = S.msgs[ti];
+  if (m) {
+    const chip = $('#dateChip');
+    chip.textContent = dayLabel(m.day);
+    if (fromUser) { chip.classList.add('on'); clearTimeout(chipTimer); chipTimer = setTimeout(() => chip.classList.remove('on'), 1300); }
+    if (!scrubbing) placeThumb(ti);
+  }
+  const atEnd = we >= S.msgs.length && scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 80;
+  $('#toEnd').hidden = atEnd;
+  clearTimeout(posTimer);
+  posTimer = setTimeout(() => store.set('pos:' + S.fp, ti), 400);
+}
+
+/* ======================= search highlighting ======================= */
+function highlight(root, q) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  while (walker.nextNode()) if (!walker.currentNode.parentNode.closest('.time')) nodes.push(walker.currentNode);
+  for (const node of nodes) {
+    const t = node.nodeValue, tl = t.toLowerCase();
+    let at = tl.indexOf(q);
+    if (at < 0) continue;
+    const f = document.createDocumentFragment();
+    let last = 0;
+    while (at >= 0) {
+      f.append(t.slice(last, at));
+      const mk = document.createElement('mark');
+      mk.textContent = t.slice(at, at + q.length);
+      f.append(mk);
+      last = at + q.length;
+      at = tl.indexOf(q, last);
+    }
+    f.append(t.slice(last));
+    node.replaceWith(f);
+  }
+}
+
+/* ======================= scrubber (timeline) ======================= */
+const scrub = $('#scrub'), thumb = $('#scrubThumb'), tip = $('#scrubTip');
+let scrubbing = false;
+function placeThumb(i) {
+  const n = S.msgs.length, h = scrub.clientHeight - 26;
+  thumb.style.top = (n > 1 ? i / (n - 1) : 0) * h + 'px';
+}
+function buildTicks() {
+  const box = $('#scrubTicks');
+  box.replaceChildren();
+  const n = S.msgs.length;
+  const H = scrub.clientHeight || 400;
+  let lastMonth = -1, lastY = -100;
+  for (const d of S.days) {
+    const mo = Math.floor(d.day / 100);
+    if (mo === lastMonth) continue;
+    lastMonth = mo;
+    const frac = n > 1 ? d.first / (n - 1) : 0;
+    const y = frac * (H - 26) + 13;
+    const t = document.createElement('div');
+    t.className = 'tick';
+    t.style.top = `calc(13px + (100% - 26px) * ${frac})`;
+    if (y - lastY >= 20) { const s = document.createElement('span'); s.textContent = fMonTick.format(dayDate(d.day)); t.append(s); lastY = y; }
+    box.append(t);
+  }
+}
+function scrubAt(clientY) {
+  const r = scrub.getBoundingClientRect();
+  const frac = clamp((clientY - r.top - 13) / (r.height - 26), 0, 1);
+  const i = Math.round(frac * (S.msgs.length - 1));
+  thumb.style.top = frac * (r.height - 26) + 'px';
+  tip.hidden = false;
+  tip.style.top = (frac * (r.height - 26) + 13) + 'px';
+  tip.textContent = fShort.format(S.msgs[i].t);
+  return i;
+}
+let scrubRAF = 0, scrubIdx = 0;
+scrub.addEventListener('pointerdown', e => {
+  if (!S.msgs.length) return;
+  scrubbing = true; scrub.classList.add('drag'); scrub.setPointerCapture(e.pointerId);
+  scrubIdx = scrubAt(e.clientY); jumpTo(scrubIdx, 'start');
+  e.preventDefault();
+});
+scrub.addEventListener('pointermove', e => {
+  if (!scrubbing) return;
+  scrubIdx = scrubAt(e.clientY);
+  if (!scrubRAF) scrubRAF = requestAnimationFrame(() => { scrubRAF = 0; jumpTo(scrubIdx, 'start'); });
+});
+const endScrub = () => { if (!scrubbing) return; scrubbing = false; scrub.classList.remove('drag'); tip.hidden = true; afterScroll(); };
+scrub.addEventListener('wheel', e => { e.preventDefault(); scroller.scrollTop += e.deltaMode === 1 ? e.deltaY * 40 : e.deltaY; }, { passive: false });
+scrub.addEventListener('pointerup', endScrub);
+scrub.addEventListener('pointercancel', endScrub);
+new ResizeObserver(() => { if (S.msgs.length) { buildTicks(); placeThumb(topIndex()); } }).observe(scrub);
+
+/* ======================= chat interactions ======================= */
+list.addEventListener('click', e => {
+  const lb = e.target.closest('[data-lb]');
+  if (lb) { e.preventDefault(); lbOpen(+lb.dataset.lb); return; }
+  const dl = e.target.closest('[data-dl]');
+  if (dl) saveMedia(dl.dataset.dl).catch(() => {});
+});
+document.addEventListener('error', e => {
+  const t = e.target;
+  if (t && (t.tagName === 'IMG' || t.tagName === 'VIDEO') && t.classList.contains('lazy') && t.src) markBroken(t);
+}, true);
+$('#toEnd').addEventListener('click', () => jumpTo(S.msgs.length - 1, 'end'));
+
+/* ======================= panels ======================= */
+const panel = $('#panel');
+let curPanel = null;
+const narrow = () => matchMedia('(max-width: 860px)').matches;
+function showPanel(name) {
+  if (curPanel === name) name = null;
+  curPanel = name;
+  if (!name && panel.contains(document.activeElement)) scroller.focus({ preventScroll: true });
+  panel.hidden = !name;
+  for (const s of $$('[data-sect]', panel)) s.hidden = s.dataset.sect !== name;
+  for (const b of $$('header [data-panel]')) b.setAttribute('aria-pressed', String(b.dataset.panel === name));
+  if (name === 'search') { const q = $('#q'); q.focus(); q.select(); }
+  if (name === 'gallery') renderGallery();
+  if (name === 'calendar') renderCalendar();
+  if (S.msgs.length) requestAnimationFrame(() => { buildTicks(); placeThumb(topIndex()); });
+}
+for (const b of $$('header [data-panel]')) b.addEventListener('click', () => showPanel(b.dataset.panel));
+for (const b of $$('[data-close]', panel)) b.addEventListener('click', () => showPanel(null));
+function afterPick() { if (narrow()) showPanel(null); }
+
+/* ---------- search ---------- */
+const Q = { q: '', results: [], pos: -1, shown: 0 };
+let searchTimer = 0;
+$('#q').addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(runSearch, 160); });
+$('#qSender').addEventListener('change', runSearch);
+$('#qType').addEventListener('change', runSearch);
+$('#q').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); clearTimeout(searchTimer); if ($('#q').value.trim().toLowerCase() !== Q.q) runSearch(); step(e.shiftKey ? -1 : 1); }
+});
+$('#qPrev').addEventListener('click', () => step(-1));
+$('#qNext').addEventListener('click', () => step(1));
+function runSearch() {
+  const q = $('#q').value.trim().toLowerCase();
+  const sf = $('#qSender').value, type = $('#qType').value;
+  Q.q = q; Q.pos = -1; Q.results = [];
+  const active = q || sf !== '' || type;
+  if (active) {
+    const want = sf === '' ? null : +sf;
+    const msgs = S.msgs;
+    for (let i = 0; i < msgs.length; i++) {
+      const m = msgs[i];
+      if (want !== null && m.s !== want) continue;
+      if (type === 'media' && !(m.media && m.media.some(x => x.kind === 'image' || x.kind === 'video'))) continue;
+      if (type === 'file' && !(m.media && m.media.some(x => x.kind === 'doc' || x.kind === 'audio'))) continue;
+      if (type === 'link' && !(m.text && /https?:\/\//.test(m.text))) continue;
+      if (q) {
+        if (m.lc === null) m.lc = (m.text + '\n' + m.note).toLowerCase();
+        if (!m.lc.includes(q)) continue;
+      }
+      Q.results.push(i);
+    }
+  }
+  if (hlQuery !== q) { hlQuery = q; refreshWindow(); }
+  Q.shown = 0;
+  $('#qResults').replaceChildren();
+  updateCount();
+  if (!active) { $('#qResults').innerHTML = '<div class="empty">Type to search every message. You can also filter by person or by type, for example only messages with photos.</div>'; return; }
+  if (!Q.results.length) { $('#qResults').innerHTML = '<div class="empty">No messages found.</div>'; return; }
+  showMoreResults();
+}
+function updateCount() {
+  const n = Q.results.length;
+  $('#qCount').textContent = !Q.q && !$('#qSender').value && !$('#qType').value ? '' :
+    n ? (Q.pos >= 0 ? `${nf.format(Q.pos + 1)} of ${nf.format(n)}` : `${nf.format(n)} result${n === 1 ? '' : 's'}`) : 'No results';
+}
+function snippet(m, q) {
+  let t = m.text || m.note || (m.media ? m.media.map(x => '📎 ' + x.name).join(' ') : '');
+  t = t.replace(/\s+/g, ' ');
+  if (q) {
+    const at = t.toLowerCase().indexOf(q);
+    if (at > 70) t = '…' + t.slice(at - 50);
+  }
+  if (t.length > 260) t = t.slice(0, 260) + '…';
+  return t;
+}
+function showMoreResults() {
+  const box = $('#qResults');
+  $('.more', box)?.remove();
+  const end = Math.min(Q.results.length, Q.shown + 300);
+  let h = '';
+  for (let k = Q.shown; k < end; k++) {
+    const i = Q.results[k], m = S.msgs[i];
+    const who = m.s >= 0 ? S.people[m.s] : 'System';
+    h += `<button class="res" data-k="${k}"><div class="rh"><b dir="auto">${esc(who)}</b><span>${esc(fShort.format(m.t))} ${esc(fTime.format(m.t))}</span></div><div class="rt" dir="auto">${esc(snippet(m, Q.q))}</div></button>`;
+  }
+  tpl.innerHTML = h;
+  const f = tpl.content;
+  if (Q.q) for (const n of f.querySelectorAll('.rt')) highlight(n, Q.q);
+  box.append(f);
+  Q.shown = end;
+  if (end < Q.results.length) {
+    const b = document.createElement('button');
+    b.className = 'btn more'; b.textContent = `Show more (${nf.format(Q.results.length - end)} left)`;
+    b.addEventListener('click', showMoreResults);
+    box.append(b);
+  }
+}
+$('#qResults').addEventListener('click', e => {
+  const r = e.target.closest('.res');
+  if (!r) return;
+  gotoResult(+r.dataset.k);
+  afterPick();
+});
+function gotoResult(k) {
+  Q.pos = k;
+  for (const c of $$('.res.cur', $('#qResults'))) c.classList.remove('cur');
+  const el = $(`.res[data-k="${k}"]`, $('#qResults'));
+  if (el) { el.classList.add('cur'); el.scrollIntoView({ block: 'nearest' }); }
+  updateCount();
+  jumpTo(Q.results[k], 'center', true);
+}
+function step(dir) {
+  if (!Q.results.length) return;
+  let k;
+  if (Q.pos < 0) {
+    // start from the result nearest to what's on screen
+    const ti = topIndex();
+    let lo = 0, hi = Q.results.length;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (Q.results[mid] < ti) lo = mid + 1; else hi = mid; }
+    k = dir > 0 ? lo : lo - 1;
+  } else k = Q.pos + dir;
+  k = (k + Q.results.length) % Q.results.length;
+  while (k >= Q.shown) showMoreResults();
+  gotoResult(k);
+}
+
+/* ---------- gallery ---------- */
+let gTab = 'visual', gBuiltFor = '';
+const gio = new IntersectionObserver(entries => {
+  for (const e of entries) if (e.isIntersecting) { gio.unobserve(e.target); loadLazy(e.target); }
+}, { root: $('#gBody'), rootMargin: '600px 0px' });
+for (const b of $$('#gTabs [data-tab]')) b.addEventListener('click', () => {
+  gTab = b.dataset.tab;
+  for (const x of $$('#gTabs [data-tab]')) x.setAttribute('aria-selected', String(x === b));
+  renderGallery();
+});
+function monthKey(i) { return Math.floor(S.msgs[i].day / 100); }
+function renderGallery() {
+  const key = gTab + '|' + S.fp + '|' + S.order;
+  if (gBuiltFor === key) return;
+  gBuiltFor = key;
+  const body = $('#gBody');
+  gio.disconnect();
+  body.replaceChildren();
+  body.scrollTop = 0;
+  const items = { visual: S.visual, audio: S.audio, docs: S.docs, links: S.links }[gTab];
+  for (const b of $$('#gTabs [data-tab]')) {
+    const c = { visual: S.visual, audio: S.audio, docs: S.docs, links: S.links }[b.dataset.tab].length;
+    b.textContent = b.textContent.replace(/\s*\(\d[\d,.\s]*\)$/, '') + ` (${nf.format(c)})`;
+  }
+  if (!items.length) {
+    body.innerHTML = `<div class="empty">${gTab === 'visual' && S.media.size === 0 ? 'This export has no media files. Export the chat again with “Attach media” / “Include media”.' : 'Nothing here.'}</div>`;
+    return;
+  }
+  // newest first, grouped by month
+  let h = '', curM = -1, open = false;
+  for (let k = items.length - 1; k >= 0; k--) {
+    const it = items[k], mk = monthKey(it.i);
+    if (mk !== curM) {
+      if (open) h += '</div>';
+      curM = mk;
+      h += `<div class="ghead">${esc(fMonth.format(dayDate(mk * 100 + 1)))}</div>` + (gTab === 'visual' ? '<div class="grid">' : '<div>');
+      open = true;
+    }
+    const m = S.msgs[it.i];
+    const when = esc(fShort.format(m.t));
+    const who = esc(m.s >= 0 ? S.people[m.s] : '');
+    if (gTab === 'visual') {
+      h += `<button class="tile" data-lb="${k}" data-label="${esc(it.name)}" title="${who} · ${when}">` +
+        (it.kind === 'video' ? `<video class="lazy" data-src="${esc(it.name)}" preload="metadata" muted playsinline></video><span class="play">▶</span>` : `<img class="lazy" data-src="${esc(it.name)}" alt="" decoding="async">`) + '</button>';
+    } else if (gTab === 'audio') {
+      h += `<div class="li"><div class="lt"><small>${who} · ${when}</small><audio class="aud lazy" data-src="${esc(it.name)}" controls preload="none"></audio></div><button class="ibtn" data-go="${it.i}" title="Show in chat"><svg class="icon"><use href="#i-chat"/></svg></button></div>`;
+    } else if (gTab === 'docs') {
+      const src = findMedia(it.name);
+      h += `<div class="li"><span>📄</span><div class="lt" dir="auto">${esc(it.name)}<small>${who} · ${when}${src ? ' · ' + fmtBytes(src.size) : ''}</small></div><button class="ibtn" data-dl="${esc(it.name)}" title="Save a copy"><svg class="icon"><use href="#i-dl"/></svg></button><button class="ibtn" data-go="${it.i}" title="Show in chat"><svg class="icon"><use href="#i-chat"/></svg></button></div>`;
+    } else {
+      h += `<button class="li" data-go="${it.i}"><span>🔗</span><div class="lt">${esc(it.url)}<small>${who} · ${when}</small></div></button>`;
+    }
+  }
+  if (open) h += '</div>';
+  body.innerHTML = h;
+  for (const n of body.querySelectorAll('.lazy')) gio.observe(n);
+}
+$('#gBody').addEventListener('click', e => {
+  const t = e.target.closest('[data-lb], [data-go], [data-dl]');
+  if (!t) return;
+  if (t.dataset.lb != null) lbOpen(+t.dataset.lb);
+  else if (t.dataset.dl != null) saveMedia(t.dataset.dl).catch(() => {});
+  else { jumpTo(+t.dataset.go, 'center', true); afterPick(); }
+});
+
+/* ---------- calendar & stats ---------- */
+let cBuiltFor = '';
+function dayIndexFor(dayInt) {
+  const d = S.days;
+  let lo = 0, hi = d.length - 1;
+  if (dayInt > d[hi].day) return hi;
+  while (lo < hi) { const mid = (lo + hi) >> 1; if (d[mid].day < dayInt) lo = mid + 1; else hi = mid; }
+  return lo;
+}
+const isoOf = d => `${Math.floor(d / 10000)}-${String(Math.floor(d / 100) % 100).padStart(2, '0')}-${String(d % 100).padStart(2, '0')}`;
+function renderCalendar() {
+  const body = $('#cBody');
+  const key = S.fp + '|' + S.order + '|' + S.me;
+  const cur = S.msgs[topIndex()]?.day;
+  if (cBuiltFor !== key) {
+    cBuiltFor = key;
+    const first = S.days[0].day, last = S.days[S.days.length - 1].day;
+    const per = S.people.map(() => 0);
+    let media = 0;
+    for (const m of S.msgs) { if (m.s >= 0) per[m.s]++; if (m.media) media += m.media.length; }
+    const maxPer = Math.max(1, ...per);
+    const busiest = S.days.reduce((a, b) => (b.count > a.count ? b : a));
+    const span = Math.round((dayDate(last) - dayDate(first)) / 864e5) + 1;
+    let h = `<div class="cal-top">
+      <div class="field"><label for="cDate">Go to</label><input type="date" id="cDate" min="${isoOf(first)}" max="${isoOf(last)}" value="${isoOf(cur || last)}">
+        <button class="btn" id="cFirst">First message</button><button class="btn" id="cLast">Latest</button></div>
+      <div class="stats">
+        <div class="stat"><b>${nf.format(S.msgs.length)}</b><small>messages</small></div>
+        <div class="stat"><b>${nf.format(media)}</b><small>attachments</small></div>
+        <div class="stat"><b>${nf.format(S.days.length)}</b><small>active days of ${nf.format(span)}</small></div>
+        <div class="stat"><b>${nf.format(busiest.count)}</b><small>busiest day: <a href="#" data-day="${busiest.day}">${esc(fShort.format(dayDate(busiest.day)))}</a></small></div>
+      </div>
+      <div class="pbar">${S.people.map((p, i) => `<div><span dir="auto">${esc(p)}</span><span>${nf.format(per[i])}</span></div><i style="width:${(per[i] / maxPer * 100).toFixed(1)}%;background:${PALETTE[i % PALETTE.length]}"></i>`).join('')}</div>
+    </div>`;
+    // heatmap months, newest first
+    const counts = new Map(S.days.map(d => [d.day, d.count]));
+    const maxC = Math.max(...S.days.map(d => d.count));
+    const startMonday = !/^en-US/i.test(navigator.language);
+    const wd = startMonday ? ['M', 'T', 'W', 'T', 'F', 'S', 'S'] : ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    let y = Math.floor(last / 10000), mo = Math.floor(last / 100) % 100;
+    const fy = Math.floor(first / 10000), fm = Math.floor(first / 100) % 100;
+    while (y > fy || (y === fy && mo >= fm)) {
+      const dim = new Date(y, mo, 0).getDate();
+      let lead = new Date(y, mo - 1, 1).getDay();
+      if (startMonday) lead = (lead + 6) % 7;
+      let total = 0, cells = '';
+      for (let p = 0; p < lead; p++) cells += '<span class="pad"></span>';
+      for (let d = 1; d <= dim; d++) {
+        const di = y * 10000 + mo * 100 + d, c = counts.get(di) || 0;
+        total += c;
+        const a = c ? 0.18 + 0.82 * Math.log(1 + c) / Math.log(1 + maxC) : 0;
+        cells += c
+          ? `<button data-day="${di}" class="hot" style="background:rgb(var(--heat) / ${a.toFixed(2)})" title="${esc(fShort.format(dayDate(di)))}: ${nf.format(c)} messages">${d}</button>`
+          : `<button disabled title="${esc(fShort.format(dayDate(di)))}: no messages">${d}</button>`;
+      }
+      h += `<div class="month"><h3>${esc(fMonth.format(new Date(y, mo - 1, 1)))}<small>${nf.format(total)} msgs</small></h3><div class="dgrid">${wd.map(w => `<span class="wd">${w}</span>`).join('')}${cells}</div></div>`;
+      if (--mo === 0) { mo = 12; y--; }
+    }
+    body.innerHTML = h;
+    $('#cDate').addEventListener('change', e => {
+      const v = e.target.value;
+      if (!v) return;
+      const [yy, mm, dd] = v.split('-').map(Number);
+      gotoDay(yy * 10000 + mm * 100 + dd);
+    });
+    $('#cFirst').addEventListener('click', () => { jumpTo(0, 'start'); afterPick(); });
+    $('#cLast').addEventListener('click', () => { jumpTo(S.msgs.length - 1, 'end'); afterPick(); });
+  }
+  for (const b of $$('.dgrid button.cur', body)) b.classList.remove('cur');
+  if (cur) {
+    const b = $(`.dgrid button[data-day="${cur}"]`, body);
+    if (b) b.classList.add('cur');
+    const inp = $('#cDate'); if (inp) inp.value = isoOf(cur);
+  }
+}
+function gotoDay(dayInt) { jumpTo(S.days[dayIndexFor(dayInt)].first, 'start'); afterPick(); }
+$('#cBody').addEventListener('click', e => {
+  const t = e.target.closest('[data-day]');
+  if (!t) return;
+  e.preventDefault();
+  gotoDay(+t.dataset.day);
+  renderCalendar();
+});
+
+/* ---------- settings ---------- */
+function fillPeople() {
+  const opts = S.people.map((p, i) => `<option value="${i}">${esc(p)}</option>`).join('');
+  $('#sMe').innerHTML = `<option value="-1">Nobody (show everyone on the left)</option>` + opts;
+  $('#sMe').value = String(S.me);
+  $('#qSender').innerHTML = `<option value="">From anyone</option>` + opts;
+}
+$('#sMe').addEventListener('change', e => setMe(+e.target.value));
+function setMe(i) {
+  S.me = i;
+  store.set('me:' + S.fp, i);
+  $('#sMe').value = String(i);
+  refreshWindow();
+}
+$('#sOrder').addEventListener('change', e => {
+  const v = e.target.value;
+  store.set('order:' + S.fp, v);
+  const ti = topIndex();
+  S.order = v === 'auto' ? S.orderAuto : v;
+  build(); start(ti);
+});
+const applyTheme = v => { if (v === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.dataset.theme = v; };
+$('#sTheme').value = store.get('theme', 'auto');
+applyTheme($('#sTheme').value);
+$('#sTheme').addEventListener('change', e => { store.set('theme', e.target.value); applyTheme(e.target.value); });
+$('#closeChat').addEventListener('click', () => location.reload());
+
+/* ======================= lightbox ======================= */
+const lb = $('#lb');
+let lbK = -1;
+function lbOpen(k) {
+  if (k < 0 || k >= S.visual.length) return;
+  lbK = k;
+  const it = S.visual[k], m = S.msgs[it.i];
+  const box = $('#lbMedia');
+  box.replaceChildren();
+  const node = document.createElement(it.kind === 'video' ? 'video' : 'img');
+  if (it.kind === 'video') { node.controls = true; node.autoplay = true; node.playsInline = true; }
+  node.addEventListener('error', () => { box.innerHTML = `<div class="lbl">${esc(it.name)}<br>This browser can't show this file. Use the save button to open it in another app.</div>`; });
+  box.append(node);
+  mediaURL(it.name).then(u => { if (lbK === k) node.src = u; }).catch(() => {});
+  $('#lbWho').textContent = m.s >= 0 ? S.people[m.s] : '';
+  $('#lbWhen').textContent = `${fDay.format(m.t)} · ${fTime.format(m.t)} · ${k + 1} of ${S.visual.length}`;
+  $('#lbCap').textContent = m.text || '';
+  $('#lbPrev').style.visibility = k > 0 ? '' : 'hidden';
+  $('#lbNext').style.visibility = k < S.visual.length - 1 ? '' : 'hidden';
+  lb.hidden = false;
+  // warm up neighbours
+  for (const j of [k - 1, k + 1]) if (S.visual[j]) mediaURL(S.visual[j].name).catch(() => {});
+}
+function lbClose() { lb.hidden = true; $('#lbMedia').replaceChildren(); lbK = -1; }
+$('#lbClose').addEventListener('click', lbClose);
+$('#lbPrev').addEventListener('click', () => lbOpen(lbK - 1));
+$('#lbNext').addEventListener('click', () => lbOpen(lbK + 1));
+$('#lbGo').addEventListener('click', () => { const i = S.visual[lbK].i; lbClose(); jumpTo(i, 'center', true); afterPick(); });
+$('#lbDl').addEventListener('click', () => saveMedia(S.visual[lbK].name).catch(() => {}));
+$('#lbStage').addEventListener('click', e => { if (e.target.id === 'lbStage' || e.target.id === 'lbMedia') lbClose(); });
+let touchX = null;
+lb.addEventListener('touchstart', e => { touchX = e.touches.length === 1 ? e.touches[0].clientX : null; }, { passive: true });
+lb.addEventListener('touchend', e => {
+  if (touchX == null) return;
+  const dx = e.changedTouches[0].clientX - touchX;
+  if (Math.abs(dx) > 60) lbOpen(lbK + (dx < 0 ? 1 : -1));
+  touchX = null;
+});
+
+/* ======================= keyboard ======================= */
+document.addEventListener('keydown', e => {
+  if ($('#app').hidden) return;
+  const inField = /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement?.tagName);
+  if (!lb.hidden) {
+    if (e.key === 'Escape') lbClose();
+    else if (e.key === 'ArrowLeft') lbOpen(lbK - 1);
+    else if (e.key === 'ArrowRight') lbOpen(lbK + 1);
+    return;
+  }
+  if (!$('#meModal').hidden) return;
+  if ((e.key === 'f' && (e.ctrlKey || e.metaKey)) || (e.key === '/' && !inField)) {
+    e.preventDefault();
+    if (curPanel !== 'search') showPanel('search'); else { $('#q').focus(); $('#q').select(); }
+  } else if (e.key === 'Escape') {
+    if (curPanel) showPanel(null);
+  } else if (!inField && e.key === 'Home') { e.preventDefault(); jumpTo(0, 'start'); }
+  else if (!inField && e.key === 'End') { e.preventDefault(); jumpTo(S.msgs.length - 1, 'end'); }
+  else if (!inField && (e.key === 'PageDown' || e.key === 'PageUp' || e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === ' ')) {
+    if (document.activeElement === document.body) scroller.focus({ preventScroll: true });
+  }
+});
+
+/* ======================= start ======================= */
+function start(atIndex) {
+  const n = S.msgs.length;
+  const first = S.msgs[0], last = S.msgs[n - 1];
+  $('#title').textContent = S.title;
+  document.title = S.title + ' · Chat Viewer';
+  $('#avatar').textContent = (S.title.replace(/[^\p{L}\p{N}]/gu, '')[0] || '#').toUpperCase();
+  $('#subtitle').textContent = `${S.people.join(', ')} · ${nf.format(n)} messages · ${fShort.format(first.t)} – ${fShort.format(last.t)}`;
+  $('#sOrderInfo').textContent = `Detected: ${({ dmy: 'Day / Month / Year', mdy: 'Month / Day / Year', ymd: 'Year / Month / Day' })[S.orderAuto]}. Change this only if dates look wrong.`;
+  fillPeople();
+  gBuiltFor = ''; cBuiltFor = '';
+  if (curPanel === 'gallery') renderGallery();
+  if (curPanel === 'calendar') renderCalendar();
+  Q.results = []; Q.pos = -1;
+  if ($('#q').value) runSearch(); else { $('#qResults').innerHTML = '<div class="empty">Type to search every message. You can also filter by person or by type, for example only messages with photos.</div>'; updateCount(); }
+  buildTicks();
+  if (atIndex != null) jumpTo(atIndex, 'start');
+  else {
+    const pos = store.get('pos:' + S.fp, null);
+    if (pos != null && pos < n) jumpTo(pos, 'start'); else jumpTo(n - 1, 'end');
+  }
+  if (S.me < 0 && store.get('me:' + S.fp, null) == null && S.people.length) askMe();
+}
+function askMe() {
+  const box = $('#meChoices');
+  box.replaceChildren();
+  S.people.forEach((p, i) => {
+    const b = document.createElement('button');
+    b.className = 'btn'; b.dir = 'auto';
+    b.innerHTML = `<span style="width:10px;height:10px;border-radius:50%;background:${PALETTE[i % PALETTE.length]};display:inline-block"></span>`;
+    b.append(p);
+    b.addEventListener('click', () => { $('#meModal').hidden = true; setMe(i); });
+    box.append(b);
+  });
+  const skip = document.createElement('button');
+  skip.className = 'btn'; skip.textContent = 'Skip';
+  skip.addEventListener('click', () => { $('#meModal').hidden = true; setMe(-1); });
+  box.append(skip);
+  $('#meModal').hidden = false;
+}
+
+/* ======================= file pickers & drag-drop ======================= */
+$('#pickZip').addEventListener('click', () => $('#fileZip').click());
+$('#pickDir').addEventListener('click', () => $('#fileDir').click());
+$('#fileZip').addEventListener('change', e => openFiles(e.target.files));
+$('#fileDir').addEventListener('change', e => openFiles(e.target.files));
+const drop = $('#drop');
+['dragenter', 'dragover'].forEach(t => document.addEventListener(t, e => { e.preventDefault(); if ($('#app').hidden) drop.classList.add('over'); }));
+document.addEventListener('dragleave', e => { if (!e.relatedTarget) drop.classList.remove('over'); });
+document.addEventListener('drop', async e => {
+  e.preventDefault();
+  drop.classList.remove('over');
+  if (!$('#app').hidden) return;
+  const entries = [...e.dataTransfer.items].filter(i => i.kind === 'file').map(i => i.webkitGetAsEntry && i.webkitGetAsEntry()).filter(Boolean);
+  if (!entries.length) return openFiles(e.dataTransfer.files);
+  status('Reading dropped files…');
+  const out = [];
+  const walk = async en => {
+    if (en.isFile) out.push(await new Promise((res, rej) => en.file(res, rej)));
+    else if (en.isDirectory) {
+      const r = en.createReader();
+      let batch;
+      do { batch = await new Promise((res, rej) => r.readEntries(res, rej)); for (const b of batch) await walk(b); } while (batch.length);
+    }
+  };
+  try { for (const en of entries) await walk(en); } catch (err) { status('Could not read the dropped files: ' + err.message, true); return; }
+  const dir = entries.find(en => en.isDirectory);
+  if (dir) out.forEach(f => { try { Object.defineProperty(f, 'webkitRelativePath', { value: dir.name + '/' + f.name }); } catch {} });
+  openFiles(out);
+});
+})();
+</script>
+</body>
+</html>
