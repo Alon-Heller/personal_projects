@@ -89,7 +89,7 @@ details.how ol { margin: 8px 0 4px; padding-left: 20px; }
 #loadMsg.err { color: #c2412d; }
 
 /* ---------- app shell ---------- */
-#app { display: grid; grid-template-rows: auto 1fr; height: 100vh; height: 100dvh; }
+#app { display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: minmax(0, 1fr); height: 100vh; height: 100dvh; }
 header.top {
   display: flex; align-items: center; gap: 6px; padding: 6px 8px 6px 14px;
   background: var(--header); border-bottom: 1px solid var(--border); min-width: 0;
@@ -369,7 +369,7 @@ audio.aud { display: block; width: 270px; max-width: 100%; height: 40px; margin:
 .card {
   position: relative; display: flex; gap: 8px; padding: 8px 10px; border-radius: 9px; border-left: 4px solid var(--sc);
   background: var(--them); box-shadow: var(--shadow); cursor: grab; user-select: none; -webkit-user-select: none;
-  -webkit-touch-callout: none; min-height: 0; overflow: hidden;
+  -webkit-touch-callout: none; flex-shrink: 0; overflow: hidden;
 }
 .card .cm { flex: 1; min-width: 0; }
 .card .ch { display: flex; justify-content: space-between; gap: 6px; font-size: 12px; color: var(--muted); }
@@ -1695,16 +1695,14 @@ function addColumn() {
   col.querySelector('.bname').focus();
 }
 const colOf = el => B.cols.find(c => c.id === +el.closest('.bcol').dataset.col);
-let nameTimer = 0;
 $('#bCols').addEventListener('input', e => {
   if (!e.target.classList.contains('bname')) return;
   colOf(e.target).name = e.target.value;
-  clearTimeout(nameTimer); nameTimer = setTimeout(boardSave, 300);
+  boardSave();
 });
 $('#bCols').addEventListener('keydown', e => {
   if (e.target.classList.contains('bname') && (e.key === 'Enter' || e.key === 'Escape')) { e.preventDefault(); e.stopPropagation(); e.target.blur(); }
 });
-$('#bCols').addEventListener('focusout', e => { if (e.target.classList.contains('bname')) { clearTimeout(nameTimer); boardSave(); } });
 $('#board').addEventListener('click', e => {
   if (D.justDragged) { e.preventDefault(); e.stopPropagation(); return; }
   const t = e.target;
