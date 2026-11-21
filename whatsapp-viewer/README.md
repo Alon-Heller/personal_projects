@@ -30,11 +30,12 @@ It's a single `index.html`. You don't install anything, there's no server, and n
 - **Media panel** with photos and videos (grouped by month, newest first), voice notes and audio, files, and every link shared in the chat. Each item has *show in chat*.
 - **Photo viewer** with ←/→ keys or swipe, the caption, *Show in chat*, and *Save a copy*.
 - **Stars**: point at a message (on a phone, tap it) and click ☆ to star it. These are the viewer's own stars, separate from anything starred in WhatsApp. The ★ panel lists all starred messages, oldest or newest first, with photo thumbnails. Click one to jump to it. Search has a *Starred only* filter. Stars are remembered per chat in this browser. Use *Save stars to file* / *Load stars from file* to back them up or move them to another browser.
+- **Board** (columns button in the header, or press `B`): sort your starred messages into named columns. The bottom 20% holds every starred message that isn't in a column yet, oldest first. Drag cards up into columns, between columns, up and down within a column, or back down to the bottom row. *+ New column* adds a column. Click a column's name to rename it. Drag the ⋮⋮ handle to reorder columns, and × deletes a column (its cards go back to the bottom row, still starred). Hover a card to *show it in the chat* or take it out of its column. Esc cancels a drag. The board is saved per chat in this browser, and *Save stars to file* includes your columns.
 - **Jump to date**: a date picker plus a month-by-month heat-map calendar. Click any day to jump to it. It also shows stats: messages per person, active days, and the busiest day.
 - Inline images, videos, voice notes (`.opus`), stickers and documents. *bold*, _italic_ and ~strike~ formatting and links are shown as in WhatsApp. Right-to-left text (Hebrew, Arabic) is supported. Light and dark themes are included, and the layout works on phones.
 - Handles iPhone and Android export formats in many locales: `[31/12/2024, 22:15:03]`, `12/31/24, 10:15 PM -`, `31.12.2024, 22:15 -`, `2024-12-31 22:15 -`, and others. Day/month order is detected automatically. You can override it in Settings if dates look wrong.
 
-Keyboard: `Ctrl/⌘+F` or `/` search · `Enter` / `Shift+Enter` next/previous result · `Home` / `End` first/last message · `Esc` close · `←` `→` in the photo viewer.
+Keyboard: `Ctrl/⌘+F` or `/` search · `Enter` / `Shift+Enter` next/previous result · `Home` / `End` first/last message · `B` board · `Esc` close · `←` `→` in the photo viewer.
 
 ## Notes
 

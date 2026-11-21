@@ -330,6 +330,67 @@ audio.aud { display: block; width: 270px; max-width: 100%; height: 40px; margin:
 .modal .choices { display: grid; gap: 8px; }
 .modal .choices .btn { justify-content: flex-start; padding: 10px 12px; }
 
+/* ---------- board ---------- */
+#board { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--chat); }
+#bCols { flex: 1; min-height: 0; display: flex; gap: 12px; padding: 12px; overflow-x: auto; overflow-y: hidden; align-items: stretch; }
+.bcol {
+  flex: none; width: 290px; max-height: 100%; display: flex; flex-direction: column;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 12px;
+}
+.bch { display: flex; align-items: center; gap: 2px; padding: 5px 4px; border-bottom: 1px solid var(--border); }
+.grip { display: grid; place-items: center; padding: 6px 3px; border-radius: 6px; color: var(--muted); cursor: grab; touch-action: none; }
+.grip:hover { background: var(--hover); color: var(--text); }
+.grip .icon { width: 16px; height: 16px; }
+.bname { flex: 1; min-width: 0; font-weight: 600; font-size: 14.5px; border: 1px solid transparent; background: none; border-radius: 6px; padding: 5px 6px; }
+.bname:hover { border-color: var(--border); }
+.bname:focus { border-color: var(--accent); background: var(--panel); outline: none; }
+.bcount { font-size: 12px; color: var(--muted); padding: 0 4px; }
+.bdel { padding: 6px; }
+.bdel .icon { width: 16px; height: 16px; }
+.blist { flex: 1; min-height: 70px; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 8px; }
+.blist.is-empty::before {
+  content: attr(data-empty); display: grid; place-items: center; text-align: center; min-height: 80px; padding: 10px;
+  border: 2px dashed var(--border); border-radius: 9px; color: var(--muted); font-size: 13px;
+}
+#bPoolList.is-empty::before { flex: 1; min-height: 0; }
+.bside { flex: none; width: 230px; align-self: flex-start; display: grid; gap: 10px; }
+#bAdd {
+  border: 2px dashed var(--border); background: none; border-radius: 12px; padding: 14px; color: var(--muted); font-weight: 600;
+}
+#bAdd:hover { border-color: var(--accent); color: var(--accent); }
+.bhint { font-size: 13px; color: var(--muted); padding: 0 4px; }
+#bPool { flex: none; height: 20%; min-height: 150px; display: flex; flex-direction: column; background: var(--panel); border-top: 1px solid var(--border); }
+.bph { display: flex; align-items: baseline; gap: 10px; padding: 7px 14px 0; font-size: 13px; }
+.bph span { color: var(--muted); }
+#bPoolList { flex: 1; min-height: 0; display: flex; flex-direction: row; gap: 8px; padding: 7px 12px 10px; overflow-x: auto; overflow-y: hidden; align-items: flex-start; border-radius: 8px; transition: background .12s; }
+#bPoolList .card { max-height: 100%; }
+#bPoolList.over { background: var(--flash); }
+#bPoolList .card { width: 240px; flex: none; }
+.card {
+  position: relative; display: flex; gap: 8px; padding: 8px 10px; border-radius: 9px; border-left: 4px solid var(--sc);
+  background: var(--them); box-shadow: var(--shadow); cursor: grab; user-select: none; -webkit-user-select: none;
+  -webkit-touch-callout: none; min-height: 0; overflow: hidden;
+}
+.card .cm { flex: 1; min-width: 0; }
+.card .ch { display: flex; justify-content: space-between; gap: 6px; font-size: 12px; color: var(--muted); }
+.card .ch b { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card .ch span { white-space: nowrap; }
+.card .ct { font-size: 13.5px; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
+#bPoolList .card .ct { -webkit-line-clamp: 3; }
+.cthumb { width: 48px; height: 48px; object-fit: cover; border-radius: 5px; flex: none; background: var(--hover); pointer-events: none; }
+.cbtns { position: absolute; right: 5px; bottom: 5px; display: flex; gap: 4px; opacity: 0; transition: opacity .1s; }
+.card:hover .cbtns, .card:focus-within .cbtns { opacity: 1; }
+@media (hover: none) { .cbtns { opacity: .9; } }
+.cbtns button { width: 28px; height: 28px; padding: 0; border: 0; border-radius: 7px; display: grid; place-items: center; background: var(--panel); color: var(--muted); box-shadow: 0 1px 3px rgb(0 0 0 / .25); }
+.cbtns button:hover { color: var(--text); }
+.cbtns .icon { width: 15px; height: 15px; }
+.card.dragging, .bcol.dragging { display: none; }
+.phc { flex: none; border: 2px dashed var(--accent); border-radius: 9px; background: var(--flash); }
+.phcol { flex: none; width: 290px; border: 2px dashed var(--accent); border-radius: 12px; background: var(--flash); }
+.ghost { position: fixed; left: 0; top: 0; z-index: 60; margin: 0; pointer-events: none; opacity: .96; box-shadow: 0 12px 30px rgb(0 0 0 / .32); }
+body.dragging-ui, body.dragging-ui * { cursor: grabbing !important; user-select: none !important; -webkit-user-select: none !important; }
+
+@media (max-width: 520px) { .avatar { display: none; } header.top { padding-left: 10px; } .ibtn { padding: 7px; } }
 @media (max-width: 860px) {
   #panel { position: fixed; inset: 0; width: auto; z-index: 30; border: 0; }
   #list { padding: 8px 38px 24px 10px; }
@@ -337,6 +398,8 @@ audio.aud { display: block; width: 270px; max-width: 100%; height: 40px; margin:
   .media { width: 240px; height: 240px; }
   #lbStage { padding: 8px; }
   .lbnav { width: 38px; height: 38px; background: rgb(0 0 0 / .4); }
+  .bcol, .phcol { width: 78vw; }
+  #bPoolList .card { width: 64vw; }
 }
 </style>
 </head>
@@ -357,6 +420,8 @@ audio.aud { display: block; width: 270px; max-width: 100%; height: 40px; margin:
   <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></symbol>
   <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></symbol>
   <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 2.8 2.85 5.8 6.4.93-4.63 4.5 1.1 6.37L12 17.4l-5.72 3 1.1-6.37-4.63-4.5 6.4-.93z"/></symbol>
+  <symbol id="i-board" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v12"/></symbol>
+  <symbol id="i-grip" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.2"/><circle cx="15" cy="6" r="1.2"/><circle cx="9" cy="12" r="1.2"/><circle cx="15" cy="12" r="1.2"/><circle cx="9" cy="18" r="1.2"/><circle cx="15" cy="18" r="1.2"/></symbol>
   <symbol id="i-dl" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></symbol>
 </svg>
 
@@ -396,6 +461,7 @@ audio.aud { display: block; width: 270px; max-width: 100%; height: 40px; margin:
   <header class="top">
     <div class="avatar" id="avatar"></div>
     <div class="ttl"><b id="title"></b><small id="subtitle"></small></div>
+    <button class="ibtn" id="boardBtn" title="Board: sort starred messages into columns (B)" aria-pressed="false"><svg class="icon"><use href="#i-board"/></svg></button>
     <button class="ibtn" data-panel="search" title="Search (Ctrl+F)" aria-pressed="false"><svg class="icon"><use href="#i-search"/></svg></button>
     <button class="ibtn" data-panel="gallery" title="Photos, videos, files and links" aria-pressed="false"><svg class="icon"><use href="#i-image"/></svg></button>
     <button class="ibtn" data-panel="calendar" title="Jump to date and stats" aria-pressed="false"><svg class="icon"><use href="#i-cal"/></svg></button>
@@ -408,6 +474,13 @@ audio.aud { display: block; width: 270px; max-width: 100%; height: 40px; margin:
       <div id="dateChip"></div>
       <button id="toEnd" title="Latest messages (End)" hidden><svg class="icon"><use href="#i-down"/></svg></button>
       <div id="scrub" title="Drag to move through time"><div id="scrubTicks"></div><div id="scrubThumb"></div><div id="scrubTip" hidden></div></div>
+    </div>
+    <div id="board" hidden>
+      <div id="bCols"></div>
+      <div id="bPool">
+        <div class="bph"><b>Starred messages</b><span id="bPoolCount"></span></div>
+        <div id="bPoolList" class="blist"></div>
+      </div>
     </div>
     <aside id="panel" hidden>
       <!-- search -->
@@ -467,7 +540,7 @@ audio.aud { display: block; width: 270px; max-width: 100%; height: 40px; margin:
             <p id="sOrderInfo"></p></div>
           <div class="setting"><label for="sTheme">Theme</label>
             <select id="sTheme"><option value="auto">Match system</option><option value="light">Light</option><option value="dark">Dark</option></select></div>
-          <div class="setting"><label>Keyboard</label><p>Ctrl/⌘+F or / search · Enter / Shift+Enter next / previous result · Home / End first / last message · Esc close · ← → in the photo viewer</p></div>
+          <div class="setting"><label>Keyboard</label><p>Ctrl/⌘+F or / search · Enter / Shift+Enter next / previous result · Home / End first / last message · B board · Esc close · ← → in the photo viewer</p></div>
           <div class="setting"><label>Privacy</label><p>Nothing was uploaded. The page's security policy blocks network access. The only things saved in this browser are your "which one is you" choice, your theme, your last scroll position, and which messages you starred (stored as message numbers, not their text). Message content is never saved.</p>
             <div><button class="btn" id="closeChat">Close this chat</button></div></div>
         </div>
@@ -809,6 +882,7 @@ async function loadChat(sourceName, media, txts) {
   S.orderAuto = detectOrder(recs);
   S.fp = hash(raw.slice(0, 3000) + '|' + raw.length);
   loadStars();
+  boardLoad();
   const pref = store.get('order:' + S.fp, 'auto');
   S.order = pref === 'auto' ? S.orderAuto : pref;
   $('#sOrder').value = pref;
@@ -978,6 +1052,7 @@ function topIndex() {
 function jumpTo(i, align = 'center', flash = false) {
   const n = S.msgs.length;
   if (!n) return;
+  if (boardOn) showView(false);
   i = clamp(i, 0, n - 1);
   renderRange(Math.max(0, i - CHUNK), Math.min(n, i + CHUNK));
   const row = rowEl(i);
@@ -1428,9 +1503,11 @@ function toggleStar(i) {
     b.setAttribute('aria-pressed', String(on));
     b.title = on ? 'Remove star' : 'Star this message';
   }
+  if (!on && placed().has(i)) { boardRemove(i); boardSave(); }
   updateStarBadge();
   if (curPanel === 'starred') renderStarred();
   if ($('#qType').value === 'starred') runSearch();
+  renderBoard();
 }
 const sio = new IntersectionObserver(entries => {
   for (const e of entries) if (e.isIntersecting) { sio.unobserve(e.target); loadLazy(e.target); }
@@ -1473,7 +1550,10 @@ $('#stList').addEventListener('keydown', e => {
   if (r && (e.key === 'Enter' || e.key === ' ') && e.target === r) { e.preventDefault(); jumpTo(+r.dataset.i, 'center', true); afterPick(); }
 });
 $('#stExport').addEventListener('click', () => {
-  const data = { app: 'chat-viewer-stars', version: 1, chat: S.title, stars: starList().map(i => [i, recHash(i)]) };
+  const data = {
+    app: 'chat-viewer-stars', version: 2, chat: S.title, stars: starList().map(i => [i, recHash(i)]),
+    board: B.cols.map(c => ({ name: c.name, items: c.items.map(i => [i, recHash(i)]) })),
+  };
   const url = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' }));
   const a = document.createElement('a');
   a.href = url; a.download = `stars - ${S.title.replace(/[\\/:*?"<>|]/g, '_')}.json`;
@@ -1488,22 +1568,329 @@ $('#stFile').addEventListener('change', async e => {
   try {
     const data = JSON.parse(await f.text());
     if (data.app !== 'chat-viewer-stars' || !Array.isArray(data.stars)) throw new Error('not a stars file');
-    let byHash = null, added = 0, missing = 0;
+    const resolve = makeResolver();
+    let added = 0, missing = 0;
     for (const [i, h] of data.stars) {
-      let at = S.recs[i] && recHash(i) === h ? i : -1;
-      if (at < 0) {
-        if (!byHash) { byHash = new Map(); for (let k = S.recs.length - 1; k >= 0; k--) byHash.set(recHash(k), k); }
-        at = byHash.get(h) ?? -1;
-      }
+      const at = resolve(i, h);
       if (at < 0) missing++;
       else if (!S.stars.has(at)) { S.stars.add(at); added++; }
     }
-    saveStars(); updateStarBadge(); refreshWindow(); renderStarred();
+    // Columns: merge into a column with the same name, or add a new one.
+    if (Array.isArray(data.board)) {
+      const used = placed();
+      for (const c of data.board) {
+        const name = String(c.name || '').slice(0, 80);
+        let col = B.cols.find(x => x.name.trim().toLowerCase() === name.trim().toLowerCase());
+        if (!col) { col = { id: B.nextId++, name, items: [] }; B.cols.push(col); }
+        for (const [i, h] of c.items || []) {
+          const at = resolve(i, h);
+          if (at < 0 || used.has(at)) continue;
+          S.stars.add(at); used.add(at); col.items.push(at);
+        }
+      }
+      boardSave();
+    }
+    saveStars(); updateStarBadge(); refreshWindow(); renderStarred(); renderBoard();
     $('#stCount').textContent = `Added ${nf.format(added)} star${added === 1 ? '' : 's'}` + (missing ? ` · ${nf.format(missing)} not found in this chat` : '');
   } catch (err) {
     $('#stCount').textContent = 'That file is not a stars file from this viewer.';
   }
 });
+
+
+/* ---------- board: sort starred messages into columns ---------- */
+// Saved per chat as { nextId, cols: [{ id, name, items: [[messageNumber, hash], ...] }] }.
+const B = { cols: [], nextId: 1 };
+let boardOn = false, chatPos = 0;
+function makeResolver() {
+  let byHash = null;
+  return (i, h) => {
+    if (S.recs[i] && recHash(i) === h) return i;
+    if (!byHash) { byHash = new Map(); for (let k = S.recs.length - 1; k >= 0; k--) byHash.set(recHash(k), k); }
+    return byHash.get(h) ?? -1;
+  };
+}
+function boardLoad() {
+  B.cols = []; B.nextId = 1;
+  const d = store.get('board:' + S.fp, null);
+  if (!d || !Array.isArray(d.cols)) return;
+  const seen = new Set();
+  for (const c of d.cols) {
+    const items = [];
+    for (const [i, h] of c.items || []) if (S.recs[i] && recHash(i) === h && S.stars.has(i) && !seen.has(i)) { seen.add(i); items.push(i); }
+    B.cols.push({ id: +c.id, name: String(c.name || ''), items });
+  }
+  B.nextId = Math.max(d.nextId || 1, ...B.cols.map(c => c.id + 1));
+}
+function boardSave() {
+  store.set('board:' + S.fp, { nextId: B.nextId, cols: B.cols.map(c => ({ id: c.id, name: c.name, items: c.items.map(i => [i, recHash(i)]) })) });
+}
+function placed() { const s = new Set(); for (const c of B.cols) for (const i of c.items) s.add(i); return s; }
+function boardRemove(i) { for (const c of B.cols) { const k = c.items.indexOf(i); if (k >= 0) c.items.splice(k, 1); } }
+
+function showView(board) {
+  boardOn = board;
+  $('#chatWrap').hidden = board;
+  $('#board').hidden = !board;
+  $('#boardBtn').setAttribute('aria-pressed', String(board));
+}
+function setBoard(on) {
+  if (on === boardOn) return;
+  if (on) { chatPos = topIndex(); showView(true); renderBoard(); }
+  else { showView(false); jumpTo(chatPos, 'start'); }
+}
+$('#boardBtn').addEventListener('click', () => setBoard(!boardOn));
+
+const bio = new IntersectionObserver(entries => {
+  for (const e of entries) if (e.isIntersecting) { bio.unobserve(e.target); loadLazy(e.target); }
+}, { rootMargin: '300px' });
+function cardHTML(i, inCol) {
+  const m = S.msgs[i];
+  const who = m.s >= 0 ? S.people[m.s] : '';
+  const img = m.media && m.media.find(x => x.ok && (x.kind === 'image' || x.kind === 'sticker'));
+  return `<div class="card" data-i="${i}" style="--sc:${m.s >= 0 ? PALETTE[m.s % PALETTE.length] : 'var(--border)'}" title="Drag to move">` +
+    (img ? `<img class="cthumb lazy" data-src="${esc(img.name)}" alt="" draggable="false">` : '') +
+    `<div class="cm"><div class="ch"><b dir="auto">${esc(who)}</b><span>${esc(fShort.format(m.t))}</span></div><div class="ct" dir="auto">${esc(snippet(m, ''))}</div></div>` +
+    `<div class="cbtns"><button data-open="${i}" title="Show in chat"><svg class="icon"><use href="#i-chat"/></svg></button>` +
+    (inCol ? `<button data-back="${i}" title="Take out of this column"><svg class="icon"><use href="#i-x"/></svg></button>` : '') + '</div></div>';
+}
+function syncEmpty() {
+  for (const l of $$('#board .blist')) l.classList.toggle('is-empty', !l.querySelector('.card:not(.dragging), .phc'));
+}
+function renderBoard() {
+  if (!boardOn) return;
+  const colsEl = $('#bCols'), poolEl = $('#bPoolList');
+  const sx = colsEl.scrollLeft, px = poolEl.scrollLeft, sy = {};
+  for (const l of $$('.bcol .blist', colsEl)) sy[l.dataset.col] = l.scrollTop;
+  bio.disconnect();
+  let h = '';
+  for (const c of B.cols) {
+    h += `<section class="bcol" data-col="${c.id}"><header class="bch">` +
+      `<span class="grip" title="Drag to move this column"><svg class="icon"><use href="#i-grip"/></svg></span>` +
+      `<input class="bname" value="${esc(c.name)}" placeholder="Untitled" aria-label="Column name" maxlength="80" dir="auto">` +
+      `<span class="bcount">${nf.format(c.items.length)}</span>` +
+      `<button class="ibtn bdel" title="Delete column (its messages go back to the bottom)"><svg class="icon"><use href="#i-x"/></svg></button></header>` +
+      `<div class="blist" data-col="${c.id}" data-empty="Drag starred messages here">${c.items.map(i => cardHTML(i, true)).join('')}</div></section>`;
+  }
+  h += `<div class="bside"><button id="bAdd">+ New column</button>` +
+    (B.cols.length ? '' : '<div class="bhint">Create a column, give it a name, then drag starred messages from the bottom into it. Drag a column by its ⋮⋮ handle to reorder.</div>') + '</div>';
+  colsEl.innerHTML = h;
+  const used = placed();
+  const pool = starList().filter(i => !used.has(i));
+  poolEl.innerHTML = pool.map(i => cardHTML(i, false)).join('');
+  poolEl.dataset.empty = S.stars.size
+    ? 'Every starred message is in a column. Drag a card here to take it out.'
+    : 'No starred messages yet. In the chat, point at a message (tap it on a phone) and click ☆.';
+  $('#bPoolCount').textContent = S.stars.size ? `${nf.format(pool.length)} of ${nf.format(S.stars.size)} not in a column · drag them up into columns` : '';
+  syncEmpty();
+  colsEl.scrollLeft = sx; poolEl.scrollLeft = px;
+  for (const l of $$('.bcol .blist', colsEl)) if (sy[l.dataset.col]) l.scrollTop = sy[l.dataset.col];
+  for (const n of $$('#board .lazy')) bio.observe(n);
+}
+function addColumn() {
+  const c = { id: B.nextId++, name: '', items: [] };
+  B.cols.push(c); boardSave(); renderBoard();
+  const col = $(`.bcol[data-col="${c.id}"]`);
+  col.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+  col.querySelector('.bname').focus();
+}
+const colOf = el => B.cols.find(c => c.id === +el.closest('.bcol').dataset.col);
+let nameTimer = 0;
+$('#bCols').addEventListener('input', e => {
+  if (!e.target.classList.contains('bname')) return;
+  colOf(e.target).name = e.target.value;
+  clearTimeout(nameTimer); nameTimer = setTimeout(boardSave, 300);
+});
+$('#bCols').addEventListener('keydown', e => {
+  if (e.target.classList.contains('bname') && (e.key === 'Enter' || e.key === 'Escape')) { e.preventDefault(); e.stopPropagation(); e.target.blur(); }
+});
+$('#bCols').addEventListener('focusout', e => { if (e.target.classList.contains('bname')) { clearTimeout(nameTimer); boardSave(); } });
+$('#board').addEventListener('click', e => {
+  if (D.justDragged) { e.preventDefault(); e.stopPropagation(); return; }
+  const t = e.target;
+  if (t.closest('#bAdd')) return addColumn();
+  const del = t.closest('.bdel');
+  if (del) {
+    const c = colOf(del);
+    if (c.items.length && !confirm(`Delete the column “${c.name || 'Untitled'}”? Its ${c.items.length} message${c.items.length === 1 ? '' : 's'} go back to the bottom row (they stay starred).`)) return;
+    B.cols.splice(B.cols.indexOf(c), 1); boardSave(); renderBoard();
+    return;
+  }
+  const back = t.closest('[data-back]');
+  if (back) { boardRemove(+back.dataset.back); boardSave(); renderBoard(); return; }
+  const open = t.closest('[data-open]');
+  if (open) { jumpTo(+open.dataset.open, 'center', true); return; }
+}, true);
+$('#board').addEventListener('contextmenu', e => { if (e.target.closest('.card')) e.preventDefault(); });
+$('#bPoolList').addEventListener('wheel', e => {
+  if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { e.preventDefault(); $('#bPoolList').scrollLeft += e.deltaMode === 1 ? e.deltaY * 40 : e.deltaY; }
+}, { passive: false });
+$('#bCols').addEventListener('wheel', e => {
+  if (e.target.closest('.blist') || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+  e.preventDefault(); $('#bCols').scrollLeft += e.deltaMode === 1 ? e.deltaY * 40 : e.deltaY;
+}, { passive: false });
+
+/* drag engine: pointer events, so it works with mouse, pen and touch.
+   Mouse: press and move. Touch: press and hold briefly, then move (a quick swipe still scrolls). */
+const D = { st: null, justDragged: false };
+$('#board').addEventListener('pointerdown', e => {
+  if (D.st || (e.pointerType === 'mouse' && e.button !== 0)) return;
+  const grip = e.target.closest('.grip');
+  const card = !grip && e.target.closest('.card');
+  if (!grip && !card) return;
+  if (card && e.target.closest('button')) return;
+  const touch = e.pointerType !== 'mouse';
+  D.st = { kind: grip ? 'col' : 'card', el: grip ? grip.closest('.bcol') : card, id: e.pointerId, touch,
+    x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, started: false, timer: 0, raf: 0 };
+  if (touch && card) D.st.timer = setTimeout(beginDrag, 280);
+  if (grip) e.preventDefault();
+});
+window.addEventListener('pointermove', e => {
+  const st = D.st;
+  if (!st || e.pointerId !== st.id) return;
+  st.x = e.clientX; st.y = e.clientY;
+  if (!st.started) {
+    const dist = Math.hypot(st.x - st.x0, st.y - st.y0);
+    if (st.touch && st.kind === 'card') { if (dist > 10) { clearTimeout(st.timer); D.st = null; } return; }
+    if (dist < 5) return;
+    beginDrag();
+  }
+  moveDrag();
+});
+window.addEventListener('pointerup', e => { if (D.st && e.pointerId === D.st.id) endDrag(true); });
+window.addEventListener('pointercancel', e => { if (D.st && e.pointerId === D.st.id) endDrag(false); });
+document.addEventListener('touchmove', e => { if (D.st && D.st.started) e.preventDefault(); }, { passive: false });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && D.st && D.st.started) { e.preventDefault(); e.stopImmediatePropagation(); endDrag(false); }
+}, true);
+
+function beginDrag() {
+  const st = D.st;
+  if (!st || st.started) return;
+  clearTimeout(st.timer);
+  st.started = true;
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  const r = st.el.getBoundingClientRect();
+  st.dx = st.x0 - r.left; st.dy = st.y0 - r.top; st.h = r.height;
+  const g = st.el.cloneNode(true);
+  g.classList.add('ghost');
+  g.style.width = (st.kind === 'card' ? Math.min(r.width, 290) : r.width) + 'px';
+  if (st.kind === 'col') g.style.height = r.height + 'px';
+  document.body.append(g);
+  st.ghost = g;
+  const gh = g.getBoundingClientRect().height;
+  st.dy = Math.min(st.dy, gh - 10);
+  st.ph = document.createElement('div');
+  st.ph.className = st.kind === 'col' ? 'phcol' : 'phc';
+  st.fromPool = st.kind === 'card' && !!st.el.closest('#bPoolList');
+  if (st.kind === 'card') st.ph.style.height = gh + 'px';
+  if (!st.fromPool) st.el.after(st.ph);
+  st.target = st.fromPool ? 'pool' : 'col';
+  st.el.classList.add('dragging');
+  document.body.classList.add('dragging-ui');
+  if (st.touch && navigator.vibrate) navigator.vibrate(12);
+  syncEmpty();
+  moveDrag();
+  st.raf = requestAnimationFrame(autoScroll);
+}
+function moveDrag() {
+  const st = D.st;
+  st.ghost.style.transform = `translate(${st.x - st.dx}px, ${st.y - st.dy}px) rotate(${st.kind === 'col' ? 1 : 2}deg)`;
+  const hit = document.elementFromPoint(st.x, st.y);
+  if (st.kind === 'col') {
+    const colsEl = $('#bCols');
+    let before = $('.bside', colsEl);
+    for (const c of colsEl.querySelectorAll('.bcol:not(.dragging)')) {
+      const r = c.getBoundingClientRect();
+      if (st.x < r.left + r.width / 2) { before = c; break; }
+    }
+    if (st.ph.nextElementSibling !== before) colsEl.insertBefore(st.ph, before);
+    return;
+  }
+  const overPool = hit && hit.closest('#bPool');
+  const col = !overPool && hit && hit.closest('.bcol');
+  $('#bPoolList').classList.toggle('over', !!overPool);
+  if (overPool) {
+    st.target = 'pool';
+    if (st.ph.parentNode) { st.ph.remove(); syncEmpty(); }
+    return;
+  }
+  if (!col) return; // in a gap: keep the last drop position
+  const list = col.querySelector('.blist');
+  let before = null;
+  for (const c of list.querySelectorAll('.card:not(.dragging)')) {
+    const r = c.getBoundingClientRect();
+    if (st.y < r.top + r.height / 2) { before = c; break; }
+  }
+  if (before) { if (st.ph.nextElementSibling !== before || st.ph.parentNode !== list) list.insertBefore(st.ph, before); }
+  else if (st.ph.parentNode !== list || st.ph !== list.lastElementChild) list.append(st.ph);
+  st.target = 'col';
+  syncEmpty();
+}
+function autoScroll() {
+  const st = D.st;
+  if (!st || !st.started) return;
+  let moved = false;
+  const edge = (el, horiz) => {
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const across = horiz ? st.y : st.x, a0 = horiz ? r.top : r.left, a1 = horiz ? r.bottom : r.right;
+    if (across < a0 || across > a1) return;
+    const p = horiz ? st.x : st.y, lo = horiz ? r.left : r.top, hi = horiz ? r.right : r.bottom, zone = 56;
+    let v = 0;
+    if (p < lo + zone) v = -(lo + zone - p); else if (p > hi - zone) v = p - (hi - zone);
+    if (!v) return;
+    v = clamp(v, -zone, zone) * 0.35;
+    const before = horiz ? el.scrollLeft : el.scrollTop;
+    if (horiz) el.scrollLeft += v; else el.scrollTop += v;
+    if ((horiz ? el.scrollLeft : el.scrollTop) !== before) moved = true;
+  };
+  edge($('#bCols'), true);
+  if (st.kind === 'card') {
+    edge($('#bPoolList'), true);
+    const hit = document.elementFromPoint(st.x, st.y);
+    edge(hit && hit.closest('.bcol')?.querySelector('.blist'), false);
+  }
+  if (moved) moveDrag();
+  st.raf = requestAnimationFrame(autoScroll);
+}
+function endDrag(commit) {
+  const st = D.st;
+  D.st = null;
+  if (!st) return;
+  clearTimeout(st.timer);
+  if (!st.started) return;
+  cancelAnimationFrame(st.raf);
+  st.ghost.remove();
+  document.body.classList.remove('dragging-ui');
+  $('#bPoolList').classList.remove('over');
+  D.justDragged = true;
+  setTimeout(() => { D.justDragged = false; }, 0);
+  if (commit) {
+    if (st.kind === 'col') {
+      const order = [];
+      for (const c of $('#bCols').children) {
+        if (c === st.ph) order.push(+st.el.dataset.col);
+        else if (c.classList.contains('bcol') && c !== st.el) order.push(+c.dataset.col);
+      }
+      B.cols.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+    } else {
+      const i = +st.el.dataset.i;
+      if (st.target === 'pool' || !st.ph.parentNode) boardRemove(i);
+      else {
+        const list = st.ph.parentNode, items = [];
+        for (const c of list.children) {
+          if (c === st.ph) items.push(i);
+          else if (c.classList.contains('card') && c !== st.el) items.push(+c.dataset.i);
+        }
+        boardRemove(i);
+        B.cols.find(c => c.id === +list.dataset.col).items = items;
+      }
+    }
+    boardSave();
+  }
+  renderBoard();
+}
 
 /* ---------- settings ---------- */
 function fillPeople() {
@@ -1585,8 +1972,12 @@ document.addEventListener('keydown', e => {
   if ((e.key === 'f' && (e.ctrlKey || e.metaKey)) || (e.key === '/' && !inField)) {
     e.preventDefault();
     if (curPanel !== 'search') showPanel('search'); else { $('#q').focus(); $('#q').select(); }
+  } else if (!inField && (e.key === 'b' || e.key === 'B') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    setBoard(!boardOn);
   } else if (e.key === 'Escape') {
     if (curPanel) showPanel(null);
+  } else if (boardOn) {
+    return;
   } else if (!inField && e.key === 'Home') { e.preventDefault(); jumpTo(0, 'start'); }
   else if (!inField && e.key === 'End') { e.preventDefault(); jumpTo(S.msgs.length - 1, 'end'); }
   else if (!inField && (e.key === 'PageDown' || e.key === 'PageUp' || e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === ' ')) {
@@ -1606,6 +1997,7 @@ function start(atIndex) {
   fillPeople();
   updateStarBadge();
   if (curPanel === 'starred') renderStarred();
+  renderBoard();
   gBuiltFor = ''; cBuiltFor = '';
   if (curPanel === 'gallery') renderGallery();
   if (curPanel === 'calendar') renderCalendar();
