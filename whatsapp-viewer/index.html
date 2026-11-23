@@ -432,9 +432,11 @@ body.dragging-ui, body.dragging-ui * { cursor: grabbing !important; user-select:
 .modal .box.wide { max-width: 900px; max-height: calc(100dvh - 32px); display: flex; flex-direction: column; padding: 0; overflow: hidden; }
 .mhead { display: flex; align-items: center; gap: 8px; padding: 10px 10px 10px 18px; border-bottom: 1px solid var(--border); }
 .mhead b { flex: 1; font-size: 16px; }
-.qe { flex: 1; min-height: 0; display: grid; grid-template-columns: 320px 1fr; }
+.qe { flex: 1; min-height: min(480px, calc(100dvh - 110px)); display: grid; grid-template-columns: 320px 1fr; }
 .qe-pick { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--border); }
-.qe-pick input { margin: 10px 12px; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); }
+.qe-filter { display: flex; flex-direction: column; gap: 6px; margin: 10px 12px; }
+.qe-filter select, .qe-filter input { min-width: 0; padding: 7px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); }
+#qeList .coltag { display: block; margin-top: 3px; font-size: 11.5px; color: var(--muted); }
 #qeList { flex: 1; min-height: 0; overflow-y: auto; border-top: 1px solid var(--border); }
 #qeList .used { display: block; margin-top: 3px; font-size: 11.5px; color: var(--gold); }
 .qe-prev { display: flex; flex-direction: column; min-height: 0; padding: 12px 14px; gap: 10px; }
@@ -668,7 +670,7 @@ body.dragging-ui, body.dragging-ui * { cursor: grabbing !important; user-select:
   <div class="box wide">
     <div class="mhead"><b id="qeTitle"></b><button class="ibtn" id="qeClose" title="Cancel (Esc)"><svg class="icon"><use href="#i-x"/></svg></button></div>
     <div class="qe">
-      <div class="qe-pick"><input id="qePick" type="search" placeholder="Filter your starred messages…" autocomplete="off"><div id="qeList"></div></div>
+      <div class="qe-pick"><div class="qe-filter"><select id="qeSrc" title="Where to pick from"></select><input id="qePick" type="search" placeholder="Filter…" autocomplete="off"></div><div id="qeList"></div></div>
       <div class="qe-prev">
         <div class="qe-ctx">Show <input type="number" id="qeBefore" min="0" max="30" value="0"> messages before and <input type="number" id="qeAfter" min="0" max="30" value="0"> after it. This is exactly what the player will see (dates and times hidden):</div>
         <div class="qctx" id="qePrev"></div>
@@ -2228,23 +2230,50 @@ function openCellEditor(k) {
   $('#qeTitle').textContent = squareTitle(k);
   $('#qePick').value = '';
   $('#qeClear').hidden = !cell;
+  fillPickSources(k);
   renderPickList(); renderPreview();
   $('#qzEdit').hidden = false;
   $('#qePick').focus();
 }
 function closeCellEditor() { $('#qzEdit').hidden = true; QE = null; }
+// Pick from all starred messages, one of the board's columns, or the ones not in any column.
+let qeLastSrc = 'all';
+function fillPickSources(k) {
+  const used = placed();
+  const opts = [['all', `All starred (${nf.format(S.stars.size)})`]];
+  for (const c of B.cols) opts.push(['col:' + c.id, `Column: ${c.name || 'Untitled'} (${nf.format(c.items.length)})`]);
+  if (B.cols.length) opts.push(['none', `Not in a column (${nf.format([...S.stars].filter(i => !used.has(i)).length)})`]);
+  const sel = $('#qeSrc');
+  sel.innerHTML = opts.map(([v, t]) => `<option value="${v}">${esc(t)}</option>`).join('');
+  // A quiz category named like a board column opens on that column.
+  const cat = QZ.cats.find(c => c.id === +k.split(':')[0]);
+  const same = cat && cat.name.trim() && B.cols.find(c => c.name.trim().toLowerCase() === cat.name.trim().toLowerCase());
+  const want = same ? 'col:' + same.id : qeLastSrc;
+  sel.value = opts.some(o => o[0] === want) ? want : 'all';
+}
+function pickSource() {
+  const v = $('#qeSrc').value;
+  if (v.startsWith('col:')) { const c = B.cols.find(x => x.id === +v.slice(4)); return c ? c.items.slice() : []; }
+  if (v === 'none') { const used = placed(); return starList().filter(i => !used.has(i)); }
+  return starList();
+}
+$('#qeSrc').addEventListener('change', e => { qeLastSrc = e.target.value; renderPickList(); });
 function renderPickList() {
   const q = $('#qePick').value.trim().toLowerCase();
   const usedAt = new Map(Object.entries(QZ.cells).map(([k, c]) => [c.i, k]));
+  const colOfMsg = new Map();
+  for (const c of B.cols) for (const i of c.items) colOfMsg.set(i, c.name || 'Untitled');
+  const showCol = !$('#qeSrc').value.startsWith('col:');
   let h = '';
-  for (const i of starList()) {
+  for (const i of pickSource()) {
     const m = S.msgs[i];
     if (q) { if (m.lc === null) m.lc = (m.text + '\n' + m.note).toLowerCase(); if (!m.lc.includes(q)) continue; }
     const uk = usedAt.get(i);
     h += `<button class="res${i === QE.i ? ' cur' : ''}" data-pick="${i}"><div class="rh"><b dir="auto">${esc(m.s >= 0 ? S.people[m.s] : '')}</b><span>${esc(fShort.format(m.t))}</span></div><div class="rt" dir="auto">${esc(snippet(m, ''))}</div>` +
+      (showCol && colOfMsg.has(i) ? `<span class="coltag">▤ ${esc(colOfMsg.get(i))}</span>` : '') +
       (uk && uk !== QE.k ? `<span class="used">In “${esc(squareTitle(uk))}”: picking it moves it here</span>` : '') + '</button>';
   }
-  $('#qeList').innerHTML = h || `<div class="empty">${S.stars.size ? 'No starred messages match.' : 'No starred messages yet. Star messages in the chat (☆) first.'}</div>`;
+  $('#qeList').innerHTML = h || `<div class="empty">${!S.stars.size ? 'No starred messages yet. Star messages in the chat (☆) first.' : $('#qeSrc').value.startsWith('col:') && !q ? 'This column is empty. Add messages to it in the Board view (B).' : 'No messages match.'}</div>`;
 }
 function renderPreview() {
   $('#qeBefore').value = QE.b; $('#qeAfter').value = QE.a;
