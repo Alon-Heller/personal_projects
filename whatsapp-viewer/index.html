@@ -14,36 +14,39 @@
 <title>Chat Viewer</title>
 <style>
 :root {
-  --bg: #f0ede8; --chat: #e8e2d9; --panel: #ffffff; --header: #f7f6f3;
-  --them: #ffffff; --me: #d6f3c6; --text: #1c2226; --muted: #66737b;
-  --accent: #0c7d63; --accent-ink: #ffffff; --border: #dcd6cc; --hover: rgb(0 0 0 / .06);
-  --day: rgb(255 255 255 / .92); --sys: #fdf3cf; --mark: #ffd54a; --mark-ink: #1c2226;
-  --shadow: 0 1px 1px rgb(0 0 0 / .13); --flash: rgb(12 125 99 / .28);
-  --heat0: #ebe7e0; --heat: 12 125 99; --gold: #d99a00;
+  --bg: #f6eef3; --chat: #efe2ea; --panel: #ffffff; --header: #fbf5f9;
+  --them: #ffffff; --me: #f5d0e0; --text: #2a1024; --muted: #7b5b72;
+  --accent: #a3154f; --accent-ink: #ffffff; --accent2: #5b2a8c; --border: #e6d2df; --hover: rgb(70 0 45 / .06);
+  --day: rgb(255 255 255 / .92); --sys: #f9e2ec; --mark: #ffc94d; --mark-ink: #2a1024;
+  --shadow: 0 1px 1px rgb(70 0 45 / .13); --flash: rgb(163 21 79 / .25);
+  --heat0: #efe2ea; --heat: 163 21 79; --gold: #c27a00;
   color-scheme: light;
 }
+/* Dark wine / plum is the default look (Settings → Theme can switch to light or follow the system). */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0d1317; --chat: #0b1216; --panel: #121b20; --header: #172127;
-    --them: #1e2b32; --me: #145240; --text: #e6ecee; --muted: #8c9ba3;
-    --accent: #3cc49d; --accent-ink: #062018; --border: #26343b; --hover: rgb(255 255 255 / .07);
-    --day: rgb(30 43 50 / .94); --sys: #2b2c1d; --mark: #c99a12; --mark-ink: #0d1317;
-    --shadow: 0 1px 1px rgb(0 0 0 / .4); --flash: rgb(60 196 157 / .3);
-    --heat0: #1b262c; --heat: 60 196 157; --gold: #f2b81e;
+  :root[data-theme="auto"] {
+    --bg: #120910; --chat: #170b16; --panel: #211221; --header: #1c0f1c;
+    --them: #2d1a2d; --me: #5c1838; --text: #f4e5ef; --muted: #b497ac;
+    --accent: #e0457a; --accent-ink: #ffffff; --accent2: #7d3cc8; --border: #3e2440; --hover: rgb(255 220 240 / .07);
+    --day: rgb(45 26 45 / .94); --sys: #3b1d2c; --mark: #ffb547; --mark-ink: #1f0612;
+    --shadow: 0 1px 2px rgb(0 0 0 / .55); --flash: rgb(224 69 122 / .32);
+    --heat0: #2a1729; --heat: 224 69 122; --gold: #ffb547;
     color-scheme: dark;
   }
 }
-:root[data-theme="dark"] {
-  --bg: #0d1317; --chat: #0b1216; --panel: #121b20; --header: #172127;
-  --them: #1e2b32; --me: #145240; --text: #e6ecee; --muted: #8c9ba3;
-  --accent: #3cc49d; --accent-ink: #062018; --border: #26343b; --hover: rgb(255 255 255 / .07);
-  --day: rgb(30 43 50 / .94); --sys: #2b2c1d; --mark: #c99a12; --mark-ink: #0d1317;
-  --shadow: 0 1px 1px rgb(0 0 0 / .4); --flash: rgb(60 196 157 / .3);
-  --heat0: #1b262c; --heat: 60 196 157; --gold: #f2b81e;
+:root:not([data-theme]), :root[data-theme="dark"] {
+  --bg: #120910; --chat: #170b16; --panel: #211221; --header: #1c0f1c;
+  --them: #2d1a2d; --me: #5c1838; --text: #f4e5ef; --muted: #b497ac;
+  --accent: #e0457a; --accent-ink: #ffffff; --accent2: #7d3cc8; --border: #3e2440; --hover: rgb(255 220 240 / .07);
+  --day: rgb(45 26 45 / .94); --sys: #3b1d2c; --mark: #ffb547; --mark-ink: #1f0612;
+  --shadow: 0 1px 2px rgb(0 0 0 / .55); --flash: rgb(224 69 122 / .32);
+  --heat0: #2a1729; --heat: 224 69 122; --gold: #ffb547;
   color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
+:root { --grad: linear-gradient(135deg, var(--accent), var(--accent2)); }
+.avatar, .btn.primary, .qhead, .seg button[aria-pressed="true"], .tabs button[aria-selected="true"] { background: var(--grad) !important; }
 html, body { height: 100%; margin: 0; }
 body {
   background: var(--bg); color: var(--text);
@@ -86,7 +89,7 @@ details.how { margin-top: 12px; background: var(--panel); border: 1px solid var(
 details.how summary { cursor: pointer; font-weight: 600; }
 details.how ol { margin: 8px 0 4px; padding-left: 20px; }
 #loadMsg { margin-top: 14px; min-height: 1.4em; font-size: 14px; color: var(--muted); }
-#loadMsg.err { color: #c2412d; }
+#loadMsg.err { color: #ff6b6b; }
 
 /* ---------- app shell ---------- */
 #app { display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: minmax(0, 1fr); height: 100vh; height: 100dvh; }
@@ -259,7 +262,7 @@ audio.aud { display: block; width: 270px; max-width: 100%; height: 40px; margin:
 .hbtn { position: relative; }
 .badge {
   position: absolute; top: 1px; right: 0; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px;
-  background: var(--gold); color: #1c1600; font-size: 10.5px; font-weight: 700; line-height: 17px; text-align: center;
+  background: var(--gold); color: #1f0612; font-size: 10.5px; font-weight: 700; line-height: 17px; text-align: center;
 }
 .grow { flex: 1; font-size: 13px; color: var(--muted); }
 .res.st { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
@@ -309,7 +312,7 @@ audio.aud { display: block; width: 270px; max-width: 100%; height: 40px; margin:
 .setting p { margin: 0; color: var(--muted); font-size: 13px; }
 
 /* ---------- lightbox & modal ---------- */
-#lb { position: fixed; inset: 0; z-index: 40; background: rgb(0 0 0 / .93); display: flex; flex-direction: column; color: #fff; }
+#lb { position: fixed; inset: 0; z-index: 40; background: rgb(14 4 12 / .95); display: flex; flex-direction: column; color: #fff; }
 #lbStage { flex: 1; min-height: 0; display: grid; place-items: center; padding: 8px 56px; position: relative; }
 #lbStage img, #lbStage video { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
 #lbStage .lbl { color: #bbb; font-size: 14px; text-align: center; }
@@ -441,7 +444,7 @@ body.dragging-ui, body.dragging-ui * { cursor: grabbing !important; user-select:
 .qwrap:hover .qswap, .qswap:focus-visible, .qwrap.swapping .qswap { opacity: 1; }
 .qswap:hover { color: var(--text); border-color: var(--gold); }
 .qwrap.swapping .qcell { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold); }
-.qwrap.swapping .qswap { background: var(--gold); color: #1c1600; border-color: transparent; }
+.qwrap.swapping .qswap { background: var(--gold); color: #1f0612; border-color: transparent; }
 #qzGrid.swapmode .qwrap:not(.swapping) .qcell { cursor: pointer; }
 #qzGrid.swapmode .qwrap:not(.swapping):hover .qcell { border: 2px dashed var(--gold); }
 #qzGrid.swapmode .qwrap:not(.swapping) .qswap { opacity: .9; }
@@ -714,7 +717,7 @@ body.quiz-clean .qcell.done b { font-size: 28px; }
             <select id="sOrder"><option value="auto">Detect automatically</option><option value="dmy">Day / Month / Year</option><option value="mdy">Month / Day / Year</option><option value="ymd">Year / Month / Day</option></select>
             <p id="sOrderInfo"></p></div>
           <div class="setting"><label for="sTheme">Theme</label>
-            <select id="sTheme"><option value="auto">Match system</option><option value="light">Light</option><option value="dark">Dark</option></select></div>
+            <select id="sTheme"><option value="dark">Dark (wine)</option><option value="light">Light (rose)</option><option value="auto">Match system</option></select></div>
           <div class="setting"><label>Keyboard</label><p>Ctrl/⌘+F or / search · Enter / Shift+Enter next / previous result · Home / End first / last message · B board · Q quiz · Esc close · ← → in the photo viewer</p></div>
           <div class="setting"><label>Privacy</label><p>Nothing was uploaded. The page's security policy blocks network access. The only things saved in this browser are your "which one is you" choice, your theme, your last scroll position, and which messages you starred (stored as message numbers, not their text). Message content is never saved.</p>
             <div><button class="btn" id="closeChat">Close this chat</button></div></div>
@@ -821,7 +824,7 @@ function dayLabel(d) {
   if (!s) { s = fDay.format(dayDate(d)); dayLabelCache.set(d, s); }
   return s;
 }
-const PALETTE = ['#d0573f', '#2f7fc1', '#9b4fb8', '#c2861a', '#1f9a8a', '#c2417a', '#5b8a2b', '#6d63d6', '#b25d22', '#2e8fb0'];
+const PALETTE = ['#e0456b', '#a066e8', '#e0901f', '#2fa89a', '#d6459e', '#6c86e8', '#c95a3a', '#8f5fd0', '#d4a514', '#3e9cc0'];
 
 /* ======================= ZIP reader (local, lazy) ======================= */
 // Reads only the zip's directory up front; each file is sliced/inflated on demand.
@@ -2629,7 +2632,7 @@ function nextPrize() {
   $('#pzTitle').textContent = `Prize #${n} unlocked!`;
   $('#pzText').textContent = `You just passed ${nf.format(z.m)} points.`;
   const conf = $('#pzConfetti');
-  const colors = ['#e0a100', '#0c7d63', '#d0573f', '#2f7fc1', '#9b4fb8', '#3cc49d'];
+  const colors = ['#ffb547', '#ea4f8b', '#a066e8', '#ff7a5c', '#d6459e', '#f4e5ef'];
   let h = '';
   for (let k = 0; k < 40; k++) {
     h += `<i style="left:${(Math.random() * 100).toFixed(1)}%;background:${colors[k % colors.length]};animation-delay:${(Math.random() * .6).toFixed(2)}s;transform:rotate(${Math.round(Math.random() * 360)}deg)"></i>`;
@@ -2694,8 +2697,8 @@ $('#sOrder').addEventListener('change', e => {
   S.order = v === 'auto' ? S.orderAuto : v;
   build(); start(ti);
 });
-const applyTheme = v => { if (v === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.dataset.theme = v; };
-$('#sTheme').value = store.get('theme', 'auto');
+const applyTheme = v => { document.documentElement.dataset.theme = v; };
+$('#sTheme').value = store.get('theme', 'dark');
 applyTheme($('#sTheme').value);
 $('#sTheme').addEventListener('change', e => { store.set('theme', e.target.value); applyTheme(e.target.value); });
 $('#closeChat').addEventListener('click', () => location.reload());
