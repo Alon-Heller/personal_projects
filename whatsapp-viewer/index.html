@@ -440,8 +440,26 @@ body.dragging-ui, body.dragging-ui * { cursor: grabbing !important; user-select:
 #qeList { flex: 1; min-height: 0; overflow-y: auto; border-top: 1px solid var(--border); }
 #qeList .used { display: block; margin-top: 3px; font-size: 11.5px; color: var(--gold); }
 .qe-prev { display: flex; flex-direction: column; min-height: 0; padding: 12px 14px; gap: 10px; }
-.qe-ctx { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 13.5px; color: var(--muted); }
+.qe-ctx { display: grid; gap: 6px; font-size: 13.5px; color: var(--muted); }
+.qe-ctx > div { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.qe-ctx b { color: var(--text); min-width: 128px; }
 .qe-ctx input { width: 58px; padding: 4px 6px; border-radius: 7px; border: 1px solid var(--border); background: var(--bg); }
+.qe-ctx .hint { display: block; font-size: 12.5px; }
+.zkey { display: inline-block; width: 14px; height: 14px; border-radius: 4px; vertical-align: -2px; }
+.zkey.q { background: var(--them); box-shadow: 0 0 0 2px var(--accent); }
+.zkey.r { background: var(--them); outline: 2px dashed var(--gold); outline-offset: -2px; }
+.zkey.x { background: var(--them); opacity: .45; border: 1px solid var(--border); }
+/* zones in the square editor preview */
+.zone { display: flex; align-items: center; gap: 8px; margin: 12px 0 4px; font-size: 11.5px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; }
+.zone::before, .zone::after { content: ""; flex: 1; height: 1px; background: currentColor; opacity: .35; }
+.zone.zx { color: var(--muted); }
+.zone.zr { color: var(--gold); }
+.zone.zq { color: var(--accent); }
+.qctx .zx { opacity: .4 !important; filter: grayscale(1); }
+.qctx .msg.zr, .qctx .sys.zr { opacity: .85; outline: 2px dashed var(--gold); outline-offset: 2px; }
+.qctx .msg.zq, .qctx .sys.zq { opacity: 1; }
+.qctx .rnew { animation: rnew 1.6s ease-out both; }
+@keyframes rnew { 0% { opacity: 0; transform: translateY(-4px); box-shadow: 0 0 0 3px var(--gold); } 30% { opacity: 1; transform: none; box-shadow: 0 0 0 3px var(--gold); } 100% { box-shadow: var(--shadow); } }
 .qe-btns { display: flex; gap: 8px; justify-content: flex-end; }
 .qctx { flex: 1; min-height: 120px; overflow-y: auto; background: var(--chat); border-radius: 10px; padding: 8px 12px 12px; }
 .qctx .msg { max-width: 85%; }
@@ -672,7 +690,11 @@ body.dragging-ui, body.dragging-ui * { cursor: grabbing !important; user-select:
     <div class="qe">
       <div class="qe-pick"><div class="qe-filter"><select id="qeSrc" title="Where to pick from"></select><input id="qePick" type="search" placeholder="Filter…" autocomplete="off"></div><div id="qeList"></div></div>
       <div class="qe-prev">
-        <div class="qe-ctx">Show <input type="number" id="qeBefore" min="0" max="30" value="0"> messages before and <input type="number" id="qeAfter" min="0" max="30" value="0"> after it. This is exactly what the player will see (dates and times hidden):</div>
+        <div class="qe-ctx">
+          <div><span class="zkey q"></span><b>Before answering</b> show <input type="number" id="qeBefore" min="0" max="30"> messages before and <input type="number" id="qeAfter" min="0" max="30"> after</div>
+          <div><span class="zkey r"></span><b>After the reveal</b> show <input type="number" id="qeRBefore" min="0" max="30"> messages before and <input type="number" id="qeRAfter" min="0" max="30"> after</div>
+          <div class="hint"><span class="zkey x"></span> Greyed messages (3 beyond each edge) are never shown; they're here so you can see what's just outside. Dates and times are always hidden.</div>
+        </div>
         <div class="qctx" id="qePrev"></div>
         <div class="qe-btns"><button class="btn" id="qeClear">Empty this square</button><button class="btn primary" id="qeDone">Save square</button></div>
       </div>
@@ -2059,7 +2081,7 @@ function quizReset() {
 function quizData() {
   return {
     cats: QZ.cats, values: QZ.values, halfLife: QZ.halfLife, nextId: QZ.nextId, mode: QZ.mode,
-    cells: Object.fromEntries(Object.entries(QZ.cells).map(([k, c]) => [k, [c.i, recHash(c.i), c.b, c.a]])),
+    cells: Object.fromEntries(Object.entries(QZ.cells).map(([k, c]) => [k, [c.i, recHash(c.i), c.b, c.a, c.rb, c.ra]])),
     answers: Object.fromEntries(Object.entries(QZ.answers).map(([k, a]) => [k, [a.g, a.p]])),
   };
 }
@@ -2074,7 +2096,10 @@ function quizFromData(d, resolve) {
   QZ.mode = d.mode === 'play' ? 'play' : 'edit';
   for (const [k, v] of Object.entries(d.cells || {})) {
     const at = resolve(v[0], v[1]);
-    if (at >= 0) QZ.cells[k] = { i: at, b: clamp(v[2] | 0, 0, 30), a: clamp(v[3] | 0, 0, 30) };
+    if (at < 0) continue;
+    const b = clamp(v[2] | 0, 0, 30), a = clamp(v[3] | 0, 0, 30);
+    // Older saves had one context setting: the reveal then shows the same messages.
+    QZ.cells[k] = { i: at, b, a, rb: Math.max(b, clamp((v[4] ?? b) | 0, 0, 30)), ra: Math.max(a, clamp((v[5] ?? a) | 0, 0, 30)) };
   }
   for (const [k, v] of Object.entries(d.answers || {})) if (QZ.cells[k]) QZ.answers[k] = { g: +v[0], p: +v[1] };
 }
@@ -2129,7 +2154,7 @@ function renderQuiz() {
     if (edit) {
       if (cell) {
         const m = S.msgs[cell.i];
-        h += `<button class="qcell" data-key="${x.k}" title="Change this square"><b>${nf.format(x.v)}</b><span class="qsn" dir="auto">${esc(snippet(m, ''))}</span><small>${esc(fShort.format(m.t))}${cell.b || cell.a ? ` · context −${cell.b} / +${cell.a}` : ''}${a ? ' · played' : ''}</small></button>`;
+        h += `<button class="qcell" data-key="${x.k}" title="Change this square"><b>${nf.format(x.v)}</b><span class="qsn" dir="auto">${esc(snippet(m, ''))}</span><small>${esc(fShort.format(m.t))}${cell.b || cell.a ? ` · context −${cell.b}/+${cell.a}` : ''}${cell.rb > cell.b || cell.ra > cell.a ? ` · reveal −${cell.rb}/+${cell.ra}` : ''}${a ? ' · played' : ''}</small></button>`;
       } else h += `<button class="qcell empty" data-key="${x.k}"><b>${nf.format(x.v)}</b><span>+ Pick a message</span></button>`;
     } else if (!cell) h += `<button class="qcell empty" disabled><b>${nf.format(x.v)}</b><small>empty</small></button>`;
     else if (a) h += `<button class="qcell done" data-key="${x.k}" title="See the answer"><b>+${nf.format(a.p)}</b><small>of ${nf.format(x.v)}</small></button>`;
@@ -2158,7 +2183,7 @@ $('#qzAutofill').addEventListener('click', () => {
   const pool = starList().filter(i => !used.has(i));
   for (let k = pool.length - 1; k > 0; k--) { const j = Math.floor(Math.random() * (k + 1)); [pool[k], pool[j]] = [pool[j], pool[k]]; }
   let n = 0;
-  for (const x of quizSquares()) if (!QZ.cells[x.k] && pool.length) { QZ.cells[x.k] = { i: pool.pop(), b: 0, a: 0 }; n++; }
+  for (const x of quizSquares()) if (!QZ.cells[x.k] && pool.length) { QZ.cells[x.k] = { i: pool.pop(), b: 0, a: 0, rb: 3, ra: 3 }; n++; }
   quizSave(); renderQuiz();
   $('#qzScore').textContent += n ? ` · added ${n}` : (S.stars.size ? ' · no unused starred messages left' : '');
 });
@@ -2194,11 +2219,11 @@ const squareTitle = k => {
 };
 
 // What the player sees: the message plus the chosen context, with no dates or times.
-function qBubble(j, target, prev) {
+function qBubble(j, target, prev, extra = '') {
   const m = S.msgs[j];
-  if (m.s < 0) return `<div class="sys" dir="auto">${fmtText(m.text)}</div>`;
+  if (m.s < 0) return `<div class="sys${extra}" dir="auto">${fmtText(m.text)}</div>`;
   const mine = m.s === S.me, cont = prev && prev.s === m.s;
-  let h = `<div class="msg ${mine ? 'me' : 'them'}${cont ? ' cont' : ''}${target ? ' qtarget' : ''}">`;
+  let h = `<div class="msg ${mine ? 'me' : 'them'}${cont ? ' cont' : ''}${target ? ' qtarget' : ''}${extra}">`;
   if (!cont) h += `<div class="who" style="color:${PALETTE[m.s % PALETTE.length]}" dir="auto">${esc(S.people[m.s])}</div>`;
   if (m.media) for (const md of m.media) {
     const n = esc(md.name);
@@ -2212,10 +2237,29 @@ function qBubble(j, target, prev) {
   else if (m.note) h += `<div class="text note" dir="auto">${esc(m.note)}</div>`;
   return h + '</div>';
 }
-function qContext(box, i, b, a) {
-  const from = Math.max(0, i - b), to = Math.min(S.msgs.length - 1, i + a);
-  let h = '';
-  for (let j = from; j <= to; j++) h += qBubble(j, j === i, j > from ? S.msgs[j - 1] : null);
+// mode 'question': what the player sees first. 'reveal': after locking in (newly shown ones animate in).
+// 'edit': the editor preview, with zones and 3 extra greyed messages beyond each edge.
+const ZONE_LABEL = { zx: 'Not shown', zr: 'Shown after the reveal', zq: 'Shown with the question' };
+function qContext(box, i, c, mode, animate) {
+  const n = S.msgs.length;
+  const span = mode === 'question' ? [c.b, c.a] : mode === 'reveal' ? [c.rb, c.ra] : [c.rb + 3, c.ra + 3];
+  const from = Math.max(0, i - span[0]), to = Math.min(n - 1, i + span[1]);
+  let h = '', zone = '';
+  for (let j = from; j <= to; j++) {
+    const d = j - i;
+    const z = d >= -c.b && d <= c.a ? 'zq' : d >= -c.rb && d <= c.ra ? 'zr' : 'zx';
+    let extra = '', newZone = false;
+    if (mode === 'edit') {
+      if (z !== zone) { h += `<div class="zone ${z}">${ZONE_LABEL[z]}</div>`; zone = z; newZone = true; }
+      extra = ' ' + z;
+    } else if (mode === 'reveal' && z === 'zr') extra = animate ? ' zr rnew' : ' zr';
+    // after a zone label, show the sender's name again
+    h += qBubble(j, j === i, j > from && !newZone ? S.msgs[j - 1] : null, extra);
+  }
+  if (mode === 'edit') {
+    if (from === 0 && i - from < span[0]) h = '<div class="zone zx">Start of the chat</div>' + h;
+    if (to === n - 1 && to - i < span[1]) h += '<div class="zone zx">End of the chat</div>';
+  }
   box.innerHTML = h;
   for (const n of box.querySelectorAll('[data-src]')) mediaURL(n.dataset.src).then(u => { n.src = u; }).catch(() => {});
   const t = box.querySelector('.qtarget');
@@ -2226,7 +2270,7 @@ function qContext(box, i, b, a) {
 let QE = null;
 function openCellEditor(k) {
   const cell = QZ.cells[k];
-  QE = { k, i: cell ? cell.i : -1, b: cell ? cell.b : 0, a: cell ? cell.a : 0 };
+  QE = cell ? { k, i: cell.i, b: cell.b, a: cell.a, rb: cell.rb, ra: cell.ra } : { k, i: -1, b: 0, a: 0, rb: 3, ra: 3 };
   $('#qeTitle').textContent = squareTitle(k);
   $('#qePick').value = '';
   $('#qeClear').hidden = !cell;
@@ -2276,10 +2320,10 @@ function renderPickList() {
   $('#qeList').innerHTML = h || `<div class="empty">${!S.stars.size ? 'No starred messages yet. Star messages in the chat (☆) first.' : $('#qeSrc').value.startsWith('col:') && !q ? 'This column is empty. Add messages to it in the Board view (B).' : 'No messages match.'}</div>`;
 }
 function renderPreview() {
-  $('#qeBefore').value = QE.b; $('#qeAfter').value = QE.a;
+  $('#qeBefore').value = QE.b; $('#qeAfter').value = QE.a; $('#qeRBefore').value = QE.rb; $('#qeRAfter').value = QE.ra;
   $('#qeDone').disabled = QE.i < 0;
   if (QE.i < 0) { $('#qePrev').innerHTML = '<div class="empty">Pick a starred message on the left.</div>'; return; }
-  qContext($('#qePrev'), QE.i, QE.b, QE.a);
+  qContext($('#qePrev'), QE.i, QE, 'edit');
 }
 $('#qePick').addEventListener('input', renderPickList);
 $('#qeList').addEventListener('click', e => {
@@ -2290,17 +2334,24 @@ $('#qeList').addEventListener('click', e => {
   b.classList.add('cur');
   renderPreview();
 });
-for (const id of ['#qeBefore', '#qeAfter']) $(id).addEventListener('input', e => {
-  const v = clamp(Math.round(+e.target.value) || 0, 0, 30);
-  if (id === '#qeBefore') QE.b = v; else QE.a = v;
-  if (QE.i >= 0) qContext($('#qePrev'), QE.i, QE.b, QE.a);
+// The reveal always shows at least what the question showed, so the two settings push each other.
+const CTX_INPUTS = { '#qeBefore': 'b', '#qeAfter': 'a', '#qeRBefore': 'rb', '#qeRAfter': 'ra' };
+for (const [id, f] of Object.entries(CTX_INPUTS)) $(id).addEventListener('input', e => {
+  if (e.target.value === '') return;
+  QE[f] = clamp(Math.round(+e.target.value) || 0, 0, 30);
+  if (f === 'b' && QE.rb < QE.b) QE.rb = QE.b;
+  if (f === 'a' && QE.ra < QE.a) QE.ra = QE.a;
+  if (f === 'rb' && QE.b > QE.rb) QE.b = QE.rb;
+  if (f === 'ra' && QE.a > QE.ra) QE.a = QE.ra;
+  for (const [id2, f2] of Object.entries(CTX_INPUTS)) if (id2 !== id) $(id2).value = QE[f2];
+  if (QE.i >= 0) qContext($('#qePrev'), QE.i, QE, 'edit');
 });
 $('#qeDone').addEventListener('click', () => {
   if (QE.i < 0) return;
   for (const [k, c] of Object.entries(QZ.cells)) if (c.i === QE.i && k !== QE.k) { delete QZ.cells[k]; delete QZ.answers[k]; }
   const old = QZ.cells[QE.k];
   if (!old || old.i !== QE.i) delete QZ.answers[QE.k];
-  QZ.cells[QE.k] = { i: QE.i, b: QE.b, a: QE.a };
+  QZ.cells[QE.k] = { i: QE.i, b: QE.b, a: QE.a, rb: QE.rb, ra: QE.ra };
   quizSave(); closeCellEditor(); renderQuiz();
 });
 $('#qeClear').addEventListener('click', () => { delete QZ.cells[QE.k]; delete QZ.answers[QE.k]; quizSave(); closeCellEditor(); renderQuiz(); });
@@ -2309,7 +2360,7 @@ $('#qzEdit').addEventListener('click', e => { if (e.target.id === 'qzEdit') clos
 
 /* question + dial */
 const DIAL = { cx: 200, cy: 200, R: 172 };
-let QQ = null, D0 = 0, D1 = 1, dialDrag = false;
+let QQ = null, D0 = 0, D1 = 1, dialDrag = false, justLocked = false;
 const dialAng = u => (D1 > D0 ? Math.PI * (1 - (u - D0) / (D1 - D0)) : Math.PI / 2);
 const dialPt = (a, r = DIAL.R) => [DIAL.cx + r * Math.cos(a), DIAL.cy - r * Math.sin(a)];
 const f2 = n => n.toFixed(2);
@@ -2366,7 +2417,6 @@ function openQuestion(k) {
   QQ = { k, i: cell.i, value: QZ.values[+k.split(':')[1]], u: ans ? uDay(ans.g) : Math.round((D0 + D1) / 2), locked: !!ans };
   $('#qqTitle').textContent = squareTitle(k);
   $('#qzQ').hidden = false;
-  qContext($('#qqCtx'), cell.i, cell.b, cell.a);
   drawDial();
   showQState();
 }
@@ -2374,6 +2424,9 @@ function showQState() {
   $('#qqFine').hidden = QQ.locked;
   $('#qqAct').hidden = QQ.locked;
   $('#qqResult').hidden = !QQ.locked;
+  const cell = QZ.cells[QQ.k];
+  qContext($('#qqCtx'), QQ.i, cell, QQ.locked ? 'reveal' : 'question', justLocked);
+  justLocked = false;
   if (!QQ.locked) return;
   const ans = QZ.answers[QQ.k], m = S.msgs[QQ.i];
   const off = Math.abs(uDay(ans.g) - uDay(m.day));
@@ -2393,6 +2446,7 @@ function lockIn() {
   const off = Math.abs(QQ.u - uDay(S.msgs[QQ.i].day));
   QZ.answers[QQ.k] = { g: dayOfU(QQ.u), p: qScore(off, QQ.value) };
   QQ.locked = true;
+  justLocked = true;
   quizSave(); drawDial(); showQState();
 }
 function quizKey(e, inField) {
