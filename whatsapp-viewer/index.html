@@ -510,6 +510,37 @@ body.dragging-ui, body.dragging-ui * { cursor: grabbing !important; user-select:
 .qq-pts small { font-size: 16px; color: var(--muted); font-weight: 600; }
 .qq-legend { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
 .qq-btns { display: flex; gap: 8px; justify-content: center; margin-top: 12px; flex-wrap: wrap; }
+/* clean game view: only the board and a small score */
+#qzCleanBar { display: none; }
+body.quiz-clean header.top, body.quiz-clean .qz-top, body.quiz-clean #panel { display: none !important; }
+body.quiz-clean #qzCleanBar {
+  display: flex; position: fixed; top: 10px; right: 12px; z-index: 20; align-items: center; gap: 4px;
+  padding: 3px 4px 3px 14px; border-radius: 20px; background: var(--panel); border: 1px solid var(--border);
+  box-shadow: var(--shadow); font-weight: 700; font-size: 14px; opacity: .8;
+}
+body.quiz-clean #qzCleanBar:hover { opacity: 1; }
+#qzCleanExit { padding: 5px; }
+#qzCleanExit .icon { width: 16px; height: 16px; }
+body.quiz-clean #app { grid-template-rows: minmax(0, 1fr); }
+body.quiz-clean #qzWrap { display: flex; flex-direction: column; padding: 54px 24px 24px; }
+body.quiz-clean #qzGrid { flex: 1; width: 100%; max-width: 1600px; }
+body.quiz-clean .qhead { font-size: 19px; min-height: 64px; }
+body.quiz-clean .qcell.play b { font-size: 46px; }
+body.quiz-clean .qcell.done b { font-size: 28px; }
+/* prize popup */
+#prizePop { z-index: 70; }
+#prizePop .box { position: relative; overflow: hidden; text-align: center; max-width: 420px; padding: 28px 24px 24px; animation: pzpop .55s cubic-bezier(.2, 1.5, .4, 1) both; }
+#prizePop .trophy { font-size: 72px; line-height: 1; animation: pzbob 1.4s ease-in-out infinite; }
+#prizePop .pz-k { margin-top: 10px; font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--gold); }
+#prizePop h2 { font-size: 28px; margin: 4px 0 6px; }
+#prizePop p { font-size: 16px; color: var(--text); margin-bottom: 18px; }
+#prizePop .btn { padding: 10px 30px; font-size: 16px; }
+.confetti { position: absolute; inset: 0; pointer-events: none; }
+.confetti i { position: absolute; top: -12px; width: 8px; height: 13px; border-radius: 2px; animation: pzfall 2.4s ease-in forwards; }
+@keyframes pzpop { from { transform: scale(.6); opacity: 0; } }
+@keyframes pzbob { 50% { transform: translateY(-6px) rotate(-4deg); } }
+@keyframes pzfall { to { transform: translateY(520px) rotate(540deg); opacity: .2; } }
+
 @media (max-width: 760px) { .qe { grid-template-columns: 1fr; } .qe-pick { max-height: 40vh; border-right: 0; border-bottom: 1px solid var(--border); } }
 
 @media (max-width: 520px) { .avatar { display: none; } header.top { padding-left: 10px; } .ibtn { padding: 7px; } }
@@ -612,7 +643,9 @@ body.dragging-ui, body.dragging-ui * { cursor: grabbing !important; user-select:
           <button class="btn" id="qzAddCat">+ Category</button>
         </span>
         <span class="qz-ctrls qz-play"><button class="btn" id="qzReset">New game</button></span>
+        <button class="btn" id="qzCleanBtn" title="Hide everything except the game board (Esc to come back)">⛶ Clean view</button>
       </div>
+      <div id="qzCleanBar"><span id="qzCleanScore"></span><button class="ibtn" id="qzCleanExit" title="Exit clean view (Esc)"><svg class="icon"><use href="#i-x"/></svg></button></div>
       <div id="qzWrap"><div id="qzBanner" hidden></div><div id="qzGrid"></div></div>
     </div>
     <div id="board" hidden>
@@ -733,6 +766,18 @@ body.dragging-ui, body.dragging-ui * { cursor: grabbing !important; user-select:
     </div>
     <div class="qq-act" id="qqAct"><button class="btn primary" id="qqLock">Lock in</button></div>
     <div id="qqResult" hidden></div>
+  </div>
+</div>
+
+<!-- quiz: prize milestone -->
+<div class="modal" id="prizePop" hidden>
+  <div class="box">
+    <div class="confetti" id="pzConfetti" aria-hidden="true"></div>
+    <div class="trophy">🏆</div>
+    <div class="pz-k">Milestone reached</div>
+    <h2 id="pzTitle"></h2>
+    <p id="pzText"></p>
+    <button class="btn primary" id="pzOk">Woohoo!</button>
   </div>
 </div>
 
@@ -1825,6 +1870,7 @@ function showView(v) {
 function setView(v) {
   if (v === view) v = 'chat';
   if (v === view) return;
+  if (v !== 'quiz' && qzClean) setClean(false);
   if (view === 'chat') chatPos = topIndex();
   showView(v);
   if (v === 'chat') jumpTo(chatPos, 'start');
@@ -2094,13 +2140,14 @@ const dayOfU = u => { const t = new Date(u * 864e5); return t.getUTCFullYear() *
 const fmtU = u => fDay.format(dayDate(dayOfU(u)));
 function quizReset() {
   QZ.cats = [1, 2, 3].map(id => ({ id, name: '' })); QZ.nextId = 4;
-  QZ.values = [100, 200, 300, 400]; QZ.halfLife = 28; QZ.cells = {}; QZ.answers = {}; QZ.mode = 'edit';
+  QZ.values = [100, 200, 300, 400]; QZ.halfLife = 28; QZ.cells = {}; QZ.answers = {}; QZ.prizes = []; QZ.mode = 'edit';
 }
 function quizData() {
   return {
     cats: QZ.cats, values: QZ.values, halfLife: QZ.halfLife, nextId: QZ.nextId, mode: QZ.mode,
     cells: Object.fromEntries(Object.entries(QZ.cells).map(([k, c]) => [k, [c.i, recHash(c.i), c.b, c.a, c.rb, c.ra]])),
     answers: Object.fromEntries(Object.entries(QZ.answers).map(([k, a]) => [k, [a.g, a.p]])),
+    prizes: QZ.prizes.map(z => [z.m, z.c]),
   };
 }
 function quizFromData(d, resolve) {
@@ -2120,6 +2167,7 @@ function quizFromData(d, resolve) {
     QZ.cells[k] = { i: at, b, a, rb: Math.max(b, clamp((v[4] ?? b) | 0, 0, 30)), ra: Math.max(a, clamp((v[5] ?? a) | 0, 0, 30)) };
   }
   for (const [k, v] of Object.entries(d.answers || {})) if (QZ.cells[k]) QZ.answers[k] = { g: +v[0], p: +v[1] };
+  if (Array.isArray(d.prizes)) QZ.prizes = d.prizes.slice(0, PRIZES).map(z => ({ m: +z[0], c: +z[1] }));
 }
 function quizLoad() {
   const d = store.get('quiz:' + S.fp, null);
@@ -2165,7 +2213,8 @@ function renderQuiz() {
   const total = filled.reduce((t, x) => t + x.v, 0);
   $('#qzScore').textContent = edit
     ? `${filled.length} of ${sq.length} squares filled`
-    : `Score ${nf.format(got)}${done ? ` of ${nf.format(poss)}` : ''} · ${filled.length - done} square${filled.length - done === 1 ? '' : 's'} left`;
+    : `Score ${nf.format(got)}${done ? ` of ${nf.format(poss)}` : ''} · ${filled.length - done} square${filled.length - done === 1 ? '' : 's'} left${QZ.prizes.length ? ' · ' + '🏆'.repeat(QZ.prizes.length) : ''}`;
+  $('#qzCleanScore').textContent = `${nf.format(got)} pts${QZ.prizes.length ? ' · ' + '🏆'.repeat(QZ.prizes.length) : ''}`;
   const banner = $('#qzBanner');
   banner.hidden = true;
   if (edit && !S.stars.size) {
@@ -2180,6 +2229,7 @@ function renderQuiz() {
   }
   const grid = $('#qzGrid');
   grid.style.gridTemplateColumns = `repeat(${Math.max(1, QZ.cats.length)}, minmax(150px, 1fr))`;
+  grid.style.gridTemplateRows = qzClean ? `auto repeat(${QZ.values.length}, minmax(70px, 1fr))` : '';
   let h = '';
   for (const c of QZ.cats) {
     h += edit
@@ -2233,7 +2283,7 @@ $('#qzAutofill').addEventListener('click', () => {
 });
 $('#qzReset').addEventListener('click', () => {
   if (Object.keys(QZ.answers).length && !confirm('Start a new game? This clears the current scores (the squares stay as they are).')) return;
-  QZ.answers = {}; quizSave(); renderQuiz();
+  QZ.answers = {}; QZ.prizes = []; quizSave(); renderQuiz();
 });
 $('#qzGrid').addEventListener('input', e => {
   const head = e.target.closest('.qhead');
@@ -2488,14 +2538,99 @@ function showQState() {
 }
 function closeQuestion() { $('#qzQ').hidden = true; $('#qqCtx').replaceChildren(); QQ = null; renderQuiz(); }
 function setGuess(u) { if (!QQ || QQ.locked) return; QQ.u = clamp(Math.round(u), D0, D1); drawDial(); }
+function quizTotals() {
+  let score = 0, answered = 0, filled = 0;
+  for (const x of quizSquares()) {
+    if (!QZ.cells[x.k]) continue;
+    filled++;
+    const a = QZ.answers[x.k];
+    if (a) { score += a.p; answered++; }
+  }
+  return { score, answered, filled };
+}
 function lockIn() {
   if (!QQ || QQ.locked) return;
+  const before = quizTotals().score;
   const off = Math.abs(QQ.u - uDay(S.msgs[QQ.i].day));
   QZ.answers[QQ.k] = { g: dayOfU(QQ.u), p: qScore(off, QQ.value) };
   QQ.locked = true;
   justLocked = true;
+  const t = quizTotals();
+  const won = checkPrizes(before, t.score, t.answered, t.filled);
   quizSave(); drawDial(); showQState();
+  if (won.length) setTimeout(() => showPrizes(won), 1500);
 }
+
+/* Prizes: exactly four per game, roughly evenly spaced (every ~5-7 squares on a 20-30 square board).
+   Each prize has a window of squares around its planned spot. Inside the window, a prize fires as soon
+   as the score really crosses a multiple of 500. If the window closes first, the milestone shown is the
+   highest multiple of 500 the score has reached, else of 100, else just above the last one. On the final
+   square every prize still owed is given, so all four always happen. */
+const PRIZES = 4;
+function prizeWindows(n) {
+  const w = [];
+  let prevEnd = 0;
+  for (let k = 1; k <= PRIZES; k++) {
+    const t = Math.round(n * k / 4.5);
+    let s = Math.max(t - 1, prevEnd + 1, 1), e = Math.max(s, Math.min(t + 1, n));
+    if (s > n) s = e = n;
+    w.push([s, e]);
+    prevEnd = e;
+  }
+  return w;
+}
+function checkPrizes(before, after, answered, filled) {
+  const won = [], w = prizeWindows(filled);
+  const floor = (x, step) => Math.floor(x / step) * step;
+  const last = answered >= filled;
+  while (QZ.prizes.length < PRIZES) {
+    const k = QZ.prizes.length, [start, end] = w[k];
+    const prev = k ? QZ.prizes[k - 1].m : 0;
+    if (answered < start && !last) break;
+    const m500 = floor(after, 500);
+    let m = 0;
+    if (m500 > prev && m500 > floor(before, 500)) m = m500; // genuinely crossed on this square
+    else if (answered >= end || last) m = m500 > prev ? m500 : floor(after, 100) > prev ? floor(after, 100) : prev + 100;
+    if (!m) break;
+    QZ.prizes.push({ m, c: answered });
+    won.push(QZ.prizes.length);
+    if (!last) break; // one per square, except at the very end
+  }
+  return won;
+}
+let prizeQueue = [];
+function showPrizes(list) {
+  prizeQueue.push(...list);
+  if ($('#prizePop').hidden) nextPrize();
+}
+function nextPrize() {
+  const n = prizeQueue.shift();
+  if (!n) { $('#prizePop').hidden = true; return; }
+  const z = QZ.prizes[n - 1];
+  $('#pzTitle').textContent = `Prize #${n} unlocked!`;
+  $('#pzText').textContent = `You just passed ${nf.format(z.m)} points.`;
+  const conf = $('#pzConfetti');
+  const colors = ['#e0a100', '#0c7d63', '#d0573f', '#2f7fc1', '#9b4fb8', '#3cc49d'];
+  let h = '';
+  for (let k = 0; k < 40; k++) {
+    h += `<i style="left:${(Math.random() * 100).toFixed(1)}%;background:${colors[k % colors.length]};animation-delay:${(Math.random() * .6).toFixed(2)}s;transform:rotate(${Math.round(Math.random() * 360)}deg)"></i>`;
+  }
+  conf.innerHTML = h;
+  $('#prizePop').hidden = false;
+  $('#pzOk').focus();
+}
+$('#pzOk').addEventListener('click', nextPrize);
+
+/* clean view */
+let qzClean = false;
+function setClean(on) {
+  qzClean = on;
+  document.body.classList.toggle('quiz-clean', on);
+  if (on) { QZ.mode = 'play'; qSwapFrom = null; quizSave(); if (curPanel) showPanel(null); }
+  renderQuiz();
+}
+$('#qzCleanBtn').addEventListener('click', () => setClean(true));
+$('#qzCleanExit').addEventListener('click', () => setClean(false));
 function quizKey(e, inField) {
   if (e.key === 'Escape') { e.preventDefault(); closeQuestion(); return; }
   if (!QQ || QQ.locked || inField) return;
@@ -2596,8 +2731,10 @@ document.addEventListener('keydown', e => {
     return;
   }
   if (!$('#meModal').hidden) return;
+  if (!$('#prizePop').hidden) { if (e.key === 'Escape' || e.key === 'Enter') { e.preventDefault(); nextPrize(); } return; }
   if (!$('#qzEdit').hidden) { if (e.key === 'Escape') closeCellEditor(); return; }
   if (!$('#qzQ').hidden) { quizKey(e, inField); return; }
+  if (qzClean && !inField && e.key !== 'Escape') return;
   if ((e.key === 'f' && (e.ctrlKey || e.metaKey)) || (e.key === '/' && !inField)) {
     e.preventDefault();
     if (curPanel !== 'search') showPanel('search'); else { $('#q').focus(); $('#q').select(); }
@@ -2606,7 +2743,8 @@ document.addEventListener('keydown', e => {
   } else if (!inField && (e.key === 'q' || e.key === 'Q') && !e.ctrlKey && !e.metaKey && !e.altKey) {
     setView('quiz');
   } else if (e.key === 'Escape') {
-    if (view === 'quiz' && qSwapFrom) { qSwapFrom = null; renderQuiz(); }
+    if (view === 'quiz' && qzClean) setClean(false);
+    else if (view === 'quiz' && qSwapFrom) { qSwapFrom = null; renderQuiz(); }
     else if (curPanel) showPanel(null);
   } else if (view !== 'chat') {
     return;
