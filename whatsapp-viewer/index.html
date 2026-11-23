@@ -399,6 +399,7 @@ body.dragging-ui, body.dragging-ui * { cursor: grabbing !important; user-select:
 .qz-top label { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
 .qz-top input { padding: 5px 8px; border-radius: 7px; border: 1px solid var(--border); background: var(--bg); width: 160px; }
 .qz-top #qzHalf { width: 64px; }
+.qz-top input[type=date] { width: auto; }
 #qzScore { font-weight: 700; }
 .qz-ctrls { display: contents; }
 #qzWrap { flex: 1; min-height: 0; overflow: auto; padding: 16px; }
@@ -638,6 +639,7 @@ body.quiz-clean .qcell.done b { font-size: 28px; }
         <span class="grow"></span>
         <span class="qz-ctrls qz-edit">
           <label>Points <input id="qzValues" placeholder="100, 200, 300, 400" title="Point values, top to bottom, comma separated"></label>
+          <label title="The first and last day on the dial (both included)">Dial <input id="qzFrom" type="date"> to <input id="qzTo" type="date"></label>
           <label title="A guess earns a share of the square's value that halves every N days off">Half points at <input id="qzHalf" type="number" min="1" max="365"> days off</label>
           <button class="btn" id="qzAutofill" title="Fill empty squares with random starred messages that aren't used yet">Auto-fill empty</button>
           <button class="btn" id="qzAddCat">+ Category</button>
@@ -2138,9 +2140,13 @@ const qScore = (daysOff, value) => Math.round(value * Math.pow(0.5, daysOff / QZ
 const uDay = d => Date.UTC(Math.floor(d / 10000), Math.floor(d / 100) % 100 - 1, d % 100) / 864e5;
 const dayOfU = u => { const t = new Date(u * 864e5); return t.getUTCFullYear() * 10000 + (t.getUTCMonth() + 1) * 100 + t.getUTCDate(); };
 const fmtU = u => fDay.format(dayDate(dayOfU(u)));
+// The dial runs from DIAL_FROM to DIAL_TO, both included (YYYYMMDD). Changeable per quiz in Set up.
+const DIAL_FROM = 20251122, DIAL_TO = 20261122;
+const validDay = d => Number.isInteger(d) && d > 19000101 && d < 30000101 && dayOfU(uDay(d)) === d;
 function quizReset() {
   QZ.cats = [1, 2, 3].map(id => ({ id, name: '' })); QZ.nextId = 4;
   QZ.values = [100, 200, 300, 400]; QZ.halfLife = 28; QZ.cells = {}; QZ.answers = {}; QZ.prizes = []; QZ.mode = 'edit';
+  QZ.from = DIAL_FROM; QZ.to = DIAL_TO;
 }
 function quizData() {
   return {
@@ -2148,6 +2154,7 @@ function quizData() {
     cells: Object.fromEntries(Object.entries(QZ.cells).map(([k, c]) => [k, [c.i, recHash(c.i), c.b, c.a, c.rb, c.ra]])),
     answers: Object.fromEntries(Object.entries(QZ.answers).map(([k, a]) => [k, [a.g, a.p]])),
     prizes: QZ.prizes.map(z => [z.m, z.c]),
+    from: QZ.from, to: QZ.to,
   };
 }
 function quizFromData(d, resolve) {
@@ -2167,6 +2174,7 @@ function quizFromData(d, resolve) {
     QZ.cells[k] = { i: at, b, a, rb: Math.max(b, clamp((v[4] ?? b) | 0, 0, 30)), ra: Math.max(a, clamp((v[5] ?? a) | 0, 0, 30)) };
   }
   for (const [k, v] of Object.entries(d.answers || {})) if (QZ.cells[k]) QZ.answers[k] = { g: +v[0], p: +v[1] };
+  if (validDay(d.from) && validDay(d.to) && d.from < d.to) { QZ.from = d.from; QZ.to = d.to; }
   if (Array.isArray(d.prizes)) QZ.prizes = d.prizes.slice(0, PRIZES).map(z => ({ m: +z[0], c: +z[1] }));
 }
 function quizLoad() {
@@ -2207,6 +2215,7 @@ function renderQuiz() {
   for (const e of $$('.qz-play')) e.hidden = edit;
   if (document.activeElement !== $('#qzValues')) $('#qzValues').value = QZ.values.join(', ');
   if (document.activeElement !== $('#qzHalf')) $('#qzHalf').value = QZ.halfLife;
+  $('#qzFrom').value = isoOf(QZ.from); $('#qzTo').value = isoOf(QZ.to);
   const sq = quizSquares(), filled = sq.filter(x => QZ.cells[x.k]);
   let got = 0, poss = 0, done = 0;
   for (const x of filled) { const a = QZ.answers[x.k]; if (a) { got += a.p; poss += x.v; done++; } }
@@ -2217,6 +2226,8 @@ function renderQuiz() {
   $('#qzCleanScore').textContent = `${nf.format(got)} pts${QZ.prizes.length ? ' · ' + '🏆'.repeat(QZ.prizes.length) : ''}`;
   const banner = $('#qzBanner');
   banner.hidden = true;
+  const outside = filled.filter(x => { const d = S.msgs[QZ.cells[x.k].i].day; return d < QZ.from || d > QZ.to; }).length;
+  if (edit && outside) $('#qzScore').textContent += ` · ⚠ ${outside} outside the dial's dates`;
   if (edit && !S.stars.size) {
     banner.hidden = false;
     banner.innerHTML = 'You need starred messages to build a quiz. In the chat, point at a message and click ☆, then come back and click a square to put a message in it.';
@@ -2262,6 +2273,14 @@ $('#qzValues').addEventListener('change', e => {
   if (vals.length) QZ.values = vals;
   quizSave(); e.target.blur(); renderQuiz();
 });
+function dialRangeChanged() {
+  const parse = v => (v ? +v.replace(/-/g, '') : 0);
+  const f = parse($('#qzFrom').value), t = parse($('#qzTo').value);
+  if (validDay(f) && validDay(t) && f < t) { QZ.from = f; QZ.to = t; quizSave(); }
+  renderQuiz();
+}
+$('#qzFrom').addEventListener('change', dialRangeChanged);
+$('#qzTo').addEventListener('change', dialRangeChanged);
 $('#qzHalf').addEventListener('change', e => {
   const n = Math.round(+e.target.value);
   QZ.halfLife = n > 0 ? Math.min(365, n) : 28;
@@ -2474,7 +2493,7 @@ function drawDial() {
   if (QQ.locked) {
     const t = uDay(S.msgs[QQ.i].day);
     [[0.25, 'b1'], [0.5, 'b2'], [0.75, 'b3']].forEach(([sh, cls]) => { const d = bandDays(sh); h += `<path class="band ${cls}" d="${wedge(t - d, t + d)}"/>`; });
-    const [tx, ty] = dialPt(dialAng(t), R + 4);
+    const [tx, ty] = dialPt(dialAng(clamp(t, D0, D1)), R + 4);
     h += `<line class="truth" x1="${cx}" y1="${cy}" x2="${f2(tx)}" y2="${f2(ty)}"/>`;
   }
   h += `<path class="dial-in" d="M${cx - 26} ${cy}A26 26 0 0 1 ${cx + 26} ${cy}Z"/>`;
@@ -2509,7 +2528,7 @@ function drawDial() {
 function openQuestion(k) {
   const cell = QZ.cells[k];
   if (!cell) return;
-  D0 = uDay(S.days[0].day); D1 = uDay(S.days[S.days.length - 1].day);
+  D0 = uDay(QZ.from); D1 = uDay(QZ.to);
   const ans = QZ.answers[k];
   QQ = { k, i: cell.i, value: QZ.values[+k.split(':')[1]], u: ans ? uDay(ans.g) : Math.round((D0 + D1) / 2), locked: !!ans };
   $('#qqTitle').textContent = squareTitle(k);
