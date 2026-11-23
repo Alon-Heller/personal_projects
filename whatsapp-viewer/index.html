@@ -390,6 +390,91 @@ audio.aud { display: block; width: 270px; max-width: 100%; height: 40px; margin:
 .ghost { position: fixed; left: 0; top: 0; z-index: 60; margin: 0; pointer-events: none; opacity: .96; box-shadow: 0 12px 30px rgb(0 0 0 / .32); }
 body.dragging-ui, body.dragging-ui * { cursor: grabbing !important; user-select: none !important; -webkit-user-select: none !important; }
 
+/* ---------- quiz ---------- */
+#quiz { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--chat); }
+.qz-top { display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap; padding: 10px 14px; background: var(--header); border-bottom: 1px solid var(--border); }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; }
+.seg button { border: 0; background: var(--panel); padding: 6px 14px; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.qz-top label { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.qz-top input { padding: 5px 8px; border-radius: 7px; border: 1px solid var(--border); background: var(--bg); width: 160px; }
+.qz-top #qzHalf { width: 64px; }
+#qzScore { font-weight: 700; }
+.qz-ctrls { display: contents; }
+#qzWrap { flex: 1; min-height: 0; overflow: auto; padding: 16px; }
+#qzBanner { max-width: 1200px; margin: 0 auto 14px; padding: 14px 16px; border-radius: 10px; background: var(--panel); border: 1px solid var(--border); text-align: center; }
+#qzBanner .big { font-size: 22px; font-weight: 700; }
+#qzGrid { display: grid; gap: 10px; max-width: 1200px; margin: 0 auto; }
+.qhead {
+  display: flex; align-items: center; justify-content: center; gap: 2px; min-height: 54px; padding: 8px;
+  background: var(--accent); color: var(--accent-ink); border-radius: 10px; font-weight: 700; text-align: center; overflow-wrap: anywhere;
+}
+.qhead input { flex: 1; min-width: 0; padding: 4px; border: 1px solid transparent; border-radius: 6px; background: none; color: inherit; font-weight: 700; text-align: center; }
+.qhead input::placeholder { color: inherit; opacity: .65; }
+.qhead input:focus { outline: none; border-color: currentColor; background: rgb(255 255 255 / .12); }
+.qhead button { border: 0; background: none; color: inherit; padding: 4px; border-radius: 6px; opacity: .75; display: grid; }
+.qhead button:hover { opacity: 1; background: rgb(255 255 255 / .15); }
+.qhead .icon { width: 16px; height: 16px; }
+.qcell {
+  min-height: 100px; min-width: 0; padding: 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel);
+  box-shadow: var(--shadow); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; text-align: center;
+}
+.qcell b { font-size: 22px; color: var(--accent); line-height: 1.1; }
+.qcell .qsn { font-size: 12.5px; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; max-width: 100%; }
+.qcell small { font-size: 11.5px; color: var(--muted); }
+.qcell:hover:not(:disabled) { border-color: var(--accent); }
+.qcell.empty { background: none; box-shadow: none; border-style: dashed; color: var(--muted); }
+.qcell.empty b { color: var(--muted); }
+.qcell.play b { font-size: 32px; }
+.qcell.done { background: var(--bg); box-shadow: none; }
+.qcell.done b { color: var(--muted); }
+.qcell:disabled { cursor: default; opacity: .6; }
+.modal .box.wide { max-width: 900px; max-height: calc(100dvh - 32px); display: flex; flex-direction: column; padding: 0; overflow: hidden; }
+.mhead { display: flex; align-items: center; gap: 8px; padding: 10px 10px 10px 18px; border-bottom: 1px solid var(--border); }
+.mhead b { flex: 1; font-size: 16px; }
+.qe { flex: 1; min-height: 0; display: grid; grid-template-columns: 320px 1fr; }
+.qe-pick { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--border); }
+.qe-pick input { margin: 10px 12px; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); }
+#qeList { flex: 1; min-height: 0; overflow-y: auto; border-top: 1px solid var(--border); }
+#qeList .used { display: block; margin-top: 3px; font-size: 11.5px; color: var(--gold); }
+.qe-prev { display: flex; flex-direction: column; min-height: 0; padding: 12px 14px; gap: 10px; }
+.qe-ctx { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 13.5px; color: var(--muted); }
+.qe-ctx input { width: 58px; padding: 4px 6px; border-radius: 7px; border: 1px solid var(--border); background: var(--bg); }
+.qe-btns { display: flex; gap: 8px; justify-content: flex-end; }
+.qctx { flex: 1; min-height: 120px; overflow-y: auto; background: var(--chat); border-radius: 10px; padding: 8px 12px 12px; }
+.qctx .msg { max-width: 85%; }
+.qctx .msg:not(.qtarget), .qctx .sys { opacity: .7; }
+.qctx .msg.qtarget { box-shadow: 0 0 0 2px var(--accent), var(--shadow); }
+.qimg { display: block; max-width: min(240px, 100%); max-height: 240px; border-radius: 7px; margin-bottom: 4px; }
+.qq { overflow-y: auto; }
+#qqCtx { flex: none; max-height: 34vh; margin: 12px 16px 0; }
+#dial { display: block; width: 100%; max-width: 560px; margin: 4px auto 0; touch-action: none; user-select: none; cursor: pointer; }
+#dial.locked { cursor: default; }
+.dial-bg { fill: var(--panel); stroke: var(--border); stroke-width: 2; }
+.dial-in { fill: var(--bg); }
+.dtick { stroke: var(--muted); stroke-width: 1.5; }
+.dtick.yr { stroke: var(--text); stroke-width: 2.5; }
+.dlabel { fill: var(--muted); font-size: 11px; font-family: inherit; }
+.dlabel.yr { fill: var(--text); font-weight: 700; }
+.needle { stroke: var(--text); stroke-width: 4; stroke-linecap: round; }
+.knob { fill: var(--accent); stroke: var(--panel); stroke-width: 3; }
+.hub { fill: var(--text); }
+.band { transform-box: view-box; transform-origin: 200px 200px; animation: fan .8s cubic-bezier(.2, .8, .2, 1) both; }
+.band.b1 { fill: rgb(var(--heat) / .22); } .band.b2 { fill: rgb(var(--heat) / .4); animation-delay: .1s; } .band.b3 { fill: rgb(var(--heat) / .65); animation-delay: .2s; }
+@keyframes fan { from { transform: scale(0); opacity: 0; } }
+.truth { stroke: var(--gold); stroke-width: 4; stroke-linecap: round; animation: fan .6s .3s both; transform-box: view-box; transform-origin: 200px 200px; }
+.qq-guess { text-align: center; font-size: 19px; font-weight: 700; margin-top: 2px; }
+.qq-fine { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; margin: 8px 16px 0; }
+.qq-fine button { min-width: 52px; padding: 5px 8px; font-size: 13px; }
+.qq-act { display: flex; justify-content: center; padding: 12px 16px 16px; }
+.qq-act .btn { padding: 9px 28px; font-size: 16px; }
+#qqResult { padding: 4px 18px 18px; text-align: center; }
+.qq-pts { font-size: 34px; font-weight: 800; color: var(--accent); }
+.qq-pts small { font-size: 16px; color: var(--muted); font-weight: 600; }
+.qq-legend { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+.qq-btns { display: flex; gap: 8px; justify-content: center; margin-top: 12px; flex-wrap: wrap; }
+@media (max-width: 760px) { .qe { grid-template-columns: 1fr; } .qe-pick { max-height: 40vh; border-right: 0; border-bottom: 1px solid var(--border); } }
+
 @media (max-width: 520px) { .avatar { display: none; } header.top { padding-left: 10px; } .ibtn { padding: 7px; } }
 @media (max-width: 860px) {
   #panel { position: fixed; inset: 0; width: auto; z-index: 30; border: 0; }
@@ -422,6 +507,7 @@ body.dragging-ui, body.dragging-ui * { cursor: grabbing !important; user-select:
   <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 2.8 2.85 5.8 6.4.93-4.63 4.5 1.1 6.37L12 17.4l-5.72 3 1.1-6.37-4.63-4.5 6.4-.93z"/></symbol>
   <symbol id="i-board" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v12"/></symbol>
   <symbol id="i-grip" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.2"/><circle cx="15" cy="6" r="1.2"/><circle cx="9" cy="12" r="1.2"/><circle cx="15" cy="12" r="1.2"/><circle cx="9" cy="18" r="1.2"/><circle cx="15" cy="18" r="1.2"/></symbol>
+  <symbol id="i-quiz" viewBox="0 0 24 24"><path d="M3 18a9 9 0 0 1 18 0"/><path d="m12 18 4-6"/><circle cx="12" cy="18" r="1.2"/></symbol>
   <symbol id="i-dl" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></symbol>
 </svg>
 
@@ -462,6 +548,7 @@ body.dragging-ui, body.dragging-ui * { cursor: grabbing !important; user-select:
     <div class="avatar" id="avatar"></div>
     <div class="ttl"><b id="title"></b><small id="subtitle"></small></div>
     <button class="ibtn" id="boardBtn" title="Board: sort starred messages into columns (B)" aria-pressed="false"><svg class="icon"><use href="#i-board"/></svg></button>
+    <button class="ibtn" id="quizBtn" title="Quiz: guess when messages were sent (Q)" aria-pressed="false"><svg class="icon"><use href="#i-quiz"/></svg></button>
     <button class="ibtn" data-panel="search" title="Search (Ctrl+F)" aria-pressed="false"><svg class="icon"><use href="#i-search"/></svg></button>
     <button class="ibtn" data-panel="gallery" title="Photos, videos, files and links" aria-pressed="false"><svg class="icon"><use href="#i-image"/></svg></button>
     <button class="ibtn" data-panel="calendar" title="Jump to date and stats" aria-pressed="false"><svg class="icon"><use href="#i-cal"/></svg></button>
@@ -474,6 +561,21 @@ body.dragging-ui, body.dragging-ui * { cursor: grabbing !important; user-select:
       <div id="dateChip"></div>
       <button id="toEnd" title="Latest messages (End)" hidden><svg class="icon"><use href="#i-down"/></svg></button>
       <div id="scrub" title="Drag to move through time"><div id="scrubTicks"></div><div id="scrubThumb"></div><div id="scrubTip" hidden></div></div>
+    </div>
+    <div id="quiz" hidden>
+      <div class="qz-top">
+        <div class="seg"><button data-qmode="edit">Set up</button><button data-qmode="play">Play</button></div>
+        <span id="qzScore"></span>
+        <span class="grow"></span>
+        <span class="qz-ctrls qz-edit">
+          <label>Points <input id="qzValues" placeholder="100, 200, 300, 400" title="Point values, top to bottom, comma separated"></label>
+          <label title="A guess earns a share of the square's value that halves every N days off">Half points at <input id="qzHalf" type="number" min="1" max="365"> days off</label>
+          <button class="btn" id="qzAutofill" title="Fill empty squares with random starred messages that aren't used yet">Auto-fill empty</button>
+          <button class="btn" id="qzAddCat">+ Category</button>
+        </span>
+        <span class="qz-ctrls qz-play"><button class="btn" id="qzReset">New game</button></span>
+      </div>
+      <div id="qzWrap"><div id="qzBanner" hidden></div><div id="qzGrid"></div></div>
     </div>
     <div id="board" hidden>
       <div id="bCols"></div>
@@ -540,7 +642,7 @@ body.dragging-ui, body.dragging-ui * { cursor: grabbing !important; user-select:
             <p id="sOrderInfo"></p></div>
           <div class="setting"><label for="sTheme">Theme</label>
             <select id="sTheme"><option value="auto">Match system</option><option value="light">Light</option><option value="dark">Dark</option></select></div>
-          <div class="setting"><label>Keyboard</label><p>Ctrl/⌘+F or / search · Enter / Shift+Enter next / previous result · Home / End first / last message · B board · Esc close · ← → in the photo viewer</p></div>
+          <div class="setting"><label>Keyboard</label><p>Ctrl/⌘+F or / search · Enter / Shift+Enter next / previous result · Home / End first / last message · B board · Q quiz · Esc close · ← → in the photo viewer</p></div>
           <div class="setting"><label>Privacy</label><p>Nothing was uploaded. The page's security policy blocks network access. The only things saved in this browser are your "which one is you" choice, your theme, your last scroll position, and which messages you starred (stored as message numbers, not their text). Message content is never saved.</p>
             <div><button class="btn" id="closeChat">Close this chat</button></div></div>
         </div>
@@ -559,6 +661,37 @@ body.dragging-ui, body.dragging-ui * { cursor: grabbing !important; user-select:
   </div>
   <div id="lbStage"><button class="lbnav" id="lbPrev" title="Previous (←)"><svg class="icon"><use href="#i-left"/></svg></button><div id="lbMedia"></div><button class="lbnav" id="lbNext" title="Next (→)"><svg class="icon"><use href="#i-right"/></svg></button></div>
   <div id="lbCap" dir="auto"></div>
+</div>
+
+<!-- quiz: square editor -->
+<div class="modal" id="qzEdit" hidden>
+  <div class="box wide">
+    <div class="mhead"><b id="qeTitle"></b><button class="ibtn" id="qeClose" title="Cancel (Esc)"><svg class="icon"><use href="#i-x"/></svg></button></div>
+    <div class="qe">
+      <div class="qe-pick"><input id="qePick" type="search" placeholder="Filter your starred messages…" autocomplete="off"><div id="qeList"></div></div>
+      <div class="qe-prev">
+        <div class="qe-ctx">Show <input type="number" id="qeBefore" min="0" max="30" value="0"> messages before and <input type="number" id="qeAfter" min="0" max="30" value="0"> after it. This is exactly what the player will see (dates and times hidden):</div>
+        <div class="qctx" id="qePrev"></div>
+        <div class="qe-btns"><button class="btn" id="qeClear">Empty this square</button><button class="btn primary" id="qeDone">Save square</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- quiz: question -->
+<div class="modal" id="qzQ" hidden>
+  <div class="box wide qq">
+    <div class="mhead"><b id="qqTitle"></b><button class="ibtn" id="qqClose" title="Back to the board (Esc)"><svg class="icon"><use href="#i-x"/></svg></button></div>
+    <div class="qctx" id="qqCtx"></div>
+    <svg id="dial" viewBox="0 0 400 228" aria-label="Date dial"></svg>
+    <div class="qq-guess" id="qqGuess"></div>
+    <div class="qq-fine" id="qqFine">
+      <button class="btn" data-d="-30">−1 mo</button><button class="btn" data-d="-7">−1 wk</button><button class="btn" data-d="-1">−1 day</button>
+      <button class="btn" data-d="1">+1 day</button><button class="btn" data-d="7">+1 wk</button><button class="btn" data-d="30">+1 mo</button>
+    </div>
+    <div class="qq-act" id="qqAct"><button class="btn primary" id="qqLock">Lock in</button></div>
+    <div id="qqResult" hidden></div>
+  </div>
 </div>
 
 <!-- who-am-I modal -->
@@ -883,6 +1016,7 @@ async function loadChat(sourceName, media, txts) {
   S.fp = hash(raw.slice(0, 3000) + '|' + raw.length);
   loadStars();
   boardLoad();
+  quizLoad();
   const pref = store.get('order:' + S.fp, 'auto');
   S.order = pref === 'auto' ? S.orderAuto : pref;
   $('#sOrder').value = pref;
@@ -1052,7 +1186,7 @@ function topIndex() {
 function jumpTo(i, align = 'center', flash = false) {
   const n = S.msgs.length;
   if (!n) return;
-  if (boardOn) showView(false);
+  if (view !== 'chat') showView('chat');
   i = clamp(i, 0, n - 1);
   renderRange(Math.max(0, i - CHUNK), Math.min(n, i + CHUNK));
   const row = rowEl(i);
@@ -1553,6 +1687,7 @@ $('#stExport').addEventListener('click', () => {
   const data = {
     app: 'chat-viewer-stars', version: 2, chat: S.title, stars: starList().map(i => [i, recHash(i)]),
     board: B.cols.map(c => ({ name: c.name, items: c.items.map(i => [i, recHash(i)]) })),
+    quiz: quizData(),
   };
   const url = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' }));
   const a = document.createElement('a');
@@ -1590,8 +1725,14 @@ $('#stFile').addEventListener('change', async e => {
       }
       boardSave();
     }
+    // The quiz is only taken from the file when this chat's quiz has no squares filled yet.
+    let quizNote = '';
+    if (data.quiz && data.quiz.cells) {
+      if (Object.keys(QZ.cells).length) quizNote = ' · quiz in the file skipped (this chat already has one)';
+      else { quizFromData(data.quiz, resolve); quizSave(); renderQuiz(); quizNote = ' · quiz loaded'; }
+    }
     saveStars(); updateStarBadge(); refreshWindow(); renderStarred(); renderBoard();
-    $('#stCount').textContent = `Added ${nf.format(added)} star${added === 1 ? '' : 's'}` + (missing ? ` · ${nf.format(missing)} not found in this chat` : '');
+    $('#stCount').textContent = `Added ${nf.format(added)} star${added === 1 ? '' : 's'}` + (missing ? ` · ${nf.format(missing)} not found in this chat` : '') + quizNote;
   } catch (err) {
     $('#stCount').textContent = 'That file is not a stars file from this viewer.';
   }
@@ -1628,18 +1769,28 @@ function boardSave() {
 function placed() { const s = new Set(); for (const c of B.cols) for (const i of c.items) s.add(i); return s; }
 function boardRemove(i) { for (const c of B.cols) { const k = c.items.indexOf(i); if (k >= 0) c.items.splice(k, 1); } }
 
-function showView(board) {
-  boardOn = board;
-  $('#chatWrap').hidden = board;
-  $('#board').hidden = !board;
-  $('#boardBtn').setAttribute('aria-pressed', String(board));
+// Three views share the main area: the chat, the board and the quiz.
+let view = 'chat';
+function showView(v) {
+  view = v;
+  boardOn = v === 'board';
+  $('#chatWrap').hidden = v !== 'chat';
+  $('#board').hidden = v !== 'board';
+  $('#quiz').hidden = v !== 'quiz';
+  $('#boardBtn').setAttribute('aria-pressed', String(v === 'board'));
+  $('#quizBtn').setAttribute('aria-pressed', String(v === 'quiz'));
 }
-function setBoard(on) {
-  if (on === boardOn) return;
-  if (on) { chatPos = topIndex(); showView(true); renderBoard(); }
-  else { showView(false); jumpTo(chatPos, 'start'); }
+function setView(v) {
+  if (v === view) v = 'chat';
+  if (v === view) return;
+  if (view === 'chat') chatPos = topIndex();
+  showView(v);
+  if (v === 'chat') jumpTo(chatPos, 'start');
+  else if (v === 'board') renderBoard();
+  else renderQuiz();
 }
-$('#boardBtn').addEventListener('click', () => setBoard(!boardOn));
+$('#boardBtn').addEventListener('click', () => setView('board'));
+$('#quizBtn').addEventListener('click', () => setView('quiz'));
 
 const bio = new IntersectionObserver(entries => {
   for (const e of entries) if (e.isIntersecting) { bio.unobserve(e.target); loadLazy(e.target); }
@@ -1890,6 +2041,354 @@ function endDrag(commit) {
   renderBoard();
 }
 
+
+/* ---------- quiz: Jeopardy-style "when was this sent?" ---------- */
+// Saved per chat. Squares point at messages by number + hash; guesses are stored as dates.
+const QZ = { cats: [], values: [], halfLife: 28, cells: {}, answers: {}, nextId: 1, mode: 'edit' };
+const qKey = (c, r) => c.id + ':' + r;
+const qScore = (daysOff, value) => Math.round(value * Math.pow(0.5, daysOff / QZ.halfLife));
+const uDay = d => Date.UTC(Math.floor(d / 10000), Math.floor(d / 100) % 100 - 1, d % 100) / 864e5;
+const dayOfU = u => { const t = new Date(u * 864e5); return t.getUTCFullYear() * 10000 + (t.getUTCMonth() + 1) * 100 + t.getUTCDate(); };
+const fmtU = u => fDay.format(dayDate(dayOfU(u)));
+function quizReset() {
+  QZ.cats = [1, 2, 3].map(id => ({ id, name: '' })); QZ.nextId = 4;
+  QZ.values = [100, 200, 300, 400]; QZ.halfLife = 28; QZ.cells = {}; QZ.answers = {}; QZ.mode = 'edit';
+}
+function quizData() {
+  return {
+    cats: QZ.cats, values: QZ.values, halfLife: QZ.halfLife, nextId: QZ.nextId, mode: QZ.mode,
+    cells: Object.fromEntries(Object.entries(QZ.cells).map(([k, c]) => [k, [c.i, recHash(c.i), c.b, c.a]])),
+    answers: Object.fromEntries(Object.entries(QZ.answers).map(([k, a]) => [k, [a.g, a.p]])),
+  };
+}
+function quizFromData(d, resolve) {
+  quizReset();
+  if (!d) return;
+  if (Array.isArray(d.cats) && d.cats.length) QZ.cats = d.cats.map(c => ({ id: +c.id, name: String(c.name || '').slice(0, 60) }));
+  const vals = Array.isArray(d.values) ? d.values.map(Number).filter(v => v > 0) : [];
+  if (vals.length) QZ.values = vals;
+  if (d.halfLife > 0) QZ.halfLife = Math.min(365, +d.halfLife);
+  QZ.nextId = Math.max(+d.nextId || 1, ...QZ.cats.map(c => c.id + 1));
+  QZ.mode = d.mode === 'play' ? 'play' : 'edit';
+  for (const [k, v] of Object.entries(d.cells || {})) {
+    const at = resolve(v[0], v[1]);
+    if (at >= 0) QZ.cells[k] = { i: at, b: clamp(v[2] | 0, 0, 30), a: clamp(v[3] | 0, 0, 30) };
+  }
+  for (const [k, v] of Object.entries(d.answers || {})) if (QZ.cells[k]) QZ.answers[k] = { g: +v[0], p: +v[1] };
+}
+function quizLoad() {
+  const d = store.get('quiz:' + S.fp, null);
+  if (d) quizFromData(d, (i, h) => (S.recs[i] && recHash(i) === h ? i : -1)); else quizReset();
+}
+function quizSave() { store.set('quiz:' + S.fp, quizData()); }
+function quizSquares() {
+  const out = [];
+  for (let r = 0; r < QZ.values.length; r++) for (const c of QZ.cats) out.push({ c, r, k: qKey(c, r), v: QZ.values[r] });
+  return out;
+}
+
+function renderQuiz() {
+  if (view !== 'quiz') return;
+  const edit = QZ.mode === 'edit';
+  for (const b of $$('[data-qmode]')) b.setAttribute('aria-pressed', String(b.dataset.qmode === QZ.mode));
+  for (const e of $$('.qz-edit')) e.hidden = !edit;
+  for (const e of $$('.qz-play')) e.hidden = edit;
+  if (document.activeElement !== $('#qzValues')) $('#qzValues').value = QZ.values.join(', ');
+  if (document.activeElement !== $('#qzHalf')) $('#qzHalf').value = QZ.halfLife;
+  const sq = quizSquares(), filled = sq.filter(x => QZ.cells[x.k]);
+  let got = 0, poss = 0, done = 0;
+  for (const x of filled) { const a = QZ.answers[x.k]; if (a) { got += a.p; poss += x.v; done++; } }
+  const total = filled.reduce((t, x) => t + x.v, 0);
+  $('#qzScore').textContent = edit
+    ? `${filled.length} of ${sq.length} squares filled`
+    : `Score ${nf.format(got)}${done ? ` of ${nf.format(poss)}` : ''} · ${filled.length - done} square${filled.length - done === 1 ? '' : 's'} left`;
+  const banner = $('#qzBanner');
+  banner.hidden = true;
+  if (edit && !S.stars.size) {
+    banner.hidden = false;
+    banner.innerHTML = 'You need starred messages to build a quiz. In the chat, point at a message and click ☆, then come back and click a square to put a message in it.';
+  } else if (!edit && !filled.length) {
+    banner.hidden = false;
+    banner.innerHTML = 'No squares have messages yet. Switch to <b>Set up</b> and click a square to pick a starred message for it.';
+  } else if (!edit && done === filled.length) {
+    banner.hidden = false;
+    banner.innerHTML = `<div class="big">Final score: ${nf.format(got)} of ${nf.format(total)}</div><div class="qq-legend">${Math.round(100 * got / Math.max(1, total))}% · click any square to see its answer again, or start a new game.</div>`;
+  }
+  const grid = $('#qzGrid');
+  grid.style.gridTemplateColumns = `repeat(${Math.max(1, QZ.cats.length)}, minmax(150px, 1fr))`;
+  let h = '';
+  for (const c of QZ.cats) {
+    h += edit
+      ? `<div class="qhead" data-cat="${c.id}"><input value="${esc(c.name)}" placeholder="Category name" maxlength="60" dir="auto" aria-label="Category name"><button data-delcat="${c.id}" title="Remove this category"><svg class="icon"><use href="#i-x"/></svg></button></div>`
+      : `<div class="qhead"><span dir="auto">${esc(c.name || 'Untitled')}</span></div>`;
+  }
+  for (const x of sq) {
+    const cell = QZ.cells[x.k], a = QZ.answers[x.k];
+    if (edit) {
+      if (cell) {
+        const m = S.msgs[cell.i];
+        h += `<button class="qcell" data-key="${x.k}" title="Change this square"><b>${nf.format(x.v)}</b><span class="qsn" dir="auto">${esc(snippet(m, ''))}</span><small>${esc(fShort.format(m.t))}${cell.b || cell.a ? ` · context −${cell.b} / +${cell.a}` : ''}${a ? ' · played' : ''}</small></button>`;
+      } else h += `<button class="qcell empty" data-key="${x.k}"><b>${nf.format(x.v)}</b><span>+ Pick a message</span></button>`;
+    } else if (!cell) h += `<button class="qcell empty" disabled><b>${nf.format(x.v)}</b><small>empty</small></button>`;
+    else if (a) h += `<button class="qcell done" data-key="${x.k}" title="See the answer"><b>+${nf.format(a.p)}</b><small>of ${nf.format(x.v)}</small></button>`;
+    else h += `<button class="qcell play" data-key="${x.k}"><b>${nf.format(x.v)}</b></button>`;
+  }
+  grid.innerHTML = h;
+}
+for (const b of $$('[data-qmode]')) b.addEventListener('click', () => { QZ.mode = b.dataset.qmode; quizSave(); renderQuiz(); });
+$('#qzValues').addEventListener('change', e => {
+  const vals = e.target.value.split(/[,\s]+/).map(Number).filter(v => v > 0 && Number.isFinite(v)).map(v => Math.round(v)).slice(0, 12);
+  if (vals.length) QZ.values = vals;
+  quizSave(); e.target.blur(); renderQuiz();
+});
+$('#qzHalf').addEventListener('change', e => {
+  const n = Math.round(+e.target.value);
+  QZ.halfLife = n > 0 ? Math.min(365, n) : 28;
+  quizSave(); renderQuiz();
+});
+$('#qzAddCat').addEventListener('click', () => {
+  const c = { id: QZ.nextId++, name: '' };
+  QZ.cats.push(c); quizSave(); renderQuiz();
+  $(`.qhead[data-cat="${c.id}"] input`).focus();
+});
+$('#qzAutofill').addEventListener('click', () => {
+  const used = new Set(Object.values(QZ.cells).map(c => c.i));
+  const pool = starList().filter(i => !used.has(i));
+  for (let k = pool.length - 1; k > 0; k--) { const j = Math.floor(Math.random() * (k + 1)); [pool[k], pool[j]] = [pool[j], pool[k]]; }
+  let n = 0;
+  for (const x of quizSquares()) if (!QZ.cells[x.k] && pool.length) { QZ.cells[x.k] = { i: pool.pop(), b: 0, a: 0 }; n++; }
+  quizSave(); renderQuiz();
+  $('#qzScore').textContent += n ? ` · added ${n}` : (S.stars.size ? ' · no unused starred messages left' : '');
+});
+$('#qzReset').addEventListener('click', () => {
+  if (Object.keys(QZ.answers).length && !confirm('Start a new game? This clears the current scores (the squares stay as they are).')) return;
+  QZ.answers = {}; quizSave(); renderQuiz();
+});
+$('#qzGrid').addEventListener('input', e => {
+  const head = e.target.closest('.qhead');
+  if (!head) return;
+  QZ.cats.find(c => c.id === +head.dataset.cat).name = e.target.value;
+  quizSave();
+});
+$('#qzGrid').addEventListener('keydown', e => { if (e.target.matches('.qhead input') && (e.key === 'Enter' || e.key === 'Escape')) { e.preventDefault(); e.stopPropagation(); e.target.blur(); } });
+$('#qzGrid').addEventListener('click', e => {
+  const del = e.target.closest('[data-delcat]');
+  if (del) {
+    const id = +del.dataset.delcat, c = QZ.cats.find(x => x.id === id);
+    const keys = Object.keys(QZ.cells).filter(k => k.startsWith(id + ':'));
+    if (keys.length && !confirm(`Remove the category “${c.name || 'Untitled'}” and its ${keys.length} filled square${keys.length === 1 ? '' : 's'}?`)) return;
+    for (const k of keys) { delete QZ.cells[k]; delete QZ.answers[k]; }
+    QZ.cats.splice(QZ.cats.indexOf(c), 1); quizSave(); renderQuiz();
+    return;
+  }
+  const cell = e.target.closest('.qcell[data-key]');
+  if (!cell) return;
+  if (QZ.mode === 'edit') openCellEditor(cell.dataset.key); else openQuestion(cell.dataset.key);
+});
+const squareTitle = k => {
+  const [cid, r] = k.split(':');
+  const c = QZ.cats.find(x => x.id === +cid);
+  return `${(c && c.name) || 'Untitled'} · ${nf.format(QZ.values[+r])} points`;
+};
+
+// What the player sees: the message plus the chosen context, with no dates or times.
+function qBubble(j, target, prev) {
+  const m = S.msgs[j];
+  if (m.s < 0) return `<div class="sys" dir="auto">${fmtText(m.text)}</div>`;
+  const mine = m.s === S.me, cont = prev && prev.s === m.s;
+  let h = `<div class="msg ${mine ? 'me' : 'them'}${cont ? ' cont' : ''}${target ? ' qtarget' : ''}">`;
+  if (!cont) h += `<div class="who" style="color:${PALETTE[m.s % PALETTE.length]}" dir="auto">${esc(S.people[m.s])}</div>`;
+  if (m.media) for (const md of m.media) {
+    const n = esc(md.name);
+    if (!md.ok) h += '<div class="missing">📎 Attachment not included in the export</div>';
+    else if (md.kind === 'image' || md.kind === 'sticker') h += `<img class="qimg" data-src="${n}" alt="">`;
+    else if (md.kind === 'video') h += `<video class="qimg" data-src="${n}" controls preload="metadata" playsinline></video>`;
+    else if (md.kind === 'audio') h += `<audio class="aud" data-src="${n}" controls preload="none"></audio>`;
+    else h += '<div class="missing">📄 A file</div>';
+  }
+  if (m.text) h += `<div class="text" dir="auto">${fmtText(m.text)}</div>`;
+  else if (m.note) h += `<div class="text note" dir="auto">${esc(m.note)}</div>`;
+  return h + '</div>';
+}
+function qContext(box, i, b, a) {
+  const from = Math.max(0, i - b), to = Math.min(S.msgs.length - 1, i + a);
+  let h = '';
+  for (let j = from; j <= to; j++) h += qBubble(j, j === i, j > from ? S.msgs[j - 1] : null);
+  box.innerHTML = h;
+  for (const n of box.querySelectorAll('[data-src]')) mediaURL(n.dataset.src).then(u => { n.src = u; }).catch(() => {});
+  const t = box.querySelector('.qtarget');
+  if (t) requestAnimationFrame(() => { box.scrollTop = t.offsetTop - box.offsetTop - (box.clientHeight - t.offsetHeight) / 2; });
+}
+
+/* square editor */
+let QE = null;
+function openCellEditor(k) {
+  const cell = QZ.cells[k];
+  QE = { k, i: cell ? cell.i : -1, b: cell ? cell.b : 0, a: cell ? cell.a : 0 };
+  $('#qeTitle').textContent = squareTitle(k);
+  $('#qePick').value = '';
+  $('#qeClear').hidden = !cell;
+  renderPickList(); renderPreview();
+  $('#qzEdit').hidden = false;
+  $('#qePick').focus();
+}
+function closeCellEditor() { $('#qzEdit').hidden = true; QE = null; }
+function renderPickList() {
+  const q = $('#qePick').value.trim().toLowerCase();
+  const usedAt = new Map(Object.entries(QZ.cells).map(([k, c]) => [c.i, k]));
+  let h = '';
+  for (const i of starList()) {
+    const m = S.msgs[i];
+    if (q) { if (m.lc === null) m.lc = (m.text + '\n' + m.note).toLowerCase(); if (!m.lc.includes(q)) continue; }
+    const uk = usedAt.get(i);
+    h += `<button class="res${i === QE.i ? ' cur' : ''}" data-pick="${i}"><div class="rh"><b dir="auto">${esc(m.s >= 0 ? S.people[m.s] : '')}</b><span>${esc(fShort.format(m.t))}</span></div><div class="rt" dir="auto">${esc(snippet(m, ''))}</div>` +
+      (uk && uk !== QE.k ? `<span class="used">In “${esc(squareTitle(uk))}”: picking it moves it here</span>` : '') + '</button>';
+  }
+  $('#qeList').innerHTML = h || `<div class="empty">${S.stars.size ? 'No starred messages match.' : 'No starred messages yet. Star messages in the chat (☆) first.'}</div>`;
+}
+function renderPreview() {
+  $('#qeBefore').value = QE.b; $('#qeAfter').value = QE.a;
+  $('#qeDone').disabled = QE.i < 0;
+  if (QE.i < 0) { $('#qePrev').innerHTML = '<div class="empty">Pick a starred message on the left.</div>'; return; }
+  qContext($('#qePrev'), QE.i, QE.b, QE.a);
+}
+$('#qePick').addEventListener('input', renderPickList);
+$('#qeList').addEventListener('click', e => {
+  const b = e.target.closest('[data-pick]');
+  if (!b) return;
+  QE.i = +b.dataset.pick;
+  for (const x of $$('#qeList .res.cur')) x.classList.remove('cur');
+  b.classList.add('cur');
+  renderPreview();
+});
+for (const id of ['#qeBefore', '#qeAfter']) $(id).addEventListener('input', e => {
+  const v = clamp(Math.round(+e.target.value) || 0, 0, 30);
+  if (id === '#qeBefore') QE.b = v; else QE.a = v;
+  if (QE.i >= 0) qContext($('#qePrev'), QE.i, QE.b, QE.a);
+});
+$('#qeDone').addEventListener('click', () => {
+  if (QE.i < 0) return;
+  for (const [k, c] of Object.entries(QZ.cells)) if (c.i === QE.i && k !== QE.k) { delete QZ.cells[k]; delete QZ.answers[k]; }
+  const old = QZ.cells[QE.k];
+  if (!old || old.i !== QE.i) delete QZ.answers[QE.k];
+  QZ.cells[QE.k] = { i: QE.i, b: QE.b, a: QE.a };
+  quizSave(); closeCellEditor(); renderQuiz();
+});
+$('#qeClear').addEventListener('click', () => { delete QZ.cells[QE.k]; delete QZ.answers[QE.k]; quizSave(); closeCellEditor(); renderQuiz(); });
+$('#qeClose').addEventListener('click', closeCellEditor);
+$('#qzEdit').addEventListener('click', e => { if (e.target.id === 'qzEdit') closeCellEditor(); });
+
+/* question + dial */
+const DIAL = { cx: 200, cy: 200, R: 172 };
+let QQ = null, D0 = 0, D1 = 1, dialDrag = false;
+const dialAng = u => (D1 > D0 ? Math.PI * (1 - (u - D0) / (D1 - D0)) : Math.PI / 2);
+const dialPt = (a, r = DIAL.R) => [DIAL.cx + r * Math.cos(a), DIAL.cy - r * Math.sin(a)];
+const f2 = n => n.toFixed(2);
+function bandDays(share) { return QZ.halfLife * Math.log2(1 / share); }
+function wedge(u1, u2) {
+  u1 = clamp(u1, D0, D1); u2 = clamp(u2, D0, D1);
+  if (u2 - u1 < 0.35) { u1 -= 0.175; u2 += 0.175; }
+  const [x1, y1] = dialPt(dialAng(u1)), [x2, y2] = dialPt(dialAng(u2));
+  return `M${DIAL.cx} ${DIAL.cy}L${f2(x1)} ${f2(y1)}A${DIAL.R} ${DIAL.R} 0 0 1 ${f2(x2)} ${f2(y2)}Z`;
+}
+function drawDial() {
+  const { cx, cy, R } = DIAL;
+  let h = `<path class="dial-bg" d="M${cx - R} ${cy}A${R} ${R} 0 0 1 ${cx + R} ${cy}Z"/>`;
+  if (QQ.locked) {
+    const t = uDay(S.msgs[QQ.i].day);
+    [[0.25, 'b1'], [0.5, 'b2'], [0.75, 'b3']].forEach(([sh, cls]) => { const d = bandDays(sh); h += `<path class="band ${cls}" d="${wedge(t - d, t + d)}"/>`; });
+    const [tx, ty] = dialPt(dialAng(t), R + 4);
+    h += `<line class="truth" x1="${cx}" y1="${cy}" x2="${f2(tx)}" y2="${f2(ty)}"/>`;
+  }
+  h += `<path class="dial-in" d="M${cx - 26} ${cy}A26 26 0 0 1 ${cx + 26} ${cy}Z"/>`;
+  // month ticks and labels
+  const first = dayOfU(D0), last = dayOfU(D1);
+  let y = Math.floor(first / 10000), mo = Math.floor(first / 100) % 100;
+  const months = [];
+  while (y * 100 + mo <= Math.floor(last / 100)) { months.push([y, mo]); if (++mo > 12) { mo = 1; y++; } }
+  const step = months.length <= 15 ? 1 : months.length <= 30 ? 2 : months.length <= 48 ? 3 : 12;
+  months.forEach(([yy, mm], k) => {
+    const u = uDay(yy * 10000 + mm * 100 + 1);
+    if (u < D0 || u > D1) return;
+    const a = dialAng(u), yr = mm === 1;
+    const [x1, y1] = dialPt(a, R - (yr ? 14 : 9)), [x2, y2] = dialPt(a, R);
+    h += `<line class="dtick${yr ? ' yr' : ''}" x1="${f2(x1)}" y1="${f2(y1)}" x2="${f2(x2)}" y2="${f2(y2)}"/>`;
+    // labels right at either end would collide with the start/end dates under the dial
+    if ((yr || (step < 12 && k % step === 0)) && a < Math.PI - 0.1 && a > 0.1) {
+      const [lx, ly] = dialPt(a, R - 26);
+      const label = yr ? String(yy) : new Intl.DateTimeFormat(undefined, { month: 'short' }).format(new Date(yy, mm - 1, 1));
+      h += `<text class="dlabel${yr ? ' yr' : ''}" x="${f2(lx)}" y="${f2(ly + 4)}" text-anchor="middle">${esc(label)}</text>`;
+    }
+  });
+  h += `<text class="dlabel" x="${cx - R}" y="${cy + 20}" text-anchor="start">${esc(fShort.format(dayDate(first)))}</text>`;
+  h += `<text class="dlabel" x="${cx + R}" y="${cy + 20}" text-anchor="end">${esc(fShort.format(dayDate(last)))}</text>`;
+  const [nx, ny] = dialPt(dialAng(QQ.u), R - 12);
+  h += `<line class="needle" x1="${cx}" y1="${cy}" x2="${f2(nx)}" y2="${f2(ny)}"/><circle class="knob" cx="${f2(nx)}" cy="${f2(ny)}" r="10"/><circle class="hub" cx="${cx}" cy="${cy}" r="7"/>`;
+  const dial = $('#dial');
+  dial.innerHTML = h;
+  dial.classList.toggle('locked', QQ.locked);
+  $('#qqGuess').textContent = (QQ.locked ? 'Your guess: ' : '') + fmtU(QQ.u);
+}
+function openQuestion(k) {
+  const cell = QZ.cells[k];
+  if (!cell) return;
+  D0 = uDay(S.days[0].day); D1 = uDay(S.days[S.days.length - 1].day);
+  const ans = QZ.answers[k];
+  QQ = { k, i: cell.i, value: QZ.values[+k.split(':')[1]], u: ans ? uDay(ans.g) : Math.round((D0 + D1) / 2), locked: !!ans };
+  $('#qqTitle').textContent = squareTitle(k);
+  $('#qzQ').hidden = false;
+  qContext($('#qqCtx'), cell.i, cell.b, cell.a);
+  drawDial();
+  showQState();
+}
+function showQState() {
+  $('#qqFine').hidden = QQ.locked;
+  $('#qqAct').hidden = QQ.locked;
+  $('#qqResult').hidden = !QQ.locked;
+  if (!QQ.locked) return;
+  const ans = QZ.answers[QQ.k], m = S.msgs[QQ.i];
+  const off = Math.abs(uDay(ans.g) - uDay(m.day));
+  const d = s => nf.format(Math.round(bandDays(s)));
+  $('#qqResult').innerHTML = `<div class="qq-pts">+${nf.format(ans.p)} <small>of ${nf.format(QQ.value)}</small></div>` +
+    `<div>It was sent on <b>${esc(fDay.format(m.t))}</b>${off ? `. You were <b>${nf.format(off)} day${off === 1 ? '' : 's'}</b> off.` : '. Exactly right!'}</div>` +
+    `<div class="qq-legend">Bands: 75%+ within ${d(0.75)} days · 50% within ${d(0.5)} · 25% within ${d(0.25)}</div>` +
+    `<div class="qq-btns"><button class="btn" id="qqShow">Show in chat</button><button class="btn primary" id="qqBack">Back to the board</button></div>`;
+  $('#qqShow').addEventListener('click', () => { const i = QQ.i; closeQuestion(); jumpTo(i, 'center', true); });
+  $('#qqBack').addEventListener('click', closeQuestion);
+  $('#qqBack').focus();
+}
+function closeQuestion() { $('#qzQ').hidden = true; $('#qqCtx').replaceChildren(); QQ = null; renderQuiz(); }
+function setGuess(u) { if (!QQ || QQ.locked) return; QQ.u = clamp(Math.round(u), D0, D1); drawDial(); }
+function lockIn() {
+  if (!QQ || QQ.locked) return;
+  const off = Math.abs(QQ.u - uDay(S.msgs[QQ.i].day));
+  QZ.answers[QQ.k] = { g: dayOfU(QQ.u), p: qScore(off, QQ.value) };
+  QQ.locked = true;
+  quizSave(); drawDial(); showQState();
+}
+function quizKey(e, inField) {
+  if (e.key === 'Escape') { e.preventDefault(); closeQuestion(); return; }
+  if (!QQ || QQ.locked || inField) return;
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); setGuess(QQ.u + (e.key === 'ArrowLeft' ? -1 : 1) * (e.shiftKey ? 7 : 1)); }
+  else if (e.key === 'Enter') { e.preventDefault(); lockIn(); }
+}
+const dialEl = $('#dial');
+function dialFromPointer(e) {
+  const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(dialEl.getScreenCTM().inverse());
+  let a = Math.atan2(DIAL.cy - p.y, p.x - DIAL.cx);
+  if (a < 0) a = p.x < DIAL.cx ? Math.PI : 0;
+  setGuess(D0 + (1 - a / Math.PI) * (D1 - D0));
+}
+dialEl.addEventListener('pointerdown', e => { if (!QQ || QQ.locked) return; dialDrag = true; dialEl.setPointerCapture(e.pointerId); dialFromPointer(e); e.preventDefault(); });
+dialEl.addEventListener('pointermove', e => { if (dialDrag) dialFromPointer(e); });
+dialEl.addEventListener('pointerup', () => { dialDrag = false; });
+dialEl.addEventListener('pointercancel', () => { dialDrag = false; });
+dialEl.addEventListener('wheel', e => { if (!QQ || QQ.locked) return; e.preventDefault(); setGuess(QQ.u + Math.sign(e.deltaY || e.deltaX)); }, { passive: false });
+$('#qqFine').addEventListener('click', e => { const b = e.target.closest('[data-d]'); if (b) setGuess(QQ.u + +b.dataset.d); });
+$('#qqLock').addEventListener('click', lockIn);
+$('#qqClose').addEventListener('click', closeQuestion);
+$('#qzQ').addEventListener('click', e => { if (e.target.id === 'qzQ') closeQuestion(); });
+
 /* ---------- settings ---------- */
 function fillPeople() {
   const opts = S.people.map((p, i) => `<option value="${i}">${esc(p)}</option>`).join('');
@@ -1967,14 +2466,18 @@ document.addEventListener('keydown', e => {
     return;
   }
   if (!$('#meModal').hidden) return;
+  if (!$('#qzEdit').hidden) { if (e.key === 'Escape') closeCellEditor(); return; }
+  if (!$('#qzQ').hidden) { quizKey(e, inField); return; }
   if ((e.key === 'f' && (e.ctrlKey || e.metaKey)) || (e.key === '/' && !inField)) {
     e.preventDefault();
     if (curPanel !== 'search') showPanel('search'); else { $('#q').focus(); $('#q').select(); }
   } else if (!inField && (e.key === 'b' || e.key === 'B') && !e.ctrlKey && !e.metaKey && !e.altKey) {
-    setBoard(!boardOn);
+    setView('board');
+  } else if (!inField && (e.key === 'q' || e.key === 'Q') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    setView('quiz');
   } else if (e.key === 'Escape') {
     if (curPanel) showPanel(null);
-  } else if (boardOn) {
+  } else if (view !== 'chat') {
     return;
   } else if (!inField && e.key === 'Home') { e.preventDefault(); jumpTo(0, 'start'); }
   else if (!inField && e.key === 'End') { e.preventDefault(); jumpTo(S.msgs.length - 1, 'end'); }
@@ -1996,6 +2499,7 @@ function start(atIndex) {
   updateStarBadge();
   if (curPanel === 'starred') renderStarred();
   renderBoard();
+  renderQuiz();
   gBuiltFor = ''; cBuiltFor = '';
   if (curPanel === 'gallery') renderGallery();
   if (curPanel === 'calendar') renderCalendar();
